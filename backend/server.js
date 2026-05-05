@@ -14,7 +14,25 @@ const port = process.env.PORT || 5000;
 const authMiddleware = require('./middleware/authMiddleware');
 
 // Configuração do CORS
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://projeto-proita.vercel.app',
+  'https://www.proita.com.br',
+  'https://proita.com.br',
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Permite requisições sem origin (ex: Postman, curl)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`Origem não permitida pelo CORS: ${origin}`));
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 // Configuração do Banco de Dados Neon (PostgreSQL)
