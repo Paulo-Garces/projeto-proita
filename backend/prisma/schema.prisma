@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "library"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                  String    @id @default(uuid())
+  nome                String
+  sobrenome           String
+  telefone            String    @unique
+  senha               String
+  bairro              String?
+  role                String    @default("USER")
+  profileImageUrl     String?
+  profileImageFileId  String?
+  createdAt           DateTime  @default(now())
+  profiles            Profile[] // 1:N — um usuário pode ter vários anúncios
+}
+
+model Profile {
+  id                    String   @id @default(uuid())
+  userId                String   // Sem @unique: permite múltiplos anúncios por usuário
+  user                  User     @relation(fields: [userId], references: [id])
+  atividadePrincipal    String
+  atividadesSecundarias String[]
+  descricaoTrabalho     String
+  // Contato e Redes Sociais (campos explícitos)
+  instagram             String?
+  whatsapp              String?
+  // Localização
+  endereco              String?
+  // Portfólio (array de URLs de imagens no ImageKit)
+  portfolioUrls         String[]
+  // Imagem principal do anúncio
+  avatarUrl             String?
+  avatarFileId          String?
+  // Campo legado — mantido para não quebrar dados existentes
+  redesSociais          Json?
+  // Campos novos de serviço
+  servicePhone          String?   // WhatsApp/Tel específico do serviço
+  serviceBairro         String?   // Bairro/local de atendimento
+  shortDescription      String?   // Descrição curta para o card (max 100 chars)
+  socialLinks           Json?     // [{platform:'instagram',url:'...'}, ...] até 3
+  createdAt             DateTime @default(now())
+}

@@ -1,0 +1,220 @@
+const express = require('express');
+const authMiddleware = require('../middleware/authMiddleware');
+
+// Campos que retornamos do User em consultas públicas
+const publicUserSelect = {
+  nome: true,
+  sobrenome: true,
+  bairro: true,
+  telefone: true,
+};
+
+module.exports = (prisma) => {
+  const router = express.Router();
+
+  // ─────────────────────────────────────────────────────────────
+  // GET /api/ads — Listar todos os anúncios (Rota Pública)
+  // ─────────────────────────────────────────────────────────────
+  router.get('/', async (req, res) => {
+    try {
+      const ads = await prisma.profile.findMany({
+        include: { user: { select: publicUserSelect } },
+        orderBy: { createdAt: 'desc' },
+      });
+      res.status(200).json({ success: true, data: ads });
+    } catch (error) {
+      console.error('[GET /api/ads] Erro:', error.message);
+      res.status(500).json({ success: false, message: 'Erro interno ao buscar anúncios.' });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // GET /api/ads/me — Anúncios do usuário logado (Rota Privada)
+  // IMPORTANTE: deve vir ANTES de /:id para não ser capturada como ID
+  // ─────────────────────────────────────────────────────────────
+  router.get('/me', authMiddleware, async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const ads = await prisma.profile.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      });
+      res.status(200).json({ success: true, data: ads });
+    } catch (error) {
+      console.error('[GET /api/ads/me] Erro:', error.message);
+      res.status(500).json({ success: false, message: 'Erro ao buscar seus anúncios.' });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // GET /api/ads/:id — Buscar anúncio específico (Rota Pública)
+  // ─────────────────────────────────────────────────────────────
+  router.get('/:id', async (req, res) => {
+    const { id } = req.params;
+    console.log(`[GET /api/ads/:id] Buscando: ${id}`);
+    try {
+      const ad = await prisma.profile.findUnique({
+        where: { id: String(id) },
+        include: { user: { select: publicUserSelect } },
+      });
+
+      if (!ad) {
+        return res.status(404).json({ success: false, message: 'Anúncio não encontrado.' });
+      }
+
+      res.status(200).json({ success: true, data: ad });
+    } catch (error) {
+      console.error('[GET /api/ads/:id] Erro:', error.message);
+      res.status(500).json({ success: false, message: 'Erro interno ao buscar anúncio.' });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // POST /api/ads — Criar um novo anúncio (Rota Privada)
+  // ─────────────────────────────────────────────────────────────
+  router.post('/', authMiddleware, async (req, res) => {
+    const {
+      nome, sobrenome, telefone, bairro,
+      atividadePrincipal, atividadesSecundarias, descricaoTrabalho,
+      instagram, whatsapp, endereco, portfolioUrls,
+      redesSociais, avatarUrl, avatarFileId,
+      servicePhone, serviceBairro, shortDescription, socialLinks,
+    } = req.body;
+
+    const userId = req.user.id;
+
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { nome, sobrenome, telefone, bairro },
+      });
+
+      const profile = await prisma.profile.create({
+        data: {
+          userId,
+          atividadePrincipal,
+          atividadesSecundarias: atividadesSecundarias || [],
+          descricaoTrabalho,
+          instagram: instagram || null,
+          whatsapp: whatsapp || null,
+          endereco: endereco || null,
+          portfolioUrls: portfolioUrls || [],
+          avatarUrl: avatarUrl || null,
+          avatarFileId: avatarFileId || null,
+          redesSociais: redesSociais || null,
+          servicePhone: servicePhone || null,
+          serviceBairro: serviceBairro || null,
+          shortDescription: shortDescription || null,
+          socialLinks: socialLinks || null,
+        },
+      });
+
+      res.status(201).json({ success: true, profile });
+    } catch (error) {
+      console.error('[POST /api/ads] Erro:', error.message);
+      res.status(500).json({ success: false, message: 'Erro interno ao salvar anúncio.' });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // PATCH /api/ads/:id — Editar anúncio específico (Rota Privada)
+  // Só o dono do anúncio pode editar
+  // ─────────────────────────────────────────────────────────────
+  router.patch('/:id', authMiddleware, async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    try {
+      // Verifica se o anúncio existe e pertence ao usuário logado
+      const existing = await prisma.profile.findUnique({ where: { id } });
+
+      if (!existing) {
+        return res.status(404).json({ success: false, message: 'Anúncio não encontrado.' });
+      }
+
+      if (existing.userId !== userId) {
+        return res.status(403).json({ success: false, message: 'Você não tem permissão para editar este anúncio.' });
+      }
+
+      const {
+        atividadePrincipal,
+        atividadesSecundarias,
+        descricaoTrabalho,
+        shortDescription,
+        instagram,
+        whatsapp,
+        servicePhone,
+        serviceBairro,
+        endereco,
+        portfolioUrls,
+        avatarUrl,
+        avatarFileId,
+        socialLinks,
+      } = req.body;
+
+      console.log(`[PATCH /api/ads/${id}] Payload:`, JSON.stringify({ shortDescription, servicePhone, serviceBairro, socialLinks }));
+
+      if (socialLinks !== undefined) {
+        if (!Array.isArray(socialLinks)) {
+          return res.status(400).json({ success: false, message: 'socialLinks deve ser um array.' });
+        }
+        if (socialLinks.length > 3) {
+          return res.status(400).json({ success: false, message: 'Máximo de 3 redes sociais permitidas.' });
+        }
+      }
+
+      const updated = await prisma.profile.update({
+        where: { id },
+        data: {
+          ...(atividadePrincipal !== undefined && { atividadePrincipal }),
+          ...(atividadesSecundarias !== undefined && { atividadesSecundarias }),
+          ...(descricaoTrabalho !== undefined && { descricaoTrabalho }),
+          ...(shortDescription !== undefined && { shortDescription }),
+          ...(instagram !== undefined && { instagram }),
+          ...(whatsapp !== undefined && { whatsapp }),
+          ...(servicePhone !== undefined && { servicePhone }),
+          ...(serviceBairro !== undefined && { serviceBairro }),
+          ...(endereco !== undefined && { endereco }),
+          ...(portfolioUrls !== undefined && { portfolioUrls }),
+          ...(avatarUrl !== undefined && { avatarUrl }),
+          ...(avatarFileId !== undefined && { avatarFileId }),
+          ...(socialLinks !== undefined && { socialLinks }),
+        },
+      });
+
+      console.log(`[PATCH /api/ads/${id}] socialLinks salvo:`, JSON.stringify(updated.socialLinks));
+      res.status(200).json({ success: true, profile: updated });
+    } catch (error) {
+      console.error('[PATCH /api/ads/:id] Erro:', error.message);
+      res.status(500).json({ success: false, message: 'Erro interno ao atualizar anúncio.' });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // DELETE /api/ads/:id — Excluir anúncio (Rota Privada)
+  // ─────────────────────────────────────────────────────────────
+  router.delete('/:id', authMiddleware, async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    try {
+      const existing = await prisma.profile.findUnique({ where: { id } });
+
+      if (!existing) {
+        return res.status(404).json({ success: false, message: 'Anúncio não encontrado.' });
+      }
+
+      if (existing.userId !== userId) {
+        return res.status(403).json({ success: false, message: 'Você não tem permissão para excluir este anúncio.' });
+      }
+
+      await prisma.profile.delete({ where: { id } });
+      res.status(200).json({ success: true, message: 'Anúncio excluído com sucesso.' });
+    } catch (error) {
+      console.error('[DELETE /api/ads/:id] Erro:', error.message);
+      res.status(500).json({ success: false, message: 'Erro interno ao excluir anúncio.' });
+    }
+  });
+
+  return router;
+};
