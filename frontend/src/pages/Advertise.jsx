@@ -1,8 +1,11 @@
 import { useState, useContext } from 'react';
-import { MOCK_CATEGORIES } from '../mocks/data';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Briefcase, MapPin, AlignLeft, CheckCircle, Navigation, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, AtSign, Video } from 'lucide-react';
+import { Briefcase, MapPin, AlignLeft, CheckCircle, Navigation, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, ChevronDown } from 'lucide-react';
+
+const MOCK_BAIRROS = [
+  'Centro', 'Fazendinha', 'Maranhão', 'Boa Vista', 'Cacimbas', 'Cruzeiro', 'Estação', 'Moura Brasil', 'São Francisco', 'Violete'
+];
 
 export default function Advertise() {
   const { user, token } = useContext(AuthContext);
@@ -14,15 +17,21 @@ export default function Advertise() {
   const [sobrenome, setSobrenome] = useState(user?.sobrenome || '');
   const [telefone, setTelefone] = useState(user?.telefone || '');
   const [bairro, setBairro] = useState(user?.bairro || '');
+  const [showBairroSuggestions, setShowBairroSuggestions] = useState(false);
   const [showExactAddress, setShowExactAddress] = useState(false);
+  const [cep, setCep] = useState('');
+  const [loadingCep, setLoadingCep] = useState(false);
+  const [rua, setRua] = useState('');
+  const [numero, setNumero] = useState('');
+  const [complemento, setComplemento] = useState('');
 
   // Step 2 states
   const [atividadePrincipal, setAtividadePrincipal] = useState('');
   const [descricaoTrabalho, setDescricaoTrabalho] = useState('');
-
-  // Step 2 states
   const [isRecording, setIsRecording] = useState(false);
-  const [secondaryActivities, setSecondaryActivities] = useState([]);
+  const [categoryId, setCategoryId] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [bioSugerida, setBioSugerida] = useState('');
 
   // Step 3 states
   const [showSocialNetworks, setShowSocialNetworks] = useState(false);
@@ -49,29 +58,64 @@ export default function Advertise() {
     setSocialNetworks(newNetworks);
   };
 
-  const addSecondaryActivity = () => {
-    if (secondaryActivities.length < 3) {
-      setSecondaryActivities([...secondaryActivities, '']);
-    }
-  };
-
-  const removeSecondaryActivity = (index) => {
-    const newActivities = [...secondaryActivities];
-    newActivities.splice(index, 1);
-    setSecondaryActivities(newActivities);
-  };
-
-  const updateSecondaryActivity = (index, value) => {
-    const newActivities = [...secondaryActivities];
-    newActivities[index] = value;
-    setSecondaryActivities(newActivities);
-  };
-
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const handleAnalyzeDescription = async () => {
+    if (!descricaoTrabalho.trim() || isAnalyzing) return;
+    setIsAnalyzing(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/analyze-description', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ description: descricaoTrabalho })
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setAtividadePrincipal(data.data.subcategory.name);
+        setCategoryId(data.data.category.id);
+        setBioSugerida(data.data.bioSugerida || '');
+      }
+    } catch (err) {
+      console.error('Erro ao analisar com IA:', err);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleCepChange = (e) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 8) value = value.slice(0, 8);
+    if (value.length > 5) {
+      value = `${value.slice(0, 5)}-${value.slice(5)}`;
+    }
+    setCep(value);
+  };
+
+  const handleCepBlur = async () => {
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+      setLoadingCep(true);
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await response.json();
+        if (!data.erro) {
+          setRua(data.logradouro || '');
+          setBairro(data.bairro || '');
+        }
+      } catch (err) {
+        console.error("Erro ao buscar CEP", err);
+      } finally {
+        setLoadingCep(false);
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -115,11 +159,12 @@ export default function Advertise() {
           telefone,
           bairro,
           atividadePrincipal,
-          atividadesSecundarias: secondaryActivities.filter(a => a.trim() !== ''),
           descricaoTrabalho,
+          bioSugerida,
           redesSociais: showSocialNetworks ? socialNetworks.filter(n => n.link.trim() !== '') : [],
           avatarUrl: uploadedAvatarUrl || null,
           avatarFileId: uploadedAvatarFileId || null,
+          categoryId: categoryId || null,
         })
       });
       const data = await response.json();
@@ -137,7 +182,15 @@ export default function Advertise() {
     }
   };
 
-  const nextStep = () => setStep(prev => prev + 1);
+  const nextStep = () => {
+    if (step === 2) {
+      if (!atividadePrincipal.trim() || !descricaoTrabalho.trim()) {
+        alert('Por favor, descreva seu trabalho e clique em "Analisar com IA" antes de continuar.');
+        return;
+      }
+    }
+    setStep(prev => prev + 1);
+  };
   const prevStep = () => setStep(prev => prev - 1);
 
   return (
@@ -191,7 +244,39 @@ export default function Advertise() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Bairro de Atuação Principal</label>
-                    <input type="text" value={bairro} onChange={(e) => setBairro(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800" />
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        value={bairro} 
+                        onChange={(e) => {
+                          setBairro(e.target.value);
+                          setShowBairroSuggestions(true);
+                        }}
+                        onFocus={() => setShowBairroSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowBairroSuggestions(false), 200)}
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800" 
+                      />
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                        <ChevronDown size={18} />
+                      </div>
+                      
+                      {showBairroSuggestions && MOCK_BAIRROS.filter(b => b.toLowerCase().includes(bairro.toLowerCase())).length > 0 && bairro.length >= 3 && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                          {MOCK_BAIRROS.filter(b => b.toLowerCase().includes(bairro.toLowerCase())).map((b, index) => (
+                            <div 
+                              key={index}
+                              className="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-50 last:border-0"
+                              onClick={() => {
+                                setBairro(b);
+                                setShowBairroSuggestions(false);
+                              }}
+                            >
+                              {b}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -212,9 +297,23 @@ export default function Advertise() {
                       <div className="flex items-end gap-3">
                         <div className="flex-1">
                           <label className="block text-sm font-medium text-slate-700 mb-1">CEP</label>
-                          <input type="text" placeholder="00000-000" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary" />
+                          <div className="relative">
+                            <input 
+                              type="text" 
+                              value={cep}
+                              onChange={handleCepChange}
+                              onBlur={handleCepBlur}
+                              placeholder="00000-000" 
+                              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary" 
+                            />
+                            {loadingCep && (
+                              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <button className="bg-slate-800 text-white px-5 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-slate-700">
+                        <button type="button" onClick={handleCepBlur} className="bg-slate-800 text-white px-5 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-slate-700">
                           <Search size={18} /> Buscar
                         </button>
                       </div>
@@ -225,16 +324,16 @@ export default function Advertise() {
 
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Rua</label>
-                        <input type="text" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary" />
+                        <input type="text" value={rua} onChange={(e) => setRua(e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary" />
                       </div>
                       <div className="grid grid-cols-2 gap-5">
                         <div>
                           <label className="block text-sm font-medium text-slate-700 mb-1">Número</label>
-                          <input type="text" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary" />
+                          <input type="text" value={numero} onChange={(e) => setNumero(e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary" />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-slate-700 mb-1">Complemento</label>
-                          <input type="text" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary" />
+                          <input type="text" value={complemento} onChange={(e) => setComplemento(e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary" />
                         </div>
                       </div>
                     </div>
@@ -261,31 +360,6 @@ export default function Advertise() {
               
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Atividade Principal</label>
-                  <input type="text" list="categories" value={atividadePrincipal} onChange={(e) => setAtividadePrincipal(e.target.value)} placeholder="Ex: Encanador, Eletricista..." className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800" />
-                  <datalist id="categories">
-                    {MOCK_CATEGORIES.map(cat => (
-                      <option key={cat.id} value={cat.name} />
-                    ))}
-                  </datalist>
-                </div>
-
-                {secondaryActivities.map((act, index) => (
-                  <div key={index} className="flex gap-2 items-center animate-in fade-in">
-                    <input type="text" list="categories" value={act} onChange={(e) => updateSecondaryActivity(index, e.target.value)} placeholder="Atividade secundária..." className="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800" />
-                    <button onClick={() => removeSecondaryActivity(index)} className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors">
-                      <Trash2 size={20} />
-                    </button>
-                  </div>
-                ))}
-
-                {secondaryActivities.length < 3 && (
-                  <button onClick={addSecondaryActivity} className="text-primary font-medium flex items-center gap-2 hover:underline text-sm">
-                    <Plus size={16} /> Adicionar atividade secundária
-                  </button>
-                )}
-
-                <div className="pt-4 border-t border-slate-100">
                   <div className="flex justify-between items-end mb-2">
                     <label className="block text-sm font-medium text-slate-700">Conte-nos como você trabalha (Ex: horários, se atende a domicílio, tempo de experiência)</label>
                   </div>
@@ -300,6 +374,7 @@ export default function Advertise() {
                       rows={6}
                       value={descricaoTrabalho}
                       onChange={(e) => setDescricaoTrabalho(e.target.value)}
+                      onBlur={handleAnalyzeDescription}
                       className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors resize-none pr-14 text-slate-800 placeholder:text-slate-400"
                       placeholder="Sou encanador há 10 anos, atendo todos os dias da semana até as 18h. Faço reparos em vazamentos, instalação de pias..."
                     ></textarea>
@@ -313,9 +388,29 @@ export default function Advertise() {
                     </button>
                   </div>
                   
-                  <p className="text-xs text-slate-500 mt-3 flex items-start gap-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                    <span className="text-xl">✨</span> Suas informações nos ajudarão a destacar seu perfil da melhor forma.
-                  </p>
+                  <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 gap-3">
+                    <p className="text-xs text-slate-500 flex items-center gap-2">
+                      <Sparkles size={16} className="text-primary shrink-0" /> 
+                      Escreva em detalhes para nossa IA categorizar seu perfil.
+                    </p>
+                    <button 
+                      type="button"
+                      onClick={handleAnalyzeDescription}
+                      disabled={isAnalyzing || !descricaoTrabalho.trim()}
+                      className="w-full sm:w-auto text-xs font-bold bg-primary text-white hover:bg-primary-hover px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    >
+                      {isAnalyzing ? (
+                         <><Loader2 size={14} className="animate-spin" /> Analisando Perfil...</>
+                      ) : (
+                         <><Sparkles size={14} /> Analisar com IA</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Sua Atividade Principal (Definida pela IA)</label>
+                  <input type="text" value={atividadePrincipal} readOnly placeholder="Preenchido automaticamente após a análise..." className="w-full px-4 py-3 bg-slate-100 text-slate-600 border border-slate-200 rounded-xl focus:outline-none focus:ring-0 cursor-not-allowed" />
                 </div>
               </div>
               
@@ -380,12 +475,12 @@ export default function Advertise() {
                     <label className="block text-sm font-medium text-slate-700">Biografia / Apresentação</label>
                   </div>
                   <textarea 
-                    rows={5}
-                    value={descricaoTrabalho}
-                    readOnly
+                    rows={6}
+                    value={bioSugerida}
+                    onChange={(e) => setBioSugerida(e.target.value)}
                     className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors resize-none text-slate-800"
                   ></textarea>
-                  <p className="text-xs text-slate-500 mt-1">Essa é a sua descrição baseada no que você escreveu no passo anterior.</p>
+                  <p className="text-xs text-slate-500 mt-1">Essa é a sua biografia aprimorada pela IA. Sinta-se livre para editá-la se desejar.</p>
                 </div>
 
                 {/* Redes Sociais */}
@@ -409,6 +504,7 @@ export default function Advertise() {
                             className="w-full sm:w-1/3 px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary"
                           >
                             <option value="Instagram">Instagram</option>
+                            <option value="YouTube">YouTube</option>
                             <option value="Facebook">Facebook</option>
                             <option value="TikTok">TikTok</option>
                             <option value="Site">Site</option>

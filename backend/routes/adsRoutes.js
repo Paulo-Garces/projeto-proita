@@ -7,6 +7,7 @@ const publicUserSelect = {
   sobrenome: true,
   bairro: true,
   telefone: true,
+  profileImageUrl: true,
 };
 
 module.exports = (prisma) => {

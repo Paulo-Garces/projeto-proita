@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -26,6 +27,12 @@ app.use(cors({
   origin: (origin, callback) => {
     // Permite requisições sem origin (ex: Postman, curl)
     if (!origin) return callback(null, true);
+
+    // Permite qualquer localhost (ex: 5173, 5174, 3000)
+    if (origin.startsWith('http://localhost:')) {
+      return callback(null, true);
+    }
+
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
@@ -79,7 +86,7 @@ app.get('/api/test-db', async (req, res) => {
 // Rota de Registro
 app.post('/api/register', async (req, res) => {
   try {
-    const { nome, sobrenome, telefone, bairro, senha } = req.body;
+    const { nome, sobrenome, telefone, isWhatsapp, senha } = req.body;
 
     const existingUser = await prisma.user.findUnique({
       where: { telefone }
@@ -96,8 +103,8 @@ app.post('/api/register', async (req, res) => {
         nome,
         sobrenome,
         telefone,
-        bairro,
-        senha: hashedPassword,
+        isWhatsapp: isWhatsapp === true || isWhatsapp === 'true',
+        senha: hashedPassword
       }
     });
 
@@ -131,20 +138,22 @@ app.post('/api/login', async (req, res) => {
     const token = jwt.sign(
       { id: user.id, role: user.role },
       secret,
-      { expiresIn: '7d' } // O token expira em 7 dias
+      { expiresIn: '7d' }
     );
 
-    res.status(200).json({ 
-      success: true, 
-      token, 
-      user: { 
-        id: user.id, 
+    // Busca profileImageUrl diretamente do usuário (salvo pelo upload do Dashboard)
+    res.status(200).json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
         nome: user.nome,
         sobrenome: user.sobrenome,
         telefone: user.telefone,
         bairro: user.bairro,
-        role: user.role 
-      } 
+        role: user.role,
+        profileImageUrl: user.profileImageUrl || null,
+      }
     });
   } catch (error) {
     console.error('Erro ao realizar login:', error);
@@ -163,6 +172,177 @@ app.use('/api/ads', adsRoutes);
 // Rota de Upload de Imagens (ImageKit)
 const uploadRoutes = require('./routes/uploadRoutes')(prisma);
 app.use('/api/upload', uploadRoutes);
+
+// Configuração do Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+
+// Rota de Análise de Descrição com IA
+app.post('/api/analyze-description', async (req, res) => {
+  try {
+    const { description } = req.body;
+    if (!description) {
+      return res.status(400).json({ error: 'Descrição é obrigatória.' });
+    }
+
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `Você é um assistente de categorização de serviços de alto nível. Leia a descrição do serviço a seguir.
+    Identifique a ÚNICA PROFISSÃO PRINCIPAL (a especialidade dominante) e crie uma biografia atraente, profissional e focada APENAS nessa especialidade (em primeira pessoa, pronta para ser usada como "Bio" em um anúncio de serviços).
+    Retorne um JSON estrito contendo três chaves:
+    1. "categoriaGeral": Uma área ampla de atuação (ex: Manutenção, Saúde, Tecnologia, Construção).
+    2. "atividadePrincipal": A profissão exata e principal identificada (ex: Encanador, Fisioterapeuta, Desenvolvedor Frontend).
+    3. "bioSugerida": O texto de marketing persuasivo gerado (cerca de 2 a 3 parágrafos curtos).
+    
+    Apenas retorne o JSON, sem formatação Markdown.
+    
+    Descrição original do usuário: "${description}"`;
+
+    const result = await model.generateContent(prompt);
+    let text = result.response.text();
+
+    // Limpar formatação Markdown se a IA retornar (ex: ```json ... ```)
+    text = text.replace(/```json\n?|\n?```/g, '').trim();
+
+    const jsonResult = JSON.parse(text);
+    const { categoriaGeral, atividadePrincipal, bioSugerida } = jsonResult;
+
+    if (!categoriaGeral || !atividadePrincipal || !bioSugerida) {
+      return res.status(500).json({ error: 'Falha ao analisar a descrição pela IA. Campos faltando.' });
+    }
+
+    // Auto-criação ou Busca no Banco de Dados
+    // 1. Upsert da Categoria (busca pelo nome, cria se não existir)
+    const categoryRecord = await prisma.category.upsert({
+      where: { name: categoriaGeral },
+      update: {},
+      create: { name: categoriaGeral },
+    });
+
+    // 2. Upsert da Subcategoria (usando a atividadePrincipal identificada)
+    const subcategoryRecord = await prisma.subcategory.upsert({
+      where: { name: atividadePrincipal },
+      update: {},
+      create: {
+        name: atividadePrincipal,
+        categoryId: categoryRecord.id
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        category: categoryRecord,
+        subcategory: subcategoryRecord,
+        bioSugerida: bioSugerida
+      }
+    });
+
+  } catch (error) {
+    console.error('Erro na análise da descrição:', error);
+    res.status(500).json({ error: 'Erro interno ao processar a requisição com IA.' });
+  }
+});
+
+// ── Rotas de Inteligência e Busca (Fase 3) ──
+
+// Autocomplete de subcategorias
+app.get('/api/subcategories/search', async (req, res) => {
+  try {
+    const q = req.query.q || '';
+    const subcategories = await prisma.subcategory.findMany({
+      where: {
+        name: {
+          contains: q,
+          mode: 'insensitive'
+        }
+      },
+      take: 5
+    });
+    res.json({ success: true, data: subcategories });
+  } catch (err) {
+    console.error('Erro autocomplete:', err);
+    res.status(500).json({ error: 'Erro ao buscar subcategorias' });
+  }
+});
+
+// Registrar histórico de busca
+app.post('/api/search-history', async (req, res) => {
+  try {
+    const { query } = req.body;
+    if (!query) return res.status(400).json({ error: 'Query inválida' });
+    
+    await prisma.searchHistory.upsert({
+      where: { query: query.toLowerCase().trim() },
+      update: { count: { increment: 1 } },
+      create: { query: query.toLowerCase().trim() }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao registrar busca' });
+  }
+});
+
+// Obter histórico de buscas populares
+app.get('/api/search-history/popular', async (req, res) => {
+  try {
+    const popular = await prisma.searchHistory.findMany({
+      orderBy: { count: 'desc' },
+      take: 4
+    });
+    res.json({ success: true, data: popular });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar histórico popular' });
+  }
+});
+
+// Incrementar cliquesWhatsapp
+app.post('/api/ads/:id/click', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.profile.update({
+      where: { id },
+      data: { cliquesWhatsapp: { increment: 1 } }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao incrementar clique' });
+  }
+});
+
+// Incrementar visitasPerfil
+app.post('/api/ads/:id/view', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.profile.update({
+      where: { id },
+      data: { visitasPerfil: { increment: 1 } }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao incrementar visita' });
+  }
+});
+
+// Categorias Populares (agrupadas por atividadePrincipal)
+app.get('/api/categories/popular', async (req, res) => {
+  try {
+    const popularCategories = await prisma.profile.groupBy({
+      by: ['atividadePrincipal'],
+      _count: {
+        atividadePrincipal: true
+      },
+      orderBy: {
+        _count: {
+          atividadePrincipal: 'desc'
+        }
+      },
+      take: 4
+    });
+    res.json({ success: true, data: popularCategories });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar categorias populares' });
+  }
+});
 
 // Iniciando o servidor
 app.listen(port, () => {

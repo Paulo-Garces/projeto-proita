@@ -24,20 +24,21 @@ export default function Profile() {
             }
           }
 
-          setProfessional({
-            id: profile.id,
-            name: `${profile.user.nome} ${profile.user.sobrenome}`,
-            category: profile.atividadePrincipal,
-            rating: 5.0,
-            reviewsCount: 0,
-            reviews: [],
-            location: profile.user.bairro || 'Itapipoca',
-            fullDescription: profile.descricaoTrabalho,
-            phone: profile.user.telefone,
-            instagram: instagram,
-            avatar: profile.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.user.nome)}+${encodeURIComponent(profile.user.sobrenome)}&background=0ea5e9&color=fff&bold=true`,
-            verified: true
-          });
+            setProfessional({
+              id: profile.id,
+              name: `${profile.user.nome} ${profile.user.sobrenome}`,
+              category: profile.atividadePrincipal,
+              rating: 5.0,
+              reviewsCount: 0,
+              reviews: [],
+              location: profile.user.bairro || 'Itapipoca',
+              fullDescription: profile.descricaoTrabalho,
+              phone: profile.user.telefone,
+              instagram: instagram,
+              socialLinks: Array.isArray(profile.socialLinks) ? profile.socialLinks : [],
+              avatar: profile.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.user.nome)}+${encodeURIComponent(profile.user.sobrenome)}&background=0ea5e9&color=fff&bold=true`,
+              verified: true
+            });
         }
       } catch (err) {
         console.error("Erro ao buscar perfil:", err);
@@ -89,77 +90,111 @@ export default function Profile() {
         <div className="bg-white rounded-3xl shadow-xl p-6 md:p-10 border border-slate-100">
           
           {/* Header Profile */}
-          <div className="flex flex-col md:flex-row gap-8 items-start">
-            <div className="relative -mt-16 md:-mt-20 shrink-0">
-              <img 
-                src={professional.avatar} 
-                alt={professional.name} 
-                className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-white shadow-lg bg-white"
-              />
-              {professional.verified && (
-                <div className="absolute bottom-2 right-2 bg-white rounded-full p-1 shadow-sm" title="Profissional Verificado">
-                  <CheckCircle size={28} className="text-emerald-500 fill-emerald-50" />
-                </div>
-              )}
-            </div>
+          <div className="flex flex-col md:flex-row gap-10 items-start">
             
-            <div className="flex-1 w-full">
-              <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-                <div>
-                  <h1 className="text-3xl font-extrabold text-slate-900 flex items-center gap-2">
-                    {professional.name}
-                  </h1>
-                  <p className="text-lg font-medium text-primary mt-1">{professional.category}</p>
-                  
-                  <div className="flex items-center gap-4 mt-3 text-sm">
-                    <div className="flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-full text-amber-700 font-semibold border border-amber-100">
-                      {professional.reviewsCount > 0 ? (
-                        <>
-                          <Star size={16} className="fill-amber-500 text-amber-500" />
-                          {professional.rating} ({professional.reviewsCount} avaliações)
-                        </>
-                      ) : (
-                        <span className="text-emerald-600 bg-emerald-50 px-1 rounded-full">Novo na plataforma</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1 text-slate-600">
-                      <MapPin size={16} /> {professional.location || 'Itapipoca'}
-                    </div>
+            {/* Foto e Redes Sociais (Coluna da Esquerda) */}
+            <div className="flex flex-col items-center shrink-0 w-full md:w-auto">
+              <div className="relative -mt-24 md:-mt-28 mb-6">
+                <img 
+                  src={professional.avatar} 
+                  alt={professional.name} 
+                  className="w-40 h-40 md:w-48 md:h-48 rounded-[2rem] md:rounded-full object-cover border-[6px] border-white shadow-2xl bg-white"
+                />
+                {professional.verified && (
+                  <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-1.5 shadow-md" title="Profissional Verificado">
+                    <CheckCircle size={32} className="text-emerald-500 fill-emerald-50" />
                   </div>
-                </div>
-                
-                <div className="flex gap-3 flex-wrap">
-                  {professional.instagram && (
-                    <button 
-                      className="p-2.5 bg-pink-50 text-pink-600 hover:bg-pink-100 rounded-full transition-colors"
-                      title="Instagram"
-                      onClick={(e) => { 
-                        e.preventDefault(); 
-                        const isUrl = professional.instagram.startsWith('http');
-                        const instaUrl = isUrl ? professional.instagram : `https://instagram.com/${professional.instagram.replace('@', '')}`;
-                        window.open(instaUrl, '_blank'); 
-                      }}
-                    >
-                      <Camera size={20} />
-                    </button>
-                  )}
+                )}
+              </div>
+              
+              {/* Ícones de Redes Sociais */}
+              <div className="grid grid-cols-3 gap-3 w-full max-w-[12rem] justify-items-center">
+                {professional.instagram && (
                   <button 
-                    className="p-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-full transition-colors"
-                    title="Compartilhar"
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/profile/${professional.id}`);
-                      alert('Link copiado!');
+                    className="p-3 bg-pink-50 text-pink-600 hover:bg-pink-100 rounded-2xl transition-colors shadow-sm w-full flex justify-center"
+                    title="Instagram"
+                    onClick={(e) => { 
+                      e.preventDefault(); 
+                      const isUrl = professional.instagram.startsWith('http');
+                      const instaUrl = isUrl ? professional.instagram : `https://instagram.com/${professional.instagram.replace('@', '')}`;
+                      window.open(instaUrl, '_blank'); 
                     }}
                   >
-                    <Share2 size={20} />
+                    <Camera size={24} />
                   </button>
+                )}
+                {professional.socialLinks.map((link, idx) => (
                   <button 
-                    onClick={handleWhatsApp}
-                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white px-6 py-2.5 rounded-full font-bold shadow-lg shadow-[#25D366]/30 transition-transform active:scale-95"
+                    key={idx}
+                    className="p-3 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-2xl transition-colors shadow-sm w-full flex justify-center"
+                    title={link.platform || 'Link'}
+                    onClick={(e) => { 
+                      e.preventDefault(); 
+                      const isUrl = link.url.startsWith('http');
+                      const linkUrl = isUrl ? link.url : `https://${link.url}`;
+                      window.open(linkUrl, '_blank'); 
+                    }}
                   >
-                    <MessageCircle size={20} /> WhatsApp
+                    <Share2 size={24} />
                   </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Informações e Ações (Coluna da Direita) */}
+            <div className="flex-1 w-full pt-2 text-center md:text-left">
+              <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-1">{professional.name}</h1>
+              <p className="text-xl font-medium text-primary mb-4">{professional.category}</p>
+              
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-6 text-sm">
+                <div className="flex items-center gap-1 bg-amber-50 px-3 py-1.5 rounded-full text-amber-700 font-bold border border-amber-100 shadow-sm">
+                  {professional.reviewsCount > 0 ? (
+                    <>
+                      <Star size={18} className="fill-amber-500 text-amber-500" />
+                      {professional.rating} ({professional.reviewsCount} avaliações)
+                    </>
+                  ) : (
+                    <span className="text-emerald-600 bg-emerald-50 px-2 rounded-full">Novo na plataforma</span>
+                  )}
                 </div>
+                <div className="flex items-center gap-1.5 text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+                  <MapPin size={16} className="text-slate-400" /> {professional.location || 'Itapipoca'}
+                </div>
+              </div>
+
+              {/* Bio Sugerida */}
+              <div className="bg-slate-50 border border-slate-100 rounded-3xl p-5 mb-8 text-left shadow-inner">
+                <p className="text-slate-600 text-[15px] leading-relaxed line-clamp-4">
+                  {professional.fullDescription}
+                </p>
+              </div>
+
+              {/* Botões de Ação Totalmente Arredondados */}
+              <div className="flex flex-wrap justify-center md:justify-start gap-3">
+                {professional.phone && (
+                  <button 
+                    onClick={() => window.location.href = `tel:${professional.phone.replace(/\D/g,'')}`}
+                    className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-8 py-4 rounded-full font-bold shadow-lg shadow-slate-900/20 transition-transform active:scale-95"
+                  >
+                    Ligar
+                  </button>
+                )}
+                <button 
+                  onClick={handleWhatsApp}
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white px-8 py-4 rounded-full font-bold shadow-lg shadow-[#25D366]/30 transition-transform active:scale-95"
+                >
+                  <MessageCircle size={22} /> WhatsApp
+                </button>
+                <button 
+                  className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-4 rounded-full font-bold transition-transform active:scale-95"
+                  title="Compartilhar"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/profile/${professional.id}`);
+                    alert('Link copiado!');
+                  }}
+                >
+                  <Share2 size={20} />
+                </button>
               </div>
             </div>
           </div>
@@ -168,14 +203,7 @@ export default function Profile() {
             
             {/* Left Column (Main content) */}
             <div className="lg:col-span-2 space-y-10">
-              <section>
-                <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
-                  Sobre o Serviço
-                </h2>
-                <div className="prose prose-slate max-w-none text-slate-600 leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                  <p className="whitespace-pre-line">{professional.fullDescription}</p>
-                </div>
-              </section>
+              {/* Removido o bloco Sobre o Serviço, pois foi incorporado na bio do topo */}
 
               <section>
                 <div className="flex justify-between items-center mb-6">

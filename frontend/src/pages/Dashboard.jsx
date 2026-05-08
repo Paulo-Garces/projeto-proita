@@ -514,13 +514,14 @@ export default function Dashboard() {
                             // Normaliza o objeto do anúncio para o shape esperado pelo AdCard
                             const cardPro = {
                               id: ad.id,
-                              name: ad.user ? `${ad.user.nome} ${ad.user.sobrenome}` : ad.atividadePrincipal,
+                              name: ad.user ? `${ad.user.nome} ${ad.user.sobrenome}` : `${user?.nome} ${user?.sobrenome}`,
                               category: ad.atividadePrincipal,
                               shortDescription: ad.shortDescription || ad.descricaoTrabalho?.substring(0, 90),
-                              servicePhone: ad.servicePhone,
+                              servicePhone: ad.servicePhone || user?.telefone,
                               serviceBairro: ad.serviceBairro,
-                              location: ad.serviceBairro || 'Itapipoca',
-                              avatar: ad.avatarUrl || null,
+                              location: ad.serviceBairro || user?.bairro || 'Itapipoca',
+                              // Prioridade: foto do perfil do usuário → avatarUrl do anúncio → null (fallback de iniciais)
+                              avatar: user?.profileImageUrl || ad.avatarUrl || null,
                               socialLinks: Array.isArray(ad.socialLinks) ? ad.socialLinks : [],
                             };
                             return (

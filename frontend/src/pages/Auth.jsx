@@ -1,32 +1,56 @@
-import { useState, useContext } from 'react';
-import { Home, Lock, Phone, MapPin, ChevronDown, CheckCircle } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useContext, useEffect } from 'react';
+import { Home, Lock, Phone, CheckCircle, AlertCircle } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
-const MOCK_BAIRROS = [
-  'Centro', 'Fazendinha', 'Maranhão', 'Boa Vista', 'Cacimbas', 'Cruzeiro', 'Estação', 'Moura Brasil'
-];
-
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true); // Default to login
+  const location = useLocation();
+  const [isLogin, setIsLogin] = useState(() => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get('mode') !== 'register';
+  });
   const [showSuccess, setShowSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [nome, setNome] = useState('');
   const [sobrenome, setSobrenome] = useState('');
   const [telefone, setTelefone] = useState('');
   const [senha, setSenha] = useState('');
-  const [bairroInput, setBairroInput] = useState('');
-  const [showBairroSuggestions, setShowBairroSuggestions] = useState(false);
+  const [isWhatsapp, setIsWhatsapp] = useState(true);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const navigate = useNavigate();
 
   const { login } = useContext(AuthContext);
 
-  const filteredBairros = MOCK_BAIRROS.filter(b => 
-    b.toLowerCase().includes(bairroInput.toLowerCase())
-  );
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get('mode') === 'register') {
+      setIsLogin(false);
+    } else {
+      setIsLogin(true);
+    }
+  }, [location.search]);
+
+  const handleTelefoneChange = (e) => {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.slice(0, 11);
+    if (value.length > 2) {
+      value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+    }
+    if (value.length > 10) {
+      value = `${value.slice(0, 10)}-${value.slice(10)}`;
+    }
+    setTelefone(value);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
     
+    if (!isLogin && !acceptedTerms) {
+      setErrorMsg("Você precisa aceitar os Termos de Uso e Políticas de Privacidade.");
+      return;
+    }
+
     if (isLogin) {
       // Login Real
       try {
@@ -42,11 +66,11 @@ export default function Auth() {
           login(data.token, data.user);
           navigate('/');
         } else {
-          alert(data.message || "Erro ao fazer login. Verifique suas credenciais.");
+          setErrorMsg(data.message || "Erro ao fazer login. Verifique suas credenciais.");
         }
       } catch (error) {
         console.error("Erro na requisição:", error);
-        alert("Erro ao conectar com o servidor.");
+        setErrorMsg("Erro ao conectar com o servidor.");
       }
     } else {
       // Cadastro Real
@@ -58,7 +82,7 @@ export default function Auth() {
             nome,
             sobrenome,
             telefone,
-            bairro: bairroInput,
+            isWhatsapp,
             senha
           })
         });
@@ -71,13 +95,14 @@ export default function Auth() {
           setSobrenome('');
           setTelefone('');
           setSenha('');
-          setBairroInput('');
+          setIsWhatsapp(true);
+          setAcceptedTerms(false);
         } else {
-          alert(data.message || "Erro ao cadastrar.");
+          setErrorMsg(data.message || "Erro ao cadastrar.");
         }
       } catch (error) {
         console.error("Erro na requisição:", error);
-        alert("Erro ao conectar com o servidor.");
+        setErrorMsg("Erro ao conectar com o servidor.");
       }
     }
   };
@@ -140,7 +165,14 @@ export default function Auth() {
           </div>
         </div>
 
-        <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+        {errorMsg && (
+          <div className="mt-6 bg-red-50 text-red-600 p-4 rounded-xl flex items-start gap-3 border border-red-100 animate-in fade-in slide-in-from-top-2">
+            <AlertCircle className="shrink-0 mt-0.5" size={20} />
+            <p className="text-sm font-medium">{errorMsg}</p>
+          </div>
+        )}
+
+        <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
           
           {!isLogin && (
             <div className="grid grid-cols-2 gap-4">
@@ -156,57 +188,30 @@ export default function Auth() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Telefone (WhatsApp)</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Telefone</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                 <Phone size={18} />
               </div>
-              <input type="tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} required className="pl-10 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base" placeholder="(88) 99999-9999" />
+              <input type="tel" value={telefone} onChange={handleTelefoneChange} required className="pl-10 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base" placeholder="(88) 99999-9999" />
             </div>
+            {!isLogin && (
+              <div className="mt-2 flex items-center gap-2">
+                <input 
+                  type="checkbox" 
+                  id="isWhatsapp" 
+                  checked={isWhatsapp}
+                  onChange={(e) => setIsWhatsapp(e.target.checked)}
+                  className="w-4 h-4 text-primary bg-slate-50 border-slate-300 rounded focus:ring-primary"
+                />
+                <label htmlFor="isWhatsapp" className="text-sm text-slate-600 cursor-pointer">
+                  Este número é WhatsApp?
+                </label>
+              </div>
+            )}
           </div>
 
-          {!isLogin && (
-            <div className="relative">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Bairro de atuação</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                  <MapPin size={18} />
-                </div>
-                <input 
-                  type="text" 
-                  value={bairroInput}
-                  onChange={(e) => {
-                    setBairroInput(e.target.value);
-                    setShowBairroSuggestions(true);
-                  }}
-                  onFocus={() => setShowBairroSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowBairroSuggestions(false), 200)}
-                  className="pl-10 pr-10 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base" 
-                  placeholder="Ex: Centro" 
-                />
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
-                  <ChevronDown size={18} />
-                </div>
-              </div>
-              
-              {showBairroSuggestions && filteredBairros.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                  {filteredBairros.map((bairro, index) => (
-                    <div 
-                      key={index}
-                      className="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-50 last:border-0"
-                      onClick={() => {
-                        setBairroInput(bairro);
-                        setShowBairroSuggestions(false);
-                      }}
-                    >
-                      {bairro}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Senha</label>
@@ -217,6 +222,22 @@ export default function Auth() {
               <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} required className="pl-10 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base" placeholder="••••••••" />
             </div>
           </div>
+
+          {!isLogin && (
+            <div className="flex items-start gap-2 mt-4">
+              <input 
+                type="checkbox" 
+                id="acceptedTerms" 
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-1 w-4 h-4 text-primary bg-slate-50 border-slate-300 rounded focus:ring-primary shrink-0"
+                required
+              />
+              <label htmlFor="acceptedTerms" className="text-sm text-slate-600">
+                Li e concordo com os <a href="/terms" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Termos de Uso</a> e <a href="/privacy" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Políticas de Privacidade</a>.
+              </label>
+            </div>
+          )}
 
           {isLogin && (
             <div className="flex items-center justify-end">

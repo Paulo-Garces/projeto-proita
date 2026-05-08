@@ -28,11 +28,19 @@ export default function Header() {
     <header className="fixed top-0 left-0 w-full z-50 glass border-b border-slate-200 bg-white/90 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Esquerda: Logo Apenas (Oculto na Home) */}
-          <div className="flex items-center">
+          {/* Esquerda: Menu Mobile e Logo */}
+          <div className="flex items-center gap-4">
+            {/* Mobile menu button */}
+            <div className="md:hidden flex items-center">
+              <button onClick={() => setIsOpen(true)} className="text-slate-600 hover:text-slate-900 focus:outline-none">
+                <Menu size={28} />
+              </button>
+            </div>
+
+            {/* Logo (Oculto na Home) */}
             {!isHome && (
               <Link to="/" className="flex items-center">
-                <img src="/logo-proita.svg" alt="proITA Logo" className="h-8" />
+                <img src="/logo-proita.svg" alt="proITA Logo" className="h-10 md:h-12" />
               </Link>
             )}
           </div>
@@ -76,9 +84,17 @@ export default function Header() {
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)} 
                     className="flex items-center gap-2 focus:outline-none"
                   >
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 border-2 border-transparent hover:border-primary transition-all">
-                      <User size={20} />
-                    </div>
+                    {user?.profileImageUrl ? (
+                      <img
+                        src={user.profileImageUrl}
+                        alt={user.nome}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-transparent hover:border-primary transition-all shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white font-bold text-sm border-2 border-transparent hover:border-primary transition-all select-none">
+                        {user?.nome?.[0]?.toUpperCase()}{user?.sobrenome?.[0]?.toUpperCase()}
+                      </div>
+                    )}
                   </button>
 
                   {/* Dropdown Menu */}
@@ -116,7 +132,7 @@ export default function Header() {
               </div>
             ) : (
               <div className="flex items-center gap-4">
-                <Link to="/auth" className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-full font-medium transition-colors shadow-md shadow-sky-200">
+                <Link to="/auth?mode=register" className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-full font-medium transition-colors shadow-md shadow-sky-200">
                   Cadastrar
                 </Link>
                 <Link to="/auth" className="text-slate-600 hover:text-primary font-medium transition-colors">
@@ -126,19 +142,21 @@ export default function Header() {
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
-            <button onClick={() => setIsOpen(!isOpen)} className="text-slate-600 hover:text-slate-900 focus:outline-none">
-              {isOpen ? <X size={28} /> : <Menu size={28} />}
-            </button>
-          </div>
+          {/* Mobile right side - Empty space to balance */}
+          <div className="md:hidden w-7"></div>
         </div>
       </div>
 
-      {/* Mobile Navigation */}
-      {isOpen && (
-        <div className="md:hidden absolute top-16 left-0 w-full glass bg-white/95 border-b border-slate-200 shadow-xl max-h-[calc(100vh-4rem)] overflow-y-auto">
-          <div className="px-4 pt-2 pb-6 space-y-1">
+      {/* Mobile Navigation Sidebar */}
+      <div className={`md:hidden fixed inset-0 z-50 bg-slate-900/50 transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsOpen(false)}>
+        <div className={`fixed inset-y-0 left-0 w-4/5 max-w-sm glass bg-white/95 shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`} onClick={e => e.stopPropagation()}>
+          <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white/90">
+            <img src="/logo-proita.svg" alt="proITA Logo" className="h-8" />
+            <button onClick={() => setIsOpen(false)} className="text-slate-500 hover:text-slate-800 p-1 rounded-full hover:bg-slate-100 transition-colors">
+              <X size={24} />
+            </button>
+          </div>
+          <div className="px-4 py-6 overflow-y-auto flex-1 space-y-1">
             {!isHome && (
               <Link to="/" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
                 <Home size={20} className="text-slate-400" /> Início
@@ -164,9 +182,17 @@ export default function Header() {
                 </Link>
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <div className="flex items-center gap-3 px-3 mb-4">
-                    <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 border-2 border-primary">
-                      <User size={20} />
-                    </div>
+                    {user?.profileImageUrl ? (
+                      <img
+                        src={user.profileImageUrl}
+                        alt={user.nome}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-primary shadow-sm shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white font-bold text-sm border-2 border-primary shrink-0 select-none">
+                        {user?.nome?.[0]?.toUpperCase()}{user?.sobrenome?.[0]?.toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <p className="text-sm font-medium text-slate-800">{user?.nome}</p>
                       <p className="text-xs text-slate-500">{user?.telefone}</p>
@@ -187,7 +213,7 @@ export default function Header() {
               </>
             ) : (
               <div className="mt-6 flex flex-col gap-3 px-3">
-                <Link to="/auth" onClick={() => setIsOpen(false)} className="w-full text-center block px-4 py-3 text-base font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md">
+                <Link to="/auth?mode=register" onClick={() => setIsOpen(false)} className="w-full text-center block px-4 py-3 text-base font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md">
                   Cadastrar
                 </Link>
                 <Link to="/auth" onClick={() => setIsOpen(false)} className="w-full text-center block px-4 py-3 text-base font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-200">
@@ -197,7 +223,7 @@ export default function Header() {
             )}
           </div>
         </div>
-      )}
+      </div>
     </header>
   );
 }

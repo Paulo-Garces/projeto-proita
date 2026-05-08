@@ -14,11 +14,14 @@ model User {
   telefone            String    @unique
   senha               String
   bairro              String?
+  cep                 String?
+  isWhatsapp          Boolean   @default(false)
   role                String    @default("USER")
   profileImageUrl     String?
   profileImageFileId  String?
   createdAt           DateTime  @default(now())
   profiles            Profile[] // 1:N — um usuário pode ter vários anúncios
+  subcategories       Subcategory[]
 }
 
 model Profile {
@@ -45,5 +48,29 @@ model Profile {
   serviceBairro         String?   // Bairro/local de atendimento
   shortDescription      String?   // Descrição curta para o card (max 100 chars)
   socialLinks           Json?     // [{platform:'instagram',url:'...'}, ...] até 3
-  createdAt             DateTime @default(now())
+  cliquesWhatsapp       Int       @default(0)
+  visitasPerfil         Int       @default(0)
+  createdAt             DateTime  @default(now())
+}
+
+model Category {
+  id            String         @id @default(uuid())
+  name          String         @unique
+  subcategories Subcategory[]
+}
+
+model Subcategory {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id])
+  users       User[]
+}
+
+model SearchHistory {
+  id        String   @id @default(uuid())
+  query     String   @unique
+  count     Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

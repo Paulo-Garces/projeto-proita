@@ -15,6 +15,8 @@ import Privacy from './pages/Privacy';
 import About from './pages/About';
 import Support from './pages/Support';
 import Admin from './pages/Admin';
+import Planos from './pages/Planos';
+import Dicas from './pages/Dicas';
 
 function App() {
   return (
@@ -31,10 +33,12 @@ function App() {
               <Route path="/advertise" element={<Advertise />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/admin" element={<Admin />} />
-              <Route path="/termos" element={<Terms />} />
+              <Route path="/termos-de-uso" element={<Terms />} />
               <Route path="/privacidade" element={<Privacy />} />
               <Route path="/sobre" element={<About />} />
-              <Route path="/suporte" element={<Support />} />
+              <Route path="/central-de-ajuda" element={<Support />} />
+              <Route path="/planos" element={<Planos />} />
+              <Route path="/dicas" element={<Dicas />} />
             </Routes>
           </main>
           <Footer />
