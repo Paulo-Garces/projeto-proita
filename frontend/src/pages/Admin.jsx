@@ -1,15 +1,15 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { 
 import { API_URL } from '../config';
-  LayoutDashboard, 
-  Users, 
-  ShieldAlert, 
-  CircleDollarSign, 
-  Settings, 
-  TrendingUp, 
-  Activity, 
+import {
+  LayoutDashboard,
+  Users,
+  ShieldAlert,
+  CircleDollarSign,
+  Settings,
+  TrendingUp,
+  Activity,
   Briefcase,
   Edit,
   Ban
@@ -28,21 +28,21 @@ export default function Admin() {
       fetch('${API_URL}/api/admin/stats', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setStats(data.data);
-      })
-      .catch(console.error);
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setStats(data.data);
+        })
+        .catch(console.error);
 
       // Busca Usuários
       fetch('${API_URL}/api/admin/users', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setUsersList(data.data);
-      })
-      .catch(console.error);
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setUsersList(data.data);
+        })
+        .catch(console.error);
     }
   }, [user, token]);
 
@@ -79,7 +79,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-[calc(100vh-64px)] flex flex-col md:flex-row bg-slate-50 pt-16">
-      
+
       {/* Sidebar */}
       <aside className="w-full md:w-64 bg-white border-r border-slate-200 p-4 shrink-0">
         <div className="mb-8 px-4 hidden md:block">
@@ -95,11 +95,10 @@ export default function Admin() {
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all whitespace-nowrap md:whitespace-normal text-sm font-medium w-full ${
-                  isActive 
-                  ? 'bg-primary/10 text-primary' 
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all whitespace-nowrap md:whitespace-normal text-sm font-medium w-full ${isActive
+                  ? 'bg-primary/10 text-primary'
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                }`}
+                  }`}
               >
                 <Icon size={20} className={isActive ? 'text-primary' : 'text-slate-400'} />
                 {item.label}
@@ -112,7 +111,7 @@ export default function Admin() {
       {/* Main Content */}
       <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
         <div className="max-w-6xl mx-auto">
-          
+
           <header className="mb-8">
             <h1 className="text-2xl font-bold text-slate-900">
               {navItems.find(i => i.id === activeTab)?.label}
@@ -122,7 +121,7 @@ export default function Admin() {
 
           {activeTab === 'dashboard' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              
+
               {/* Card 1 */}
               <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col">
                 <div className="flex items-center justify-between mb-4">
