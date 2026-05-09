@@ -149,7 +149,7 @@ export default function Header() {
 
       {/* Mobile Navigation Sidebar */}
       <div className={`md:hidden fixed inset-0 z-50 bg-slate-900/50 transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsOpen(false)}>
-        <div className={`fixed inset-y-0 left-0 w-4/5 max-w-sm glass bg-white/95 shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`} onClick={e => e.stopPropagation()}>
+        <div className={`fixed inset-y-0 left-0 w-4/5 max-w-sm z-50 glass bg-white/95 shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`} onClick={e => e.stopPropagation()}>
           <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white/90">
             <img src="/logo-proita.svg" alt="proITA Logo" className="h-8" />
             <button onClick={() => setIsOpen(false)} className="text-slate-500 hover:text-slate-800 p-1 rounded-full hover:bg-slate-100 transition-colors">
