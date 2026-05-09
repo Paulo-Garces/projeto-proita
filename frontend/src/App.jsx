@@ -19,6 +19,8 @@ import Planos from './pages/Planos';
 import Dicas from './pages/Dicas';
 
 function App() {
+  console.log('URL da API atual:', import.meta.env.VITE_API_URL);
+  
   return (
     <AuthProvider>
       <Router>
