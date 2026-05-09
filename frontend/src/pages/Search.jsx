@@ -29,7 +29,7 @@ export default function Search() {
   const [popularCategories, setPopularCategories] = useState([]);
 
   useEffect(() => {
-    fetch('${API_URL}/api/categories/popular')
+    fetch(`${API_URL}/api/categories/popular`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -43,7 +43,7 @@ export default function Search() {
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        const res = await fetch('${API_URL}/api/ads');
+        const res = await fetch(`${API_URL}/api/ads`);
         const data = await res.json();
         if (res.ok && data.success) {
           const mappedData = data.data.map(profile => {

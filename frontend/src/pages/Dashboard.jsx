@@ -318,7 +318,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!token) return;
     setAdsLoading(true);
-    fetch('${API_URL}/api/ads/me', {
+    fetch(`${API_URL}/api/ads/me`, {
       headers: { 'Authorization': `Bearer ${token}` },
     })
       .then(r => r.json())
@@ -347,7 +347,7 @@ export default function Dashboard() {
       const fd = new FormData();
       fd.append('profileImage', compressed, 'profile.jpg');
 
-      const res = await fetch('${API_URL}/api/upload/profile-image', {
+      const res = await fetch(`${API_URL}/api/upload/profile-image`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}` },
         body: fd,

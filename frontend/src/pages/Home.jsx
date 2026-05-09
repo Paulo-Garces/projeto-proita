@@ -16,7 +16,7 @@ export default function Home() {
 
   useEffect(() => {
     // Fetch popular searches
-    fetch('${API_URL}/api/search-history/popular')
+    fetch(`${API_URL}/api/search-history/popular`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -66,7 +66,7 @@ export default function Home() {
   const executeSearch = async (term) => {
     if (!term.trim()) return;
     try {
-      await fetch('${API_URL}/api/search-history', {
+      await fetch(`${API_URL}/api/search-history`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: term })
