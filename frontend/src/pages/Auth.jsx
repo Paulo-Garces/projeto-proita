@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { Home, Lock, Phone, CheckCircle, AlertCircle } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { API_URL } from '../config';
 
 export default function Auth() {
   const location = useLocation();
@@ -54,7 +55,7 @@ export default function Auth() {
     if (isLogin) {
       // Login Real
       try {
-        const response = await fetch('http://localhost:5000/api/login', {
+        const response = await fetch(`${API_URL}/api/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ telefone, senha })
@@ -75,7 +76,7 @@ export default function Auth() {
     } else {
       // Cadastro Real
       try {
-        const response = await fetch('http://localhost:5000/api/register', {
+        const response = await fetch(`${API_URL}/api/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -143,7 +144,7 @@ export default function Auth() {
               </p>
             </div>
 
-        {/* Google Auth Button - Highlighted */}
+        {/* Google Auth Button - Oculto Temporariamente
         <div className="mt-8">
           <button className="w-full flex justify-center items-center py-3.5 px-4 border border-slate-200 rounded-xl shadow-sm bg-white text-base font-bold text-slate-700 hover:bg-slate-50 focus:outline-none transition-all hover:shadow-md hover:border-slate-300">
             <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="currentColor">
@@ -164,6 +165,7 @@ export default function Auth() {
             <span className="px-4 bg-white text-slate-500 font-medium">Ou use seu telefone</span>
           </div>
         </div>
+        */}
 
         {errorMsg && (
           <div className="mt-6 bg-red-50 text-red-600 p-4 rounded-xl flex items-start gap-3 border border-red-100 animate-in fade-in slide-in-from-top-2">

@@ -1,6 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Star, MapPin, CheckCircle, MessageCircle, Share2, Shield, Clock, Camera } from 'lucide-react';
+import { API_URL } from '../config';
 
 export default function Profile() {
   const { id } = useParams();
@@ -10,7 +11,7 @@ export default function Profile() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/ads/${id}`);
+        const res = await fetch(`${API_URL}/api/ads/${id}`);
         const data = await res.json();
         if (res.ok && data.success) {
           const profile = data.data;

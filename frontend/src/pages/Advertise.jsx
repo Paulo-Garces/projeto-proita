@@ -1,6 +1,7 @@
 import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { API_URL } from '../config';
 import { Briefcase, MapPin, AlignLeft, CheckCircle, Navigation, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, ChevronDown } from 'lucide-react';
 
 const MOCK_BAIRROS = [
@@ -69,7 +70,7 @@ export default function Advertise() {
     if (!descricaoTrabalho.trim() || isAnalyzing) return;
     setIsAnalyzing(true);
     try {
-      const response = await fetch('http://localhost:5000/api/analyze-description', {
+      const response = await fetch(`${API_URL}/api/analyze-description`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -129,7 +130,7 @@ export default function Advertise() {
         setIsUploading(true);
         const formData = new FormData();
         formData.append('avatar', avatarFile);
-        const uploadRes = await fetch('http://localhost:5000/api/upload/avatar', {
+        const uploadRes = await fetch(`${API_URL}/api/upload/avatar`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
           body: formData,
@@ -147,7 +148,7 @@ export default function Advertise() {
         setIsUploading(false);
       }
 
-      const response = await fetch('http://localhost:5000/api/ads', {
+      const response = await fetch(`${API_URL}/api/ads`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

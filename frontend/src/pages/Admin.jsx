@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { 
+import { API_URL } from '../config';
   LayoutDashboard, 
   Users, 
   ShieldAlert, 
@@ -24,7 +25,7 @@ export default function Admin() {
   useEffect(() => {
     if (user?.role === 'ADMIN' && token) {
       // Busca Estatísticas
-      fetch('http://localhost:5000/api/admin/stats', {
+      fetch('${API_URL}/api/admin/stats', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())
@@ -34,7 +35,7 @@ export default function Admin() {
       .catch(console.error);
 
       // Busca Usuários
-      fetch('http://localhost:5000/api/admin/users', {
+      fetch('${API_URL}/api/admin/users', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())

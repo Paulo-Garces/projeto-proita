@@ -3,6 +3,7 @@ import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import AdCard from '../components/AdCard';
 import { Search as SearchIcon, Filter, X, User, MapPin, Sparkles } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import { API_URL } from '../config';
 
 export default function Search() {
   const { user } = useContext(AuthContext);
@@ -28,7 +29,7 @@ export default function Search() {
   const [popularCategories, setPopularCategories] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/categories/popular')
+    fetch('${API_URL}/api/categories/popular')
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -42,7 +43,7 @@ export default function Search() {
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/ads');
+        const res = await fetch('${API_URL}/api/ads');
         const data = await res.json();
         if (res.ok && data.success) {
           const mappedData = data.data.map(profile => {
@@ -130,7 +131,7 @@ export default function Search() {
       });
       
       try {
-        const res = await fetch(`http://localhost:5000/api/subcategories/search?q=${encodeURIComponent(searchTerm)}`);
+        const res = await fetch(`${API_URL}/api/subcategories/search?q=${encodeURIComponent(searchTerm)}`);
         const data = await res.json();
         if (data.success) {
           data.data.forEach(sub => {

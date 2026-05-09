@@ -1,6 +1,7 @@
 import { Search as SearchIcon, Wrench, Zap, Paintbrush, Sparkles, Clock, Navigation } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
+import { API_URL } from '../config';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ export default function Home() {
 
   useEffect(() => {
     // Fetch popular searches
-    fetch('http://localhost:5000/api/search-history/popular')
+    fetch('${API_URL}/api/search-history/popular')
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -34,7 +35,7 @@ export default function Home() {
     }
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/subcategories/search?q=${encodeURIComponent(searchTerm)}`);
+        const res = await fetch(`${API_URL}/api/subcategories/search?q=${encodeURIComponent(searchTerm)}`);
         const data = await res.json();
         if (data.success && data.data.length > 0) {
           setSuggestions(data.data.map(d => ({ type: 'category', label: d.name })));
@@ -65,7 +66,7 @@ export default function Home() {
   const executeSearch = async (term) => {
     if (!term.trim()) return;
     try {
-      await fetch('http://localhost:5000/api/search-history', {
+      await fetch('${API_URL}/api/search-history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: term })

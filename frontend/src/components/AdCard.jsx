@@ -11,6 +11,7 @@
 import { useState } from 'react';
 import { Star, MapPin, Phone, Share2, CheckCircle, Edit2, Trash2, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { API_URL } from '../config';
 
 // ─── SVG das plataformas ──────────────────────────────────────────────────────
 const INSTAGRAM_SVG = (
@@ -57,7 +58,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
     e.preventDefault();
     if (phone) {
       try {
-        await fetch(`http://localhost:5000/api/ads/${professional.id}/click`, { method: 'POST' });
+        await fetch(`${API_URL}/api/ads/${professional.id}/click`, { method: 'POST' });
       } catch (err) {
         console.error(err);
       }
@@ -66,7 +67,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   };
 
   const handleProfileClick = () => {
-    fetch(`http://localhost:5000/api/ads/${professional.id}/view`, { method: 'POST' }).catch(err => console.error(err));
+    fetch(`${API_URL}/api/ads/${professional.id}/view`, { method: 'POST' }).catch(err => console.error(err));
   };
 
   const callPhone = (e) => {

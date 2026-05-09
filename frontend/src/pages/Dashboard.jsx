@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import AdCard from '../components/AdCard';
+import { API_URL } from '../config';
 
 // ── Sub-componente: Avatar (foto real ou iniciais) ──────────────
 function AvatarDisplay({ user, sizeClass = 'w-20 h-20', textClass = 'text-2xl' }) {
@@ -35,7 +36,7 @@ function PortfolioSection({ ad, token }) {
       const compressed = await imageCompression(file, options);
       const fd = new FormData();
       fd.append('portfolioImage', compressed, 'portfolio.jpg');
-      const res = await fetch(`http://localhost:5000/api/upload/portfolio/${ad.id}`, {
+      const res = await fetch(`${API_URL}/api/upload/portfolio/${ad.id}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: fd,
@@ -54,7 +55,7 @@ function PortfolioSection({ ad, token }) {
   const handleDelete = async (url) => {
     if (!confirm('Remover esta foto do portfólio?')) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/upload/portfolio/${ad.id}`, {
+      const res = await fetch(`${API_URL}/api/upload/portfolio/${ad.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ url }),
@@ -154,7 +155,7 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
     setIsSaving(true);
     setError('');
     try {
-      const res = await fetch(`http://localhost:5000/api/ads/${ad.id}`, {
+      const res = await fetch(`${API_URL}/api/ads/${ad.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
@@ -317,7 +318,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!token) return;
     setAdsLoading(true);
-    fetch('http://localhost:5000/api/ads/me', {
+    fetch('${API_URL}/api/ads/me', {
       headers: { 'Authorization': `Bearer ${token}` },
     })
       .then(r => r.json())
@@ -346,7 +347,7 @@ export default function Dashboard() {
       const fd = new FormData();
       fd.append('profileImage', compressed, 'profile.jpg');
 
-      const res = await fetch('http://localhost:5000/api/upload/profile-image', {
+      const res = await fetch('${API_URL}/api/upload/profile-image', {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}` },
         body: fd,
@@ -370,7 +371,7 @@ export default function Dashboard() {
   const handleDeleteAd = async (adId) => {
     if (!confirm('Excluir este anúncio?')) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/ads/${adId}`, {
+      const res = await fetch(`${API_URL}/api/ads/${adId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
