@@ -147,81 +147,87 @@ export default function Header() {
         </div>
       </div>
 
+      {/* Mobile Navigation Overlay */}
+      {isOpen && (
+        <div 
+          className="md:hidden fixed inset-0 z-40 bg-slate-900/50 transition-opacity"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
       {/* Mobile Navigation Sidebar */}
-      <div className={`md:hidden fixed inset-0 z-50 bg-slate-900/50 transition-opacity duration-300 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsOpen(false)}>
-        <div className={`fixed inset-y-0 left-0 w-4/5 max-w-sm z-50 glass bg-white/95 shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`} onClick={e => e.stopPropagation()}>
-          <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white/90">
-            <img src="/logo-proita.svg" alt="proITA Logo" className="h-8" />
-            <button onClick={() => setIsOpen(false)} className="text-slate-500 hover:text-slate-800 p-1 rounded-full hover:bg-slate-100 transition-colors">
-              <X size={24} />
-            </button>
-          </div>
-          <div className="px-4 py-6 overflow-y-auto flex-1 space-y-1">
-            {!isHome && (
-              <Link to="/" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
-                <Home size={20} className="text-slate-400" /> Início
-              </Link>
-            )}
-            <Link to="/search" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
-              <Search size={20} className="text-slate-400" /> Explorar Profissionais
+      <div className={`md:hidden fixed inset-y-0 left-0 w-4/5 max-w-sm z-50 glass bg-white/95 shadow-xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white/90">
+          <img src="/logo-proita.svg" alt="proITA Logo" className="h-8" />
+          <button onClick={() => setIsOpen(false)} className="text-slate-500 hover:text-slate-800 p-1 rounded-full hover:bg-slate-100 transition-colors">
+            <X size={24} />
+          </button>
+        </div>
+        <div className="px-4 py-6 overflow-y-auto flex-1 space-y-1">
+          {!isHome && (
+            <Link to="/" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
+              <Home size={20} className="text-slate-400" /> Início
             </Link>
-            {isAuthenticated ? (
-              <Link to="/support" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
-                <HelpCircle size={20} className="text-slate-400" /> Suporte
+          )}
+          <Link to="/search" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
+            <Search size={20} className="text-slate-400" /> Explorar Profissionais
+          </Link>
+          {isAuthenticated ? (
+            <Link to="/support" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
+              <HelpCircle size={20} className="text-slate-400" /> Suporte
+            </Link>
+          ) : (
+            <Link to="/about" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
+              <Info size={20} className="text-slate-400" /> Sobre
+            </Link>
+          )}
+          
+          {isAuthenticated ? (
+            <>
+              <Link to="/advertise" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md flex items-center gap-3 mt-4 justify-center">
+                <PlusCircle size={20} /> Anuncie
               </Link>
-            ) : (
-              <Link to="/about" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
-                <Info size={20} className="text-slate-400" /> Sobre
-              </Link>
-            )}
-            
-            {isAuthenticated ? (
-              <>
-                <Link to="/advertise" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md flex items-center gap-3 mt-4 justify-center">
-                  <PlusCircle size={20} /> Anuncie
-                </Link>
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <div className="flex items-center gap-3 px-3 mb-4">
-                    {user?.profileImageUrl ? (
-                      <img
-                        src={user.profileImageUrl}
-                        alt={user.nome}
-                        className="w-10 h-10 rounded-full object-cover border-2 border-primary shadow-sm shrink-0"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white font-bold text-sm border-2 border-primary shrink-0 select-none">
-                        {user?.nome?.[0]?.toUpperCase()}{user?.sobrenome?.[0]?.toUpperCase()}
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">{user?.nome}</p>
-                      <p className="text-xs text-slate-500">{user?.telefone}</p>
+              <div className="mt-4 pt-4 border-t border-slate-100">
+                <div className="flex items-center gap-3 px-3 mb-4">
+                  {user?.profileImageUrl ? (
+                    <img
+                      src={user.profileImageUrl}
+                      alt={user.nome}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-primary shadow-sm shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white font-bold text-sm border-2 border-primary shrink-0 select-none">
+                      {user?.nome?.[0]?.toUpperCase()}{user?.sobrenome?.[0]?.toUpperCase()}
                     </div>
-                  </div>
-                  {user?.role === 'ADMIN' && (
-                    <Link to="/admin" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md flex items-center gap-3">
-                      <Shield size={20} className="text-slate-400" /> Administração
-                    </Link>
                   )}
-                  <Link to="/dashboard" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md flex items-center gap-3">
-                    <User size={20} className="text-slate-400" /> Minha Conta
-                  </Link>
-                  <button onClick={() => { logout(); setIsOpen(false); }} className="block w-full text-left px-3 py-3 text-base font-medium text-red-500 hover:bg-red-50 rounded-md flex items-center gap-3">
-                    <LogOut size={20} /> Sair
-                  </button>
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">{user?.nome}</p>
+                    <p className="text-xs text-slate-500">{user?.telefone}</p>
+                  </div>
                 </div>
-              </>
-            ) : (
-              <div className="mt-6 flex flex-col gap-3 px-3">
-                <Link to="/auth?mode=register" onClick={() => setIsOpen(false)} className="w-full text-center block px-4 py-3 text-base font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md">
-                  Cadastrar
+                {user?.role === 'ADMIN' && (
+                  <Link to="/admin" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md flex items-center gap-3">
+                    <Shield size={20} className="text-slate-400" /> Administração
+                  </Link>
+                )}
+                <Link to="/dashboard" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md flex items-center gap-3">
+                  <User size={20} className="text-slate-400" /> Minha Conta
                 </Link>
-                <Link to="/auth" onClick={() => setIsOpen(false)} className="w-full text-center block px-4 py-3 text-base font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-200">
-                  Entrar
-                </Link>
+                <button onClick={() => { logout(); setIsOpen(false); }} className="block w-full text-left px-3 py-3 text-base font-medium text-red-500 hover:bg-red-50 rounded-md flex items-center gap-3">
+                  <LogOut size={20} /> Sair
+                </button>
               </div>
-            )}
-          </div>
+            </>
+          ) : (
+            <div className="mt-6 flex flex-col gap-3 px-3">
+              <Link to="/auth?mode=register" onClick={() => setIsOpen(false)} className="w-full text-center block px-4 py-3 text-base font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md">
+                Cadastrar
+              </Link>
+              <Link to="/auth" onClick={() => setIsOpen(false)} className="w-full text-center block px-4 py-3 text-base font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-200">
+                Entrar
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </header>
