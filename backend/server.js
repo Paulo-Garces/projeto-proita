@@ -245,7 +245,43 @@ app.post('/api/analyze-description', async (req, res) => {
 
 // ── Rotas de Inteligência e Busca (Fase 3) ──
 
-// Autocomplete de subcategorias
+// Autocomplete de profissionais e serviços (Novo Endpoint)
+app.get('/api/search/suggestions', async (req, res) => {
+  try {
+    const q = req.query.q || '';
+    
+    // Busca Profiles usando modo insensitive
+    const profiles = await prisma.profile.findMany({
+      where: {
+        OR: [
+          { atividadePrincipal: { contains: q, mode: 'insensitive' } },
+          { descricaoTrabalho: { contains: q, mode: 'insensitive' } },
+          { user: { nome: { contains: q, mode: 'insensitive' } } }
+        ]
+      },
+      include: {
+        user: { select: { nome: true } }
+      },
+      take: 5
+    });
+
+    // Mapeia para retornar id, nome e categoria
+    // Nota: 'name' é incluído como alias de 'nome' para compatibilidade com o frontend atual.
+    const suggestions = profiles.map(p => ({
+      id: p.id,
+      nome: p.user.nome,
+      name: p.user.nome,
+      categoria: p.atividadePrincipal
+    }));
+
+    res.json({ success: true, data: suggestions });
+  } catch (err) {
+    console.error('Erro autocomplete profissionais:', err);
+    res.status(500).json({ error: 'Erro ao buscar sugestões' });
+  }
+});
+
+// Autocomplete de subcategorias (legado)
 app.get('/api/subcategories/search', async (req, res) => {
   try {
     const q = req.query.q || '';

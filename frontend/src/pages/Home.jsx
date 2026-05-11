@@ -35,7 +35,7 @@ export default function Home() {
     }
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`${API_URL}/api/subcategories/search?q=${encodeURIComponent(searchTerm)}`);
+        const res = await fetch(`${API_URL}/api/search/suggestions?q=${encodeURIComponent(searchTerm)}`);
         const data = await res.json();
         if (data.success && data.data.length > 0) {
           setSuggestions(data.data.map(d => ({ type: 'category', label: d.name })));
