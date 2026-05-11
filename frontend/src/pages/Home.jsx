@@ -166,17 +166,17 @@ export default function Home() {
         </form>
 
         {/* Shortcuts / Chips */}
-        <div className="mb-8 flex flex-col md:flex-row items-center justify-center gap-4">
+        <div className="mb-8 flex flex-col md:flex-row items-center justify-center gap-4 w-full overflow-hidden">
           <span className="text-gray-500 text-sm font-medium uppercase tracking-wider whitespace-nowrap">
             Mais Buscados:
           </span>
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex overflow-x-auto gap-3 pb-2 whitespace-nowrap w-full md:w-auto px-4 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {shortcuts.map((shortcut, index) => {
               return (
                 <button 
                   key={index}
                   onClick={() => executeSearch(shortcut.query)}
-                  className="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2 rounded-full transition-all hover:scale-105 hover:border-slate-300"
+                  className="flex-shrink-0 flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-4 py-2 rounded-full transition-all hover:scale-105 hover:border-slate-300"
                 >
                   <SearchIcon size={14} className="text-primary opacity-50" />
                   <span className="font-medium text-sm capitalize">{shortcut.query}</span>

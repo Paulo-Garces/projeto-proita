@@ -166,9 +166,9 @@ export default function Header() {
       <div
         className={`md:hidden fixed inset-y-0 left-0 w-4/5 max-w-sm z-[60] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white">
-          <img src="/logo-proita.svg" alt="proITA Logo" className="h-8" />
-          <button onClick={() => setIsOpen(false)} className="text-slate-500 hover:text-slate-800 p-1 rounded-full hover:bg-slate-100 transition-colors">
+        <div className="p-4 border-b border-slate-100 flex justify-end items-center bg-white min-h-[72px] relative">
+          <img src="/logo-proita.svg" alt="proITA Logo" className="h-12 absolute left-1/2 -translate-x-1/2" />
+          <button onClick={() => setIsOpen(false)} className="text-slate-500 hover:text-slate-800 p-1 rounded-full hover:bg-slate-100 transition-colors relative z-10">
             <X size={24} />
           </button>
         </div>
