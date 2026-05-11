@@ -17,13 +17,15 @@ import Support from './pages/Support';
 import Admin from './pages/Admin';
 import Planos from './pages/Planos';
 import Dicas from './pages/Dicas';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   console.log('URL da API atual:', import.meta.env.VITE_API_URL);
-  
+
   return (
     <AuthProvider>
       <Router>
+        <ScrollToTop /> {/* <-- OLHA O ELEVADOR AQUI! */}
         <div className="flex flex-col min-h-screen bg-slate-50">
           <Header />
           <main className="flex-grow">
