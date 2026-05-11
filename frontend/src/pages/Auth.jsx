@@ -46,7 +46,7 @@ export default function Auth() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
-    
+
     if (!isLogin && !acceptedTerms) {
       setErrorMsg("Você precisa aceitar os Termos de Uso e Políticas de Privacidade.");
       return;
@@ -60,9 +60,9 @@ export default function Auth() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ telefone, senha })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok && data.success) {
           login(data.token, data.user);
           navigate('/');
@@ -87,9 +87,9 @@ export default function Auth() {
             senha
           })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
           setShowSuccess(true);
           setNome('');
@@ -120,7 +120,7 @@ export default function Auth() {
             <p className="text-slate-600 mb-8 leading-relaxed">
               Sua conta foi registrada e agora você faz parte da melhor rede de profissionais de Itapipoca.
             </p>
-            <button 
+            <button
               onClick={() => {
                 setShowSuccess(false);
                 setIsLogin(true);
@@ -144,7 +144,7 @@ export default function Auth() {
               </p>
             </div>
 
-        {/* Google Auth Button - Oculto Temporariamente
+            {/* Google Auth Button - Oculto Temporariamente
         <div className="mt-8">
           <button className="w-full flex justify-center items-center py-3.5 px-4 border border-slate-200 rounded-xl shadow-sm bg-white text-base font-bold text-slate-700 hover:bg-slate-50 focus:outline-none transition-all hover:shadow-md hover:border-slate-300">
             <svg className="w-6 h-6 mr-3" viewBox="0 0 24 24" fill="currentColor">
@@ -167,93 +167,93 @@ export default function Auth() {
         </div>
         */}
 
-        {errorMsg && (
-          <div className="mt-6 bg-red-50 text-red-600 p-4 rounded-xl flex items-start gap-3 border border-red-100 animate-in fade-in slide-in-from-top-2">
-            <AlertCircle className="shrink-0 mt-0.5" size={20} />
-            <p className="text-sm font-medium">{errorMsg}</p>
-          </div>
-        )}
-
-        <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
-          
-          {!isLogin && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nome</label>
-                <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base" placeholder="Seu nome" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Sobrenome</label>
-                <input type="text" value={sobrenome} onChange={(e) => setSobrenome(e.target.value)} required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base" placeholder="Seu sobrenome" />
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Telefone</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                <Phone size={18} />
-              </div>
-              <input type="tel" value={telefone} onChange={handleTelefoneChange} required className="pl-10 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base" placeholder="(88) 99999-9999" />
-            </div>
-            {!isLogin && (
-              <div className="mt-2 flex items-center gap-2">
-                <input 
-                  type="checkbox" 
-                  id="isWhatsapp" 
-                  checked={isWhatsapp}
-                  onChange={(e) => setIsWhatsapp(e.target.checked)}
-                  className="w-4 h-4 text-primary bg-slate-50 border-slate-300 rounded focus:ring-primary"
-                />
-                <label htmlFor="isWhatsapp" className="text-sm text-slate-600 cursor-pointer">
-                  Este número é WhatsApp?
-                </label>
+            {errorMsg && (
+              <div className="mt-6 bg-red-50 text-red-600 p-4 rounded-xl flex items-start gap-3 border border-red-100 animate-in fade-in slide-in-from-top-2">
+                <AlertCircle className="shrink-0 mt-0.5" size={20} />
+                <p className="text-sm font-medium">{errorMsg}</p>
               </div>
             )}
-          </div>
 
+            <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
 
+              {!isLogin && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Nome</label>
+                    <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base" placeholder="Seu nome" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Sobrenome</label>
+                    <input type="text" value={sobrenome} onChange={(e) => setSobrenome(e.target.value)} required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base" placeholder="Seu sobrenome" />
+                  </div>
+                </div>
+              )}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Senha</label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                <Lock size={18} />
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Telefone</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Phone size={18} />
+                  </div>
+                  <input type="tel" value={telefone} onChange={handleTelefoneChange} required className="pl-10 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base" placeholder="(88) 99999-9999" />
+                </div>
+                {!isLogin && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="isWhatsapp"
+                      checked={isWhatsapp}
+                      onChange={(e) => setIsWhatsapp(e.target.checked)}
+                      className="w-4 h-4 text-primary bg-slate-50 border-slate-300 rounded focus:ring-primary"
+                    />
+                    <label htmlFor="isWhatsapp" className="text-sm text-slate-600 cursor-pointer">
+                      Este número é WhatsApp?
+                    </label>
+                  </div>
+                )}
               </div>
-              <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} required className="pl-10 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base" placeholder="••••••••" />
-            </div>
-          </div>
 
-          {!isLogin && (
-            <div className="flex items-start gap-2 mt-4">
-              <input 
-                type="checkbox" 
-                id="acceptedTerms" 
-                checked={acceptedTerms}
-                onChange={(e) => setAcceptedTerms(e.target.checked)}
-                className="mt-1 w-4 h-4 text-primary bg-slate-50 border-slate-300 rounded focus:ring-primary shrink-0"
-                required
-              />
-              <label htmlFor="acceptedTerms" className="text-sm text-slate-600">
-                Li e concordo com os <a href="/terms" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Termos de Uso</a> e <a href="/privacy" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Políticas de Privacidade</a>.
-              </label>
-            </div>
-          )}
 
-          {isLogin && (
-            <div className="flex items-center justify-end">
-              <a href="#" className="text-sm font-medium text-primary hover:text-primary-hover">Esqueceu a senha?</a>
-            </div>
-          )}
 
-          <button type="submit" className="w-full flex justify-center py-4 px-4 border border-transparent rounded-xl shadow-md text-base font-bold text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all mt-2">
-            {isLogin ? 'Entrar' : 'Criar Conta'}
-          </button>
-        </form>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Senha</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Lock size={18} />
+                  </div>
+                  <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} required className="pl-10 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base" placeholder="••••••••" />
+                </div>
+              </div>
+
+              {!isLogin && (
+                <div className="flex items-start gap-2 mt-4">
+                  <input
+                    type="checkbox"
+                    id="acceptedTerms"
+                    checked={acceptedTerms}
+                    onChange={(e) => setAcceptedTerms(e.target.checked)}
+                    className="mt-1 w-4 h-4 text-primary bg-slate-50 border-slate-300 rounded focus:ring-primary shrink-0"
+                    required
+                  />
+                  <label htmlFor="acceptedTerms" className="text-sm text-slate-600">
+                    Li e concordo com os <a href="/termos-de-uso" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Termos de Uso</a> e <a href="/privacidade" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Políticas de Privacidade</a>.
+                  </label>
+                </div>
+              )}
+
+              {isLogin && (
+                <div className="flex items-center justify-end">
+                  <a href="#" className="text-sm font-medium text-primary hover:text-primary-hover">Esqueceu a senha?</a>
+                </div>
+              )}
+
+              <button type="submit" className="w-full flex justify-center py-4 px-4 border border-transparent rounded-xl shadow-md text-base font-bold text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all mt-2">
+                {isLogin ? 'Entrar' : 'Criar Conta'}
+              </button>
+            </form>
 
             <div className="text-center mt-6">
-              <button 
+              <button
                 onClick={() => setIsLogin(!isLogin)}
                 className="text-sm text-slate-600 hover:text-primary font-medium transition-colors"
               >

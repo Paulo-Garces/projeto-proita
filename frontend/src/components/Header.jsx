@@ -69,7 +69,7 @@ export default function Header() {
                     <HelpCircle size={18} /> Suporte
                   </Link>
                 ) : (
-                  <Link to="/about" className="text-slate-600 hover:text-primary font-medium transition-colors flex items-center gap-2">
+                  <Link to="/sobre" className="text-slate-600 hover:text-primary font-medium transition-colors flex items-center gap-2">
                     <Info size={18} /> Sobre
                   </Link>
                 )}
@@ -187,7 +187,7 @@ export default function Header() {
               <HelpCircle size={20} className="text-slate-400" /> Suporte
             </Link>
           ) : (
-            <Link to="/about" className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
+            <Link to="/sobre" className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
               <Info size={20} className="text-slate-400" /> Sobre
             </Link>
           )}
