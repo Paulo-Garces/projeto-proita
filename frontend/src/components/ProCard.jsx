@@ -72,106 +72,116 @@ export default function ProCard({ professional }) {
 
   return (
     <Link to={`/profile/${professional.id}`} className="group block h-full">
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 h-full flex flex-col overflow-hidden relative">
-
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 h-full flex flex-row p-4 gap-4 overflow-hidden relative">
+        
         {/* Barra de destaque no hover */}
         <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-primary to-cyan-400 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
 
-        {/* Cabeçalho */}
-        <div className="p-5 pb-3 flex items-start gap-4">
-          <div className="relative shrink-0">
+        {/* Coluna Esquerda: Foto, Categoria e Redes Sociais */}
+        <div className="flex flex-col items-center gap-3 w-20 md:w-24 shrink-0">
+          <div className="relative">
             <img
               src={professional.avatar}
               alt={professional.name}
-              className="w-16 h-16 rounded-2xl object-cover border border-slate-100"
+              className="w-20 h-20 md:w-24 md:h-24 rounded-2xl object-cover border border-slate-100 shadow-sm"
             />
             {professional.verified && (
-              <div className="absolute -bottom-1.5 -right-1.5 bg-white rounded-full p-0.5 shadow-sm">
-                <CheckCircle size={16} className="text-emerald-500 fill-emerald-50" />
+              <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-0.5 shadow-sm">
+                <CheckCircle size={18} className="text-emerald-500 fill-emerald-50" />
               </div>
             )}
           </div>
+          
+          <p className="text-xs font-semibold text-primary text-center leading-tight">
+            {professional.category}
+          </p>
 
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-slate-800 leading-tight truncate group-hover:text-primary transition-colors">
+          {/* Redes Sociais */}
+          {socialLinks.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-1.5 mt-auto">
+              {socialLinks.map((s, i) => (
+                <button
+                  key={i}
+                  title={s.platform}
+                  onClick={(e) => handleSocialClick(e, s.url)}
+                  className={`p-1.5 rounded-full transition-colors ${platformColors[s.platform?.toLowerCase()] || 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                >
+                  <SocialIcon platform={s.platform} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Coluna Direita: Dados e Botões */}
+        <div className="flex flex-col flex-1 min-w-0">
+          {/* Nome e Avaliação */}
+          <div className="mb-2">
+            <h3 className="text-lg font-bold text-slate-800 leading-tight truncate group-hover:text-primary transition-colors">
               {professional.name}
             </h3>
-            <p className="text-sm font-semibold text-primary mt-0.5 truncate">{professional.category}</p>
-
-            {/* Avaliação */}
-            <div className="flex items-center gap-1.5 mt-1.5">
+            <div className="flex items-center gap-1 mt-1">
               {[1,2,3,4,5].map(i => (
                 <Star key={i} size={12} className="text-amber-400 fill-amber-400" />
               ))}
               <span className="text-xs font-bold text-slate-700 ml-0.5">5.0</span>
-              <span className="text-xs text-slate-400">(novo)</span>
             </div>
           </div>
-        </div>
 
-        {/* Descrição curta */}
-        <div className="px-5 pb-3 flex-1">
-          <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed">
+          {/* Localização e Telefone */}
+          <div className="flex flex-col gap-1 text-xs text-slate-500 mb-2">
+            <span className="flex items-center gap-1 truncate">
+              <MapPin size={12} className="shrink-0" /> {location}
+            </span>
+            {phone && (
+              <span className="flex items-center gap-1 truncate">
+                <Phone size={12} className="shrink-0" /> {phone}
+              </span>
+            )}
+          </div>
+
+          {/* Descrição curta */}
+          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-3 flex-1">
             {description}
           </p>
-        </div>
 
-        {/* Localização e Telefone */}
-        <div className="px-5 pb-3 flex items-center gap-4 text-xs text-slate-400">
-          <span className="flex items-center gap-1">
-            <MapPin size={12} /> {location}
-          </span>
-          {phone && (
-            <span className="flex items-center gap-1">
-              <Phone size={12} /> {phone}
-            </span>
-          )}
-        </div>
-
-        {/* Redes Sociais dinâmicas */}
-        {socialLinks.length > 0 && (
-          <div className="px-5 pb-3 flex gap-2">
-            {socialLinks.map((s, i) => (
+          {/* Botões de Ação */}
+          <div className="flex items-center gap-2 mt-auto">
+            {phone && (
               <button
-                key={i}
-                title={s.platform}
-                onClick={(e) => handleSocialClick(e, s.url)}
-                className={`p-1.5 rounded-lg transition-colors ${platformColors[s.platform?.toLowerCase()] || 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.open(`tel:${phone.replace(/\D/g, '')}`, '_self');
+                }}
+                title="Ligar"
+                className="flex-1 flex items-center justify-center py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-full transition-colors shadow-sm"
               >
-                <SocialIcon platform={s.platform} />
+                <Phone size={18} />
               </button>
-            ))}
-          </div>
-        )}
+            )}
 
-        {/* Footer: ações */}
-        <div className="px-5 py-3 border-t border-slate-50 flex items-center justify-between">
-          <div className="flex gap-1.5">
             {phone && (
               <button
                 onClick={handleWhatsApp}
                 title="WhatsApp"
-                className="flex items-center gap-1.5 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors"
+                className="flex-[1.5] flex items-center justify-center gap-1.5 py-2 bg-green-500 text-white hover:bg-green-600 rounded-full transition-colors shadow-md transform hover:scale-105"
               >
-                <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
                 </svg>
-                WhatsApp
               </button>
             )}
+
             <button
               onClick={handleShare}
               title="Compartilhar"
-              className="p-1.5 bg-slate-50 text-slate-400 hover:bg-slate-100 rounded-full transition-colors"
+              className="flex-1 flex items-center justify-center py-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-full transition-colors shadow-sm"
             >
-              <Share2 size={14} />
+              <Share2 size={18} />
             </button>
           </div>
-
-          <div className="flex items-center gap-1 text-xs font-semibold text-primary group-hover:translate-x-1 transition-transform">
-            Sobre <ChevronRight size={14} />
-          </div>
         </div>
+
       </div>
     </Link>
   );
