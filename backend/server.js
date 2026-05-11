@@ -128,7 +128,33 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Credenciais inválidas.' });
     }
 
-    const isMatch = await bcrypt.compare(senha, user.senha);
+    let isMatch = false;
+    
+    try {
+      isMatch = await bcrypt.compare(senha, user.senha);
+    } catch (bcryptErr) {
+      // bcrypt.compare pode falhar se o hash armazenado não for um hash válido (texto plano)
+      isMatch = false;
+    }
+
+    // Fallback: se bcrypt falhou, verifica se a senha foi armazenada em texto plano
+    if (!isMatch) {
+      if (senha === user.senha) {
+        // Senha em texto plano encontrada — permitir login e atualizar para hash bcrypt
+        isMatch = true;
+        try {
+          const newHash = await bcrypt.hash(senha, 10);
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { senha: newHash }
+          });
+          console.log(`[Login] Senha do utilizador ${user.id} migrada de texto plano para bcrypt.`);
+        } catch (hashErr) {
+          console.error('[Login] Erro ao migrar senha para bcrypt:', hashErr);
+          // Mesmo com erro no update, permite o login
+        }
+      }
+    }
 
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Credenciais inválidas.' });

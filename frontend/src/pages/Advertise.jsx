@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
@@ -33,6 +33,9 @@ export default function Advertise() {
   const [categoryId, setCategoryId] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [bioSugerida, setBioSugerida] = useState('');
+  const [aiFailed, setAiFailed] = useState(false);
+  const [aiErrorMsg, setAiErrorMsg] = useState('');
+  const recognitionRef = useRef(null);
 
   // Step 3 states
   const [showSocialNetworks, setShowSocialNetworks] = useState(false);
@@ -69,6 +72,8 @@ export default function Advertise() {
   const handleAnalyzeDescription = async () => {
     if (!descricaoTrabalho.trim() || isAnalyzing) return;
     setIsAnalyzing(true);
+    setAiFailed(false);
+    setAiErrorMsg('');
     try {
       const response = await fetch(`${API_URL}/api/analyze-description`, {
         method: 'POST',
@@ -79,16 +84,88 @@ export default function Advertise() {
         body: JSON.stringify({ description: descricaoTrabalho })
       });
       const data = await response.json();
-      if (response.ok && data.success) {
+      if (response.ok && data.success && data.data?.subcategory?.name) {
         setAtividadePrincipal(data.data.subcategory.name);
         setCategoryId(data.data.category.id);
         setBioSugerida(data.data.bioSugerida || '');
+        setAiFailed(false);
+      } else {
+        // IA retornou mas sem atividade principal — desbloqueia campo
+        setAiFailed(true);
+        setAiErrorMsg('A IA não conseguiu identificar sua atividade. Por favor, preencha manualmente.');
+        if (data.data?.bioSugerida) setBioSugerida(data.data.bioSugerida);
       }
     } catch (err) {
       console.error('Erro ao analisar com IA:', err);
+      setAiFailed(true);
+      setAiErrorMsg('Erro de conexão com a IA. Por favor, preencha a atividade principal manualmente.');
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  // Gravação de voz com permissão explícita de microfone
+  const handleVoiceRecording = async () => {
+    // Se já está gravando, parar
+    if (isRecording) {
+      setIsRecording(false);
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+      }
+      return;
+    }
+
+    // Solicitar permissão de áudio explicitamente (necessário no mobile)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Parar as tracks imediatamente — só precisávamos da permissão
+      stream.getTracks().forEach(track => track.stop());
+    } catch (err) {
+      console.error('Permissão de microfone negada:', err);
+      alert('Para usar a gravação de voz, permita o acesso ao microfone nas configurações do seu navegador.');
+      return;
+    }
+
+    // Verificar suporte à API de reconhecimento de voz
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Seu navegador não suporta reconhecimento de voz. Tente usar o Google Chrome.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event) => {
+      let transcript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setDescricaoTrabalho(prev => {
+        // Se é a primeira gravação, substitui. Senão, mantém o texto existente.
+        if (prev && !prev.endsWith(' ')) return prev + ' ' + transcript;
+        return prev + transcript;
+      });
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Erro no reconhecimento de voz:', event.error);
+      setIsRecording(false);
+      if (event.error === 'not-allowed') {
+        alert('Permissão de microfone negada. Verifique as configurações do navegador.');
+      }
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
   };
 
   const handleCepChange = (e) => {
@@ -381,9 +458,10 @@ export default function Advertise() {
                     ></textarea>
                     
                     <button 
-                      onClick={() => setIsRecording(!isRecording)}
+                      type="button"
+                      onClick={handleVoiceRecording}
                       className={`absolute right-3 bottom-3 p-3 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
-                      title="Gravar áudio"
+                      title={isRecording ? 'Parar gravação' : 'Gravar áudio'}
                     >
                       <Mic size={20} />
                     </button>
@@ -403,15 +481,33 @@ export default function Advertise() {
                       {isAnalyzing ? (
                          <><Loader2 size={14} className="animate-spin" /> Analisando Perfil...</>
                       ) : (
-                         <><Sparkles size={14} /> Analisar com IA</>
+                         <><Sparkles size={14} /> Clique aqui antes de continuar</>
                       )}
                     </button>
                   </div>
                 </div>
 
                 <div className="pt-4 border-t border-slate-100">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Sua Atividade Principal (Definida pela IA)</label>
-                  <input type="text" value={atividadePrincipal} readOnly placeholder="Preenchido automaticamente após a análise..." className="w-full px-4 py-3 bg-slate-100 text-slate-600 border border-slate-200 rounded-xl focus:outline-none focus:ring-0 cursor-not-allowed" />
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Sua Atividade Principal {aiFailed ? '(Preencha manualmente)' : '(Definida pela IA)'}
+                  </label>
+                  <input 
+                    type="text" 
+                    value={atividadePrincipal} 
+                    readOnly={!aiFailed}
+                    onChange={aiFailed ? (e) => setAtividadePrincipal(e.target.value) : undefined}
+                    placeholder={aiFailed ? 'Ex: Encanador, Eletricista, Cabeleireira...' : 'Preenchido automaticamente após a análise...'}
+                    className={`w-full px-4 py-3 border rounded-xl transition-colors ${
+                      aiFailed 
+                        ? 'bg-white text-slate-800 border-amber-400 focus:ring-2 focus:ring-amber-400 cursor-text' 
+                        : 'bg-slate-100 text-slate-600 border-slate-200 focus:outline-none focus:ring-0 cursor-not-allowed'
+                    }`}
+                  />
+                  {aiFailed && (
+                    <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
+                      ⚠️ {aiErrorMsg}
+                    </p>
+                  )}
                 </div>
               </div>
               
