@@ -419,3 +419,135 @@ app.post('/api/analyze-description', async (req, res) => {
 app.get('/api/search/suggestions', async (req, res) => {
   try {
     const q = req.query.q || '';
+
+    // Busca apenas o campo atividadePrincipal dos perfis que correspondam
+    const profiles = await prisma.profile.findMany({
+      where: {
+        atividadePrincipal: { contains: q, mode: 'insensitive' }
+      },
+      select: {
+        atividadePrincipal: true
+      }
+    });
+
+    // Deduplica as atividades principais
+    const seen = new Set();
+    const suggestions = [];
+    profiles.forEach(p => {
+      const atividade = p.atividadePrincipal;
+      if (atividade && !seen.has(atividade.toLowerCase())) {
+        seen.add(atividade.toLowerCase());
+        suggestions.push({ type: 'category', label: atividade });
+      }
+    });
+
+    res.json({ success: true, data: suggestions.slice(0, 8) });
+  } catch (err) {
+    console.error('Erro autocomplete atividades:', err);
+    res.status(500).json({ error: 'Erro ao buscar sugestões' });
+  }
+});
+
+// Autocomplete de subcategorias (legado)
+app.get('/api/subcategories/search', async (req, res) => {
+  try {
+    const q = req.query.q || '';
+    const subcategories = await prisma.subcategory.findMany({
+      where: {
+        name: {
+          contains: q,
+          mode: 'insensitive'
+        }
+      },
+      take: 5
+    });
+    res.json({ success: true, data: subcategories });
+  } catch (err) {
+    console.error('Erro autocomplete:', err);
+    res.status(500).json({ error: 'Erro ao buscar subcategorias' });
+  }
+});
+
+// Registrar histórico de busca
+app.post('/api/search-history', async (req, res) => {
+  try {
+    const { query } = req.body;
+    if (!query) return res.status(400).json({ error: 'Query inválida' });
+
+    await prisma.searchHistory.upsert({
+      where: { query: query.toLowerCase().trim() },
+      update: { count: { increment: 1 } },
+      create: { query: query.toLowerCase().trim() }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao registrar busca' });
+  }
+});
+
+// Obter histórico de buscas populares
+app.get('/api/search-history/popular', async (req, res) => {
+  try {
+    const popular = await prisma.searchHistory.findMany({
+      orderBy: { count: 'desc' },
+      take: 4
+    });
+    res.json({ success: true, data: popular });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar histórico popular' });
+  }
+});
+
+// Incrementar cliquesWhatsapp
+app.post('/api/ads/:id/click', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.profile.update({
+      where: { id },
+      data: { cliquesWhatsapp: { increment: 1 } }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao incrementar clique' });
+  }
+});
+
+// Incrementar visitasPerfil
+app.post('/api/ads/:id/view', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.profile.update({
+      where: { id },
+      data: { visitasPerfil: { increment: 1 } }
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao incrementar visita' });
+  }
+});
+
+// Categorias Populares (agrupadas por atividadePrincipal)
+app.get('/api/categories/popular', async (req, res) => {
+  try {
+    const popularCategories = await prisma.profile.groupBy({
+      by: ['atividadePrincipal'],
+      _count: {
+        atividadePrincipal: true
+      },
+      orderBy: {
+        _count: {
+          atividadePrincipal: 'desc'
+        }
+      },
+      take: 4
+    });
+    res.json({ success: true, data: popularCategories });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar categorias populares' });
+  }
+});
+
+// Iniciando o servidor
+app.listen(port, () => {
+  console.log(`Servidor rodando na porta ${port}`);
+});
