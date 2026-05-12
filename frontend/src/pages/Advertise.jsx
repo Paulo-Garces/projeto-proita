@@ -2,7 +2,7 @@ import { useState, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
-import { Briefcase, MapPin, AlignLeft, CheckCircle, Navigation, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, ChevronDown } from 'lucide-react';
+import { Briefcase, MapPin, AlignLeft, CheckCircle, Navigation, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, ChevronDown, X } from 'lucide-react';
 
 const MOCK_BAIRROS = [
   'Centro', 'Fazendinha', 'Maranhão', 'Boa Vista', 'Cacimbas', 'Cruzeiro', 'Estação', 'Moura Brasil', 'São Francisco', 'Violete'
@@ -33,6 +33,7 @@ export default function Advertise() {
   const [categoryId, setCategoryId] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [bioSugerida, setBioSugerida] = useState('');
+  const [descricaoCurta, setDescricaoCurta] = useState('');
   const [aiFailed, setAiFailed] = useState(false);
   const [aiErrorMsg, setAiErrorMsg] = useState('');
   const recognitionRef = useRef(null);
@@ -77,9 +78,9 @@ export default function Advertise() {
     try {
       const response = await fetch(`${API_URL}/api/analyze-description`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ description: descricaoTrabalho })
       });
@@ -87,13 +88,15 @@ export default function Advertise() {
       if (response.ok && data.success && data.data?.subcategory?.name) {
         setAtividadePrincipal(data.data.subcategory.name);
         setCategoryId(data.data.category.id);
-        setBioSugerida(data.data.bioSugerida || '');
+        setDescricaoCurta(data.data.descricaoCurta || '');
+        setBioSugerida(data.data.biografiaCompleta || data.data.bioSugerida || '');
         setAiFailed(false);
       } else {
         // IA retornou mas sem atividade principal — desbloqueia campo
         setAiFailed(true);
         setAiErrorMsg('A IA não conseguiu identificar sua atividade. Por favor, preencha manualmente.');
-        if (data.data?.bioSugerida) setBioSugerida(data.data.bioSugerida);
+        if (data.data?.biografiaCompleta) setBioSugerida(data.data.biografiaCompleta);
+        else if (data.data?.bioSugerida) setBioSugerida(data.data.bioSugerida);
       }
     } catch (err) {
       console.error('Erro ao analisar com IA:', err);
@@ -137,18 +140,23 @@ export default function Advertise() {
     const recognition = new SpeechRecognition();
     recognition.lang = 'pt-BR';
     recognition.continuous = true;
-    recognition.interimResults = true;
+    recognition.interimResults = false;
 
     recognition.onresult = (event) => {
-      let transcript = '';
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
+      // Usa apenas resultados finais (isFinal) para evitar duplicação no mobile
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
       }
-      setDescricaoTrabalho(prev => {
-        // Se é a primeira gravação, substitui. Senão, mantém o texto existente.
-        if (prev && !prev.endsWith(' ')) return prev + ' ' + transcript;
-        return prev + transcript;
-      });
+      if (finalTranscript) {
+        setDescricaoTrabalho(prev => {
+          const trimmed = prev.trim();
+          if (trimmed.length > 0) return trimmed + ' ' + finalTranscript.trim();
+          return finalTranscript.trim();
+        });
+      }
     };
 
     recognition.onerror = (event) => {
@@ -238,6 +246,7 @@ export default function Advertise() {
           bairro,
           atividadePrincipal,
           descricaoTrabalho,
+          descricaoCurta,
           bioSugerida,
           redesSociais: showSocialNetworks ? socialNetworks.filter(n => n.link.trim() !== '') : [],
           avatarUrl: uploadedAvatarUrl || null,
@@ -282,16 +291,15 @@ export default function Advertise() {
         {/* Progress bar */}
         <div className="mb-10 flex justify-between items-center relative before:absolute before:top-1/2 before:-translate-y-1/2 before:w-full before:h-1 before:bg-slate-200 before:-z-10">
           {[1, 2, 3].map(i => (
-            <div key={i} className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors relative z-10 ${
-              step >= i ? 'bg-primary text-white shadow-md shadow-primary/30' : 'bg-slate-200 text-slate-500'
-            }`}>
+            <div key={i} className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors relative z-10 ${step >= i ? 'bg-primary text-white shadow-md shadow-primary/30' : 'bg-slate-200 text-slate-500'
+              }`}>
               {step > i ? <CheckCircle size={20} /> : i}
             </div>
           ))}
         </div>
 
         <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100">
-          
+
           {/* PASSO 1 */}
           {step === 1 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-500">
@@ -302,7 +310,7 @@ export default function Advertise() {
                   <p className="text-sm text-slate-500">Estes dados aparecerão no seu anúncio. Pode alterá-los se desejar.</p>
                 </div>
               </div>
-              
+
               <div className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
@@ -323,25 +331,25 @@ export default function Advertise() {
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Bairro de Atuação Principal</label>
                     <div className="relative">
-                      <input 
-                        type="text" 
-                        value={bairro} 
+                      <input
+                        type="text"
+                        value={bairro}
                         onChange={(e) => {
                           setBairro(e.target.value);
                           setShowBairroSuggestions(true);
                         }}
                         onFocus={() => setShowBairroSuggestions(true)}
                         onBlur={() => setTimeout(() => setShowBairroSuggestions(false), 200)}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800" 
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
                       />
                       <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
                         <ChevronDown size={18} />
                       </div>
-                      
+
                       {showBairroSuggestions && MOCK_BAIRROS.filter(b => b.toLowerCase().includes(bairro.toLowerCase())).length > 0 && bairro.length >= 3 && (
                         <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
                           {MOCK_BAIRROS.filter(b => b.toLowerCase().includes(bairro.toLowerCase())).map((b, index) => (
-                            <div 
+                            <div
                               key={index}
                               className="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-50 last:border-0"
                               onClick={() => {
@@ -376,13 +384,13 @@ export default function Advertise() {
                         <div className="flex-1">
                           <label className="block text-sm font-medium text-slate-700 mb-1">CEP</label>
                           <div className="relative">
-                            <input 
-                              type="text" 
+                            <input
+                              type="text"
                               value={cep}
                               onChange={handleCepChange}
                               onBlur={handleCepBlur}
-                              placeholder="00000-000" 
-                              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary" 
+                              placeholder="00000-000"
+                              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary"
                             />
                             {loadingCep && (
                               <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -418,7 +426,7 @@ export default function Advertise() {
                   )}
                 </div>
               </div>
-              
+
               <div className="mt-8 flex justify-end">
                 <button onClick={nextStep} className="bg-primary hover:bg-primary-hover text-white px-8 py-3.5 rounded-xl font-bold transition-colors shadow-lg shadow-primary/20">Continuar para o Passo 2</button>
               </div>
@@ -435,7 +443,7 @@ export default function Advertise() {
                   <p className="text-sm text-slate-500">Preencha as informações para construirmos o melhor perfil para você.</p>
                 </div>
               </div>
-              
+
               <div className="space-y-6">
                 <div>
                   <div className="flex justify-between items-end mb-2">
@@ -446,18 +454,30 @@ export default function Advertise() {
                       Dúvidas do que escrever? Clique aqui e assista ao vídeo de exemplo <Video size={14} />
                     </a>
                   </div>
-                  
+
                   <div className="relative">
-                    <textarea 
+                    <textarea
                       rows={6}
                       value={descricaoTrabalho}
                       onChange={(e) => setDescricaoTrabalho(e.target.value)}
                       onBlur={handleAnalyzeDescription}
-                      className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors resize-none pr-14 text-slate-800 placeholder:text-slate-400"
+                      className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors resize-none pr-24 text-slate-800 placeholder:text-slate-400"
                       placeholder="Sou encanador há 10 anos, atendo todos os dias da semana até as 18h. Faço reparos em vazamentos, instalação de pias..."
                     ></textarea>
-                    
-                    <button 
+
+                    {/* Botão Limpar Descrição */}
+                    {descricaoTrabalho.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => setDescricaoTrabalho('')}
+                        className="absolute right-14 bottom-3 p-3 rounded-full flex items-center justify-center transition-all bg-slate-200 text-slate-600 hover:bg-red-100 hover:text-red-500"
+                        title="Limpar descrição"
+                      >
+                        <X size={20} />
+                      </button>
+                    )}
+
+                    <button
                       type="button"
                       onClick={handleVoiceRecording}
                       className={`absolute right-3 bottom-3 p-3 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
@@ -466,22 +486,22 @@ export default function Advertise() {
                       <Mic size={20} />
                     </button>
                   </div>
-                  
+
                   <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 gap-3">
                     <p className="text-xs text-slate-500 flex items-center gap-2">
-                      <Sparkles size={16} className="text-primary shrink-0" /> 
+                      <Sparkles size={16} className="text-primary shrink-0" />
                       Escreva em detalhes para nossa IA categorizar seu perfil.
                     </p>
-                    <button 
+                    <button
                       type="button"
                       onClick={handleAnalyzeDescription}
                       disabled={isAnalyzing || !descricaoTrabalho.trim()}
                       className="w-full sm:w-auto text-xs font-bold bg-primary text-white hover:bg-primary-hover px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     >
                       {isAnalyzing ? (
-                         <><Loader2 size={14} className="animate-spin" /> Analisando Perfil...</>
+                        <><Loader2 size={14} className="animate-spin" /> Analisando Perfil...</>
                       ) : (
-                         <><Sparkles size={14} /> Clique aqui antes de continuar</>
+                        <><Sparkles size={14} /> Clique aqui antes de continuar</>
                       )}
                     </button>
                   </div>
@@ -491,17 +511,16 @@ export default function Advertise() {
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     Sua Atividade Principal {aiFailed ? '(Preencha manualmente)' : '(Definida pela IA)'}
                   </label>
-                  <input 
-                    type="text" 
-                    value={atividadePrincipal} 
+                  <input
+                    type="text"
+                    value={atividadePrincipal}
                     readOnly={!aiFailed}
                     onChange={aiFailed ? (e) => setAtividadePrincipal(e.target.value) : undefined}
                     placeholder={aiFailed ? 'Ex: Encanador, Eletricista, Cabeleireira...' : 'Preenchido automaticamente após a análise...'}
-                    className={`w-full px-4 py-3 border rounded-xl transition-colors ${
-                      aiFailed 
-                        ? 'bg-white text-slate-800 border-amber-400 focus:ring-2 focus:ring-amber-400 cursor-text' 
+                    className={`w-full px-4 py-3 border rounded-xl transition-colors ${aiFailed
+                        ? 'bg-white text-slate-800 border-amber-400 focus:ring-2 focus:ring-amber-400 cursor-text'
                         : 'bg-slate-100 text-slate-600 border-slate-200 focus:outline-none focus:ring-0 cursor-not-allowed'
-                    }`}
+                      }`}
                   />
                   {aiFailed && (
                     <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
@@ -510,7 +529,7 @@ export default function Advertise() {
                   )}
                 </div>
               </div>
-              
+
               <div className="mt-10 flex justify-between">
                 <button onClick={prevStep} className="text-slate-500 hover:text-slate-800 font-medium px-6 py-3.5">Voltar</button>
                 <button onClick={nextStep} className="bg-primary hover:bg-primary-hover text-white px-8 py-3.5 rounded-xl font-bold transition-colors shadow-lg shadow-primary/20">Continuar</button>
@@ -528,9 +547,9 @@ export default function Advertise() {
                   <p className="text-sm text-slate-500">Revise seu perfil gerado pela IA e adicione fotos.</p>
                 </div>
               </div>
-              
+
               <form onSubmit={handleSubmit} className="space-y-8">
-                
+
                 {/* Foto de Perfil */}
                 <div className="flex flex-col items-center">
                   <label htmlFor="avatar-upload" className="cursor-pointer group">
@@ -545,10 +564,11 @@ export default function Advertise() {
                       </div>
                     </div>
                   </label>
-                  <input 
+                  <input
                     id="avatar-upload"
-                    type="file" 
+                    type="file"
                     accept="image/*"
+                    capture="user"
                     className="hidden"
                     onChange={handleAvatarChange}
                   />
@@ -556,7 +576,7 @@ export default function Advertise() {
                     {avatarPreview ? 'Trocar foto de perfil' : 'Adicionar foto de perfil'}
                   </label>
                   {avatarPreview && (
-                    <button 
+                    <button
                       type="button"
                       onClick={() => { setAvatarFile(null); setAvatarPreview(null); }}
                       className="text-xs text-red-400 hover:text-red-600 mt-1"
@@ -566,18 +586,34 @@ export default function Advertise() {
                   )}
                 </div>
 
-                {/* Biografia IA */}
+                {/* Descrição Curta (para Cards) */}
                 <div>
                   <div className="flex justify-between items-end mb-2">
-                    <label className="block text-sm font-medium text-slate-700">Biografia / Apresentação</label>
+                    <label className="block text-sm font-medium text-slate-700">Descrição Curta (para o card)</label>
+                    <span className={`text-xs ${descricaoCurta.length > 90 ? 'text-red-500' : 'text-slate-400'}`}>{descricaoCurta.length}/90</span>
                   </div>
-                  <textarea 
+                  <input
+                    type="text"
+                    value={descricaoCurta}
+                    onChange={(e) => setDescricaoCurta(e.target.value.slice(0, 90))}
+                    placeholder="Ex: Encanador com 10 anos de experiência. Atendo a domicílio."
+                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-slate-800"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Essa descrição curta aparece nos cards de busca. Máximo 90 caracteres.</p>
+                </div>
+
+                {/* Biografia Completa (para o Perfil) */}
+                <div>
+                  <div className="flex justify-between items-end mb-2">
+                    <label className="block text-sm font-medium text-slate-700">Biografia Completa / Apresentação</label>
+                  </div>
+                  <textarea
                     rows={6}
                     value={bioSugerida}
                     onChange={(e) => setBioSugerida(e.target.value)}
                     className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors resize-none text-slate-800"
                   ></textarea>
-                  <p className="text-xs text-slate-500 mt-1">Essa é a sua biografia aprimorada pela IA. Sinta-se livre para editá-la se desejar.</p>
+                  <p className="text-xs text-slate-500 mt-1">Essa é a biografia completa aprimorada pela IA. Aparece na sua página de perfil. Sinta-se livre para editá-la.</p>
                 </div>
 
                 {/* Redes Sociais */}
@@ -589,14 +625,14 @@ export default function Advertise() {
                       <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                     </label>
                   </div>
-                  
+
                   {showSocialNetworks && (
                     <div className="space-y-4 mt-4 animate-in slide-in-from-top-2 duration-300">
                       <p className="text-sm text-slate-600 mb-2">Deseja adicionar suas redes sociais?</p>
                       {socialNetworks.map((net, index) => (
                         <div key={index} className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                          <select 
-                            value={net.network} 
+                          <select
+                            value={net.network}
                             onChange={(e) => updateSocialNetwork(index, 'network', e.target.value)}
                             className="w-full sm:w-1/3 px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary"
                           >
@@ -607,12 +643,12 @@ export default function Advertise() {
                             <option value="Site">Site</option>
                           </select>
                           <div className="flex-1 w-full flex items-center gap-2">
-                            <input 
-                              type="text" 
+                            <input
+                              type="text"
                               value={net.link}
                               onChange={(e) => updateSocialNetwork(index, 'link', e.target.value)}
-                              placeholder={`Link do seu ${net.network}`} 
-                              className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary" 
+                              placeholder={`Link do seu ${net.network}`}
+                              className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary"
                             />
                             <button type="button" onClick={() => removeSocialNetwork(index)} className="p-2.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
                               <Trash2 size={18} />
@@ -652,8 +688,8 @@ export default function Advertise() {
 
                 <div className="mt-8 flex justify-between items-center">
                   <button type="button" onClick={prevStep} className="text-slate-500 hover:text-slate-800 font-medium px-4 py-3">Voltar</button>
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     disabled={isUploading}
                     className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 md:px-12 py-4 rounded-xl font-bold text-lg transition-all shadow-xl shadow-emerald-500/30 hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-3"
                   >

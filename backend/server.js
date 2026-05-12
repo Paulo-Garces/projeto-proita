@@ -118,10 +118,20 @@ app.post('/api/register', async (req, res) => {
 // Rota de Login
 app.post('/api/login', async (req, res) => {
   try {
+
     const { telefone, senha } = req.body;
 
-    const user = await prisma.user.findUnique({
-      where: { telefone }
+    // Limpa a formatação: remove parênteses, espaços e traços, deixando só números
+    const telefoneLimpo = telefone.replace(/\D/g, '');
+
+    // Usa findFirst para procurar o usuário aceitando tanto o formato com símbolos quanto o limpo
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { telefone: telefone },
+          { telefone: telefoneLimpo }
+        ]
+      }
     });
 
     if (!user) {
@@ -129,30 +139,36 @@ app.post('/api/login', async (req, res) => {
     }
 
     let isMatch = false;
-    
+
+    // Tenta comparar com bcrypt normalmente
     try {
       isMatch = await bcrypt.compare(senha, user.senha);
     } catch (bcryptErr) {
-      // bcrypt.compare pode falhar se o hash armazenado não for um hash válido (texto plano)
-      isMatch = false;
+      console.log(`[Login] Erro ao comparar com bcrypt para utilizador ${user.id}`);
     }
 
-    // Fallback: se bcrypt falhou, verifica se a senha foi armazenada em texto plano
+    // Fallback: se bcrypt falhou (isMatch = false), verifica se a senha foi armazenada em texto plano
     if (!isMatch) {
+      console.log(`[Login] Tentando fallback de texto plano para utilizador ${user.id}`);
+      // Comparação estrita: senha enviada vs senha armazenada
       if (senha === user.senha) {
         // Senha em texto plano encontrada — permitir login e atualizar para hash bcrypt
+        console.log(`[Login] Match em texto plano confirmado para utilizador ${user.id}. Migrando para bcrypt...`);
         isMatch = true;
+
         try {
           const newHash = await bcrypt.hash(senha, 10);
           await prisma.user.update({
             where: { id: user.id },
             data: { senha: newHash }
           });
-          console.log(`[Login] Senha do utilizador ${user.id} migrada de texto plano para bcrypt.`);
+          console.log(`[Login] Senha do utilizador ${user.id} migrada com sucesso para bcrypt.`);
         } catch (hashErr) {
           console.error('[Login] Erro ao migrar senha para bcrypt:', hashErr);
           // Mesmo com erro no update, permite o login
         }
+      } else {
+        console.log(`[Login] Fallback de texto plano também falhou para utilizador ${user.id}`);
       }
     }
 
@@ -213,11 +229,15 @@ app.post('/api/analyze-description', async (req, res) => {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `Você é um assistente de categorização de serviços de alto nível. Leia a descrição do serviço a seguir.
-    Identifique a ÚNICA PROFISSÃO PRINCIPAL (a especialidade dominante) e crie uma biografia atraente, profissional e focada APENAS nessa especialidade (em primeira pessoa, pronta para ser usada como "Bio" em um anúncio de serviços).
-    Retorne um JSON estrito contendo três chaves:
+    Identifique a ÚNICA PROFISSÃO PRINCIPAL (a especialidade dominante) e gere dois textos de marketing:
+    1. Uma descrição curta de NO MÁXIMO 90 caracteres (para exibição em cards de busca).
+    2. Uma biografia completa, atraente e profissional focada APENAS nessa especialidade (em primeira pessoa, pronta para ser usada como "Bio" na página de perfil do profissional).
+    
+    Retorne um JSON estrito contendo quatro chaves:
     1. "categoriaGeral": Uma área ampla de atuação (ex: Manutenção, Saúde, Tecnologia, Construção).
     2. "atividadePrincipal": A profissão exata e principal identificada (ex: Encanador, Fisioterapeuta, Desenvolvedor Frontend).
-    3. "bioSugerida": O texto de marketing persuasivo gerado (cerca de 2 a 3 parágrafos curtos).
+    3. "descricaoCurta": Uma frase de impacto com no máximo 90 caracteres descrevendo o profissional (ex: "Encanador com 10 anos de experiência. Atendo a domicílio em Itapipoca.").
+    4. "biografiaCompleta": O texto de marketing persuasivo completo (cerca de 2 a 3 parágrafos curtos, em primeira pessoa).
     
     Apenas retorne o JSON, sem formatação Markdown.
     
@@ -230,9 +250,9 @@ app.post('/api/analyze-description', async (req, res) => {
     text = text.replace(/```json\n?|\n?```/g, '').trim();
 
     const jsonResult = JSON.parse(text);
-    const { categoriaGeral, atividadePrincipal, bioSugerida } = jsonResult;
+    const { categoriaGeral, atividadePrincipal, descricaoCurta, biografiaCompleta } = jsonResult;
 
-    if (!categoriaGeral || !atividadePrincipal || !bioSugerida) {
+    if (!categoriaGeral || !atividadePrincipal) {
       return res.status(500).json({ error: 'Falha ao analisar a descrição pela IA. Campos faltando.' });
     }
 
@@ -259,7 +279,8 @@ app.post('/api/analyze-description', async (req, res) => {
       data: {
         category: categoryRecord,
         subcategory: subcategoryRecord,
-        bioSugerida: bioSugerida
+        descricaoCurta: descricaoCurta || '',
+        biografiaCompleta: biografiaCompleta || ''
       }
     });
 
@@ -275,7 +296,7 @@ app.post('/api/analyze-description', async (req, res) => {
 app.get('/api/search/suggestions', async (req, res) => {
   try {
     const q = req.query.q || '';
-    
+
     // Busca Profiles usando modo insensitive
     const profiles = await prisma.profile.findMany({
       where: {
@@ -332,7 +353,7 @@ app.post('/api/search-history', async (req, res) => {
   try {
     const { query } = req.body;
     if (!query) return res.status(400).json({ error: 'Query inválida' });
-    
+
     await prisma.searchHistory.upsert({
       where: { query: query.toLowerCase().trim() },
       update: { count: { increment: 1 } },
