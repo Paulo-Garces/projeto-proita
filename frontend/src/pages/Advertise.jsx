@@ -105,9 +105,9 @@ export default function Advertise() {
     }
   };
 
-  // Gravação de voz com permissão explícita de microfone
+  // Gravação de voz com permissão explícita de microfone (toggle manual)
   const handleVoiceRecording = async () => {
-    // Se já está gravando, parar
+    // Se já está gravando, parar manualmente
     if (isRecording) {
       setIsRecording(false);
       if (recognitionRef.current) {
@@ -159,14 +159,29 @@ export default function Advertise() {
 
     recognition.onerror = (event) => {
       console.error('Erro no reconhecimento de voz:', event.error);
-      setIsRecording(false);
-      if (event.error === 'not-allowed') {
-        alert('Permissão de microfone negada. Verifique as configurações do navegador.');
+      // Erros fatais — parar gravação
+      if (event.error === 'not-allowed' || event.error === 'audio-capture') {
+        setIsRecording(false);
+        recognitionRef.current = null;
+        if (event.error === 'not-allowed') {
+          alert('Permissão de microfone negada. Verifique as configurações do navegador.');
+        }
       }
+      // 'no-speech' e 'network' não são fatais — o onend vai reiniciar
     };
 
     recognition.onend = () => {
-      setIsRecording(false);
+      // Se o usuário NÃO parou manualmente, reinicia automaticamente
+      // (o browser pode cortar por silêncio, mas queremos continuar ouvindo)
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.start();
+        } catch (e) {
+          // Falha ao reiniciar — parar graciosamente
+          setIsRecording(false);
+          recognitionRef.current = null;
+        }
+      }
     };
 
     recognitionRef.current = recognition;
@@ -515,11 +530,22 @@ export default function Advertise() {
                     <button
                       type="button"
                       onClick={handleVoiceRecording}
-                      className={`absolute right-3 bottom-3 p-3 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
+                      className={`absolute right-3 bottom-3 p-3 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/40' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
                       title={isRecording ? 'Parar gravação' : 'Gravar áudio'}
                     >
                       <Mic size={20} />
                     </button>
+
+                    {/* Feedback visual de gravação ativa */}
+                    {isRecording && (
+                      <div className="absolute -bottom-8 right-0 flex items-center gap-1.5 animate-in fade-in duration-300">
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                        </span>
+                        <span className="text-xs text-red-600 font-medium">Ouvindo... Toque no microfone para finalizar</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 gap-3">
