@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, User, Search, Home, PlusCircle, HelpCircle, Info, LogOut, Shield } from 'lucide-react';
+import { Menu, X, User, Search, Home, PlusCircle, HelpCircle, Info, LogOut, Shield, Heart } from 'lucide-react';
 import { useState, useRef, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 
@@ -198,21 +198,21 @@ export default function Header() {
                 <PlusCircle size={20} /> Anuncie
               </Link>
               <div className="mt-4 pt-4 border-t border-slate-100">
-                <div className="flex items-center gap-3 px-3 mb-4">
+                <div className="flex items-center gap-4 px-3 mb-5">
                   {user?.profileImageUrl ? (
                     <img
                       src={user.profileImageUrl}
                       alt={user.nome}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-primary shadow-sm shrink-0"
+                      className="w-16 h-16 rounded-full object-cover border-[3px] border-primary shadow-lg shrink-0"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white font-bold text-sm border-2 border-primary shrink-0 select-none">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white font-bold text-xl border-[3px] border-primary shadow-lg shrink-0 select-none">
                       {user?.nome?.[0]?.toUpperCase()}{user?.sobrenome?.[0]?.toUpperCase()}
                     </div>
                   )}
                   <div>
-                    <p className="text-sm font-medium text-slate-800">{user?.nome}</p>
-                    <p className="text-xs text-slate-500">{user?.telefone}</p>
+                    <p className="text-base font-bold text-slate-900 leading-tight">{user?.nome} {user?.sobrenome}</p>
+                    <p className="text-sm text-slate-500 mt-0.5">{user?.telefone}</p>
                   </div>
                 </div>
                 {user?.role === 'ADMIN' && (
@@ -223,9 +223,14 @@ export default function Header() {
                 <Link to="/dashboard" className="block px-3 py-3 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md flex items-center gap-3">
                   <User size={20} className="text-slate-400" /> Minha Conta
                 </Link>
-                <button onClick={() => logout()} className="block w-full text-left px-3 py-3 text-base font-medium text-red-500 hover:bg-red-50 rounded-md flex items-center gap-3">
-                  <LogOut size={20} /> Sair
-                </button>
+                <Link to="/search?favoritos=true" className="block px-3 py-3 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md flex items-center gap-3">
+                  <Heart size={20} className="text-slate-400" /> Favoritos
+                </Link>
+                <div className="border-t border-slate-100 mt-2 pt-2">
+                  <button onClick={() => logout()} className="block w-full text-left px-3 py-3 text-base font-medium text-red-500 hover:bg-red-50 rounded-md flex items-center gap-3">
+                    <LogOut size={20} /> Sair
+                  </button>
+                </div>
               </div>
             </>
           ) : (

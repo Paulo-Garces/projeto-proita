@@ -486,11 +486,18 @@ export default function Advertise() {
                     {descricaoTrabalho.trim() && (
                       <button
                         type="button"
-                        onClick={() => setDescricaoTrabalho('')}
+                        onClick={() => {
+                          setDescricaoTrabalho('');
+                          setAtividadePrincipal('');
+                          setBioSugerida('');
+                          setDescricaoCurta('');
+                          setAiFailed(false);
+                          setAiErrorMsg('');
+                        }}
                         className="absolute right-14 bottom-3 p-3 rounded-full flex items-center justify-center transition-all bg-slate-200 text-slate-600 hover:bg-red-100 hover:text-red-500"
-                        title="Limpar descrição"
+                        title="Limpar tudo e recomeçar"
                       >
-                        <X size={20} />
+                        <Trash2 size={18} />
                       </button>
                     )}
 

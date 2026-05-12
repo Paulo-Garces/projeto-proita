@@ -5,23 +5,24 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
-  id                  String    @id @default(uuid())
-  nome                String
-  sobrenome           String
-  telefone            String    @unique
-  senha               String
-  bairro              String?
-  cep                 String?
-  isWhatsapp          Boolean   @default(false)
-  role                String    @default("USER")
-  profileImageUrl     String?
-  profileImageFileId  String?
-  createdAt           DateTime  @default(now())
-  profiles            Profile[] // 1:N — um usuário pode ter vários anúncios
+  id                 String    @id @default(uuid())
+  nome               String
+  sobrenome          String?   // Opcional para evitar falhas se o Google não enviar
+  telefone           String?   @unique // Opcional, pois o login Google não o possui inicialmente
+  email              String?   @unique // Essencial para capturar e vincular a conta do Google
+  senha              String?   // Opcional, usuários do Google não usam senha
+  googleId           String?   @unique // Identificador seguro de quem veio pelo Google
+  bairro             String?
+  cep                String?
+  isWhatsapp         Boolean   @default(false)
+  role               String    @default("USER")
+  profileImageUrl    String?
+  profileImageFileId String?
+  createdAt          DateTime  @default(now())
+  profiles           Profile[] // 1:N — um usuário pode ter vários anúncios
 }
 
 model Profile {
@@ -35,7 +36,7 @@ model Profile {
   atividadesSecundarias String[]
   
   descricaoTrabalho     String
-  descricaoCurta        String?  // CORRIGIDO: Estava shortDescription. Max 90 chars.
+  descricaoCurta        String?  // Max 90 chars.
 
   // Contato e Redes Sociais
   instagram             String?
@@ -44,7 +45,8 @@ model Profile {
   
   // Localização
   endereco              String?
-  serviceBairro         String?
+  serviceBairro         String?  // Usado para o "Bairro de Atuação Principal"
+  bairroEndereco        String?  // NOVO: Usado para o Bairro exato retornado pelo CEP
   
   // Portfólio e Imagens
   portfolioUrls         String[]
@@ -54,23 +56,23 @@ model Profile {
   // Campos Legado e Métricas
   redesSociais          Json?
   socialLinks           Json?
-  cliquesWhatsapp       Int       @default(0)
-  visitasPerfil         Int       @default(0)
-  createdAt             DateTime  @default(now())
+  cliquesWhatsapp       Int      @default(0)
+  visitasPerfil         Int      @default(0)
+  createdAt             DateTime @default(now())
 }
 
 // Tabelas fixas para alimentar os Menus de Busca/Filtro do Frontend
 model Category {
-  id            String         @id @default(uuid())
-  name          String         @unique
+  id            String        @id @default(uuid())
+  name          String        @unique
   subcategories Subcategory[]
 }
 
 model Subcategory {
-  id          String    @id @default(uuid())
-  name        String    @unique
-  categoryId  String
-  category    Category  @relation(fields: [categoryId], references: [id])
+  id         String   @id @default(uuid())
+  name       String   @unique
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
 }
 
 model SearchHistory {
