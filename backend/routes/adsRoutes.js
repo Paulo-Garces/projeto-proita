@@ -80,7 +80,7 @@ module.exports = (prisma) => {
       descricaoCurta, bioSugerida, shortDescription,
       instagram, whatsapp, endereco, portfolioUrls,
       redesSociais, socialLinks, avatarUrl, avatarFileId,
-      servicePhone, serviceBairro
+      servicePhone, serviceBairro, exibirEnderecoCompleto
     } = req.body;
 
     const userId = req.user.id;
@@ -104,10 +104,10 @@ module.exports = (prisma) => {
           avatarUrl: avatarUrl || null,
           avatarFileId: avatarFileId || null,
           socialLinks: socialLinks || redesSociais || null,
-          // Mapeamento corrigido para o novo banco de dados
           descricaoCurta: descricaoCurta || shortDescription || null,
-          telefoneContato: servicePhone || null,
-          bairroAtuacao: serviceBairro || null,
+          servicePhone: servicePhone || null,
+          serviceBairro: serviceBairro || null,
+          exibirEnderecoCompleto: exibirEnderecoCompleto !== undefined ? exibirEnderecoCompleto : true,
         },
       });
 
@@ -140,7 +140,7 @@ module.exports = (prisma) => {
         atividadePrincipal, atividadesSecundarias, descricaoTrabalho,
         descricaoCurta, shortDescription, instagram, whatsapp,
         servicePhone, serviceBairro, endereco, portfolioUrls,
-        avatarUrl, avatarFileId, socialLinks,
+        avatarUrl, avatarFileId, socialLinks, exibirEnderecoCompleto,
       } = req.body;
 
       if (socialLinks !== undefined) {
@@ -165,10 +165,10 @@ module.exports = (prisma) => {
           ...(avatarUrl !== undefined && { avatarUrl }),
           ...(avatarFileId !== undefined && { avatarFileId }),
           ...(socialLinks !== undefined && { socialLinks }),
-          // Mapeamento corrigido para o novo banco de dados
           ...((descricaoCurta !== undefined || shortDescription !== undefined) && { descricaoCurta: descricaoCurta || shortDescription }),
-          ...(servicePhone !== undefined && { telefoneContato: servicePhone }),
-          ...(serviceBairro !== undefined && { bairroAtuacao: serviceBairro }),
+          ...(servicePhone !== undefined && { servicePhone }),
+          ...(serviceBairro !== undefined && { serviceBairro }),
+          ...(exibirEnderecoCompleto !== undefined && { exibirEnderecoCompleto }),
         },
       });
 

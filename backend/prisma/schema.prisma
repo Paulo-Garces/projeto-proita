@@ -47,6 +47,7 @@ model Profile {
   endereco              String?
   serviceBairro         String?  // Usado para o "Bairro de Atuação Principal"
   bairroEndereco        String?  // NOVO: Usado para o Bairro exato retornado pelo CEP
+  exibirEnderecoCompleto Boolean  @default(true) // false = mostra apenas o bairro
   
   // Portfólio e Imagens
   portfolioUrls         String[]

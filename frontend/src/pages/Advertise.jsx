@@ -2,7 +2,7 @@ import { useState, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
-import { Briefcase, MapPin, AlignLeft, CheckCircle, Navigation, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, ChevronDown, X } from 'lucide-react';
+import { Briefcase, MapPin, AlignLeft, CheckCircle, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, ChevronDown, X } from 'lucide-react';
 
 const MOCK_BAIRROS = [
   'Centro', 'Fazendinha', 'Maranhão', 'Boa Vista', 'Cacimbas', 'Cruzeiro', 'Estação', 'Moura Brasil', 'São Francisco', 'Violete'
@@ -18,8 +18,8 @@ export default function Advertise() {
   const [sobrenome, setSobrenome] = useState(user?.sobrenome || '');
   const [telefone, setTelefone] = useState(user?.telefone || '');
   const [bairro, setBairro] = useState(user?.bairro || '');
-  const [showBairroSuggestions, setShowBairroSuggestions] = useState(false);
   const [showExactAddress, setShowExactAddress] = useState(false);
+  const [exibirEnderecoCompleto, setExibirEnderecoCompleto] = useState(true);
   const [cep, setCep] = useState('');
   const [loadingCep, setLoadingCep] = useState(false);
   const [rua, setRua] = useState('');
@@ -194,23 +194,9 @@ export default function Advertise() {
         const data = await response.json();
         if (!data.erro) {
           setRua(data.logradouro || '');
-
-          const bairroCep = data.bairro || '';
-          const bairroAtual = bairro.trim();
-
-          // Verifica conflito: bairro de atuação preenchido E diferente do bairro do CEP
-          if (bairroAtual && bairroCep && bairroAtual.toLowerCase() !== bairroCep.toLowerCase()) {
-            const confirmar = window.confirm(
-              `Você digitou acima o bairro "${bairroAtual}" de atuação, mas adicionou o bairro "${bairroCep}" no endereço.\n\nQuer atualizar o local de atuação para o novo endereço?`
-            );
-            if (confirmar) {
-              // Atualiza ambos com o dado do CEP
-              setBairro(bairroCep);
-            }
-            // Se cancelou, mantém o bairro de atuação original
-          } else if (!bairroAtual && bairroCep) {
-            // Se o bairro de atuação estava vazio, preenche automaticamente
-            setBairro(bairroCep);
+          // Preenche o bairro automaticamente com o retorno do CEP
+          if (data.bairro) {
+            setBairro(data.bairro);
           }
         }
       } catch (err) {
@@ -269,6 +255,9 @@ export default function Advertise() {
           avatarUrl: uploadedAvatarUrl || null,
           avatarFileId: uploadedAvatarFileId || null,
           categoryId: categoryId || null,
+          endereco: showExactAddress ? [rua, numero, complemento].filter(Boolean).join(', ') : null,
+          serviceBairro: bairro || null,
+          exibirEnderecoCompleto: showExactAddress ? exibirEnderecoCompleto : false,
         })
       });
       const data = await response.json();
@@ -320,15 +309,21 @@ export default function Advertise() {
           {/* PASSO 1 */}
           {step === 1 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-              <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3 mb-4 border-b border-slate-100 pb-4">
                 <div className="p-3 bg-primary/10 text-primary rounded-xl"><MapPin size={24} /></div>
                 <div>
                   <h2 className="text-2xl font-bold text-slate-900">Confirmação e Localização</h2>
-                  <p className="text-sm text-slate-500">Estes dados aparecerão no seu anúncio. Pode alterá-los se desejar.</p>
                 </div>
               </div>
 
+              {/* Banner informativo com destaque */}
+              <div className="mb-6 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 flex items-start gap-3">
+                <Sparkles size={18} className="text-primary shrink-0 mt-0.5" />
+                <p className="text-sm font-semibold text-slate-800">Estes dados aparecerão no seu anúncio. Pode alterá-los se desejar.</p>
+              </div>
+
               <div className="space-y-5">
+                {/* Linha 1: Nome e Sobrenome */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Nome</label>
@@ -340,54 +335,18 @@ export default function Advertise() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Telefone / WhatsApp</label>
-                    <input type="text" value={telefone} onChange={(e) => setTelefone(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Bairro de Atuação Principal</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={bairro}
-                        onChange={(e) => {
-                          setBairro(e.target.value);
-                          setShowBairroSuggestions(true);
-                        }}
-                        onFocus={() => setShowBairroSuggestions(true)}
-                        onBlur={() => setTimeout(() => setShowBairroSuggestions(false), 200)}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
-                      />
-                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
-                        <ChevronDown size={18} />
-                      </div>
-
-                      {showBairroSuggestions && MOCK_BAIRROS.filter(b => b.toLowerCase().includes(bairro.toLowerCase())).length > 0 && bairro.length >= 3 && (
-                        <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                          {MOCK_BAIRROS.filter(b => b.toLowerCase().includes(bairro.toLowerCase())).map((b, index) => (
-                            <div
-                              key={index}
-                              className="px-4 py-3 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 border-b border-slate-50 last:border-0"
-                              onClick={() => {
-                                setBairro(b);
-                                setShowBairroSuggestions(false);
-                              }}
-                            >
-                              {b}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                {/* Linha 2: Apenas Telefone (bairro foi movido para dentro do toggle) */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Telefone / WhatsApp</label>
+                  <input type="text" value={telefone} onChange={(e) => setTelefone(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800" />
                 </div>
 
+                {/* Toggle de Endereço */}
                 <div className="pt-4 mt-6 border-t border-slate-100">
                   <div className="flex items-center justify-between mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div>
-                      <h4 className="font-medium text-slate-800">Deseja exibir seu endereço exato?</h4>
-                      <p className="text-xs text-slate-500 mt-1">Ideal para estabelecimentos físicos e oficinas.</p>
+                      <h4 className="font-medium text-slate-800">Adicionar endereço</h4>
+                      <p className="text-xs text-slate-500 mt-1">Escolha o que deseja exibir.</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input type="checkbox" className="sr-only peer" checked={showExactAddress} onChange={() => setShowExactAddress(!showExactAddress)} />
@@ -397,9 +356,31 @@ export default function Advertise() {
 
                   {showExactAddress && (
                     <div className="space-y-5 animate-in slide-in-from-top-2 duration-300">
+
+                      {/* Bairro (select dropdown) */}
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Bairro</label>
+                        <div className="relative">
+                          <select
+                            value={bairro}
+                            onChange={(e) => setBairro(e.target.value)}
+                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800 appearance-none cursor-pointer"
+                          >
+                            <option value="">Selecione seu bairro...</option>
+                            {MOCK_BAIRROS.map((b) => (
+                              <option key={b} value={b}>{b}</option>
+                            ))}
+                          </select>
+                          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                            <ChevronDown size={18} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* CEP + Buscar */}
                       <div className="flex items-end gap-3">
                         <div className="flex-1">
-                          <label className="block text-sm font-medium text-slate-700 mb-1">CEP</label>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">CEP <span className="text-slate-400 font-normal">(opcional)</span></label>
                           <div className="relative">
                             <input
                               type="text"
@@ -421,14 +402,13 @@ export default function Advertise() {
                         </button>
                       </div>
 
-                      <div className="flex items-center gap-2 text-primary font-medium text-sm cursor-pointer hover:underline mb-2">
-                        <Navigation size={16} /> Usar minha localização atual
-                      </div>
-
+                      {/* Rua */}
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Rua</label>
                         <input type="text" value={rua} onChange={(e) => setRua(e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary" />
                       </div>
+
+                      {/* Número + Complemento */}
                       <div className="grid grid-cols-2 gap-5">
                         <div>
                           <label className="block text-sm font-medium text-slate-700 mb-1">Número</label>
@@ -437,6 +417,47 @@ export default function Advertise() {
                         <div>
                           <label className="block text-sm font-medium text-slate-700 mb-1">Complemento</label>
                           <input type="text" value={complemento} onChange={(e) => setComplemento(e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary" />
+                        </div>
+                      </div>
+
+                      {/* Radio Buttons — Privacidade */}
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mt-2">
+                        <p className="text-sm font-semibold text-slate-800 mb-3">O que o público poderá ver no seu perfil?</p>
+                        <div className="space-y-3">
+                          <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                            exibirEnderecoCompleto
+                              ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                              : 'border-slate-200 bg-white hover:bg-slate-50'
+                          }`}>
+                            <input
+                              type="radio"
+                              name="privacidadeEndereco"
+                              checked={exibirEnderecoCompleto === true}
+                              onChange={() => setExibirEnderecoCompleto(true)}
+                              className="h-4 w-4 text-primary focus:ring-primary border-slate-300"
+                            />
+                            <div>
+                              <span className="text-sm font-medium text-slate-800">Endereço completo</span>
+                              <span className="text-xs text-slate-500 block">Rua, Número e Bairro</span>
+                            </div>
+                          </label>
+                          <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                            !exibirEnderecoCompleto
+                              ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                              : 'border-slate-200 bg-white hover:bg-slate-50'
+                          }`}>
+                            <input
+                              type="radio"
+                              name="privacidadeEndereco"
+                              checked={exibirEnderecoCompleto === false}
+                              onChange={() => setExibirEnderecoCompleto(false)}
+                              className="h-4 w-4 text-primary focus:ring-primary border-slate-300"
+                            />
+                            <div>
+                              <span className="text-sm font-medium text-slate-800">Apenas o Bairro</span>
+                              <span className="text-xs text-slate-500 block">Mais privacidade — mostra só o nome do bairro</span>
+                            </div>
+                          </label>
                         </div>
                       </div>
                     </div>
