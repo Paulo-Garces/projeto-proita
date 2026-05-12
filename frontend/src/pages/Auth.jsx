@@ -48,53 +48,95 @@ export default function Auth() {
     setTelefone(value);
   };
 
-  // ── Google Login Handler ────────────────────────────────────
-  const handleGoogleLogin = async () => {
-    try {
-      window.location.href = `${API_URL}/api/auth/google`;
-    } catch (error) {
-      console.error("Erro ao iniciar login com Google:", error);
-      setErrorMsg("Erro ao conectar com o Google. Tente novamente.");
+  // ── Google Login via Identity Services SDK ───────────────────
+  const handleGoogleLogin = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      setErrorMsg('Google Client ID não configurado.');
+      return;
     }
+
+    if (typeof google === 'undefined' || !google.accounts) {
+      setErrorMsg('Serviço do Google ainda a carregar. Tente novamente em instantes.');
+      return;
+    }
+
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleGoogleCredential,
+      auto_select: false,
+    });
+
+    // Dispara o popup One Tap do Google
+    google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        // Fallback: se One Tap não aparecer, tenta renderizar botão
+        console.log('One Tap não exibido, motivo:', notification.getNotDisplayedReason?.() || notification.getSkippedReason?.());
+        setErrorMsg('Popup do Google bloqueado. Permita popups ou tente outro navegador.');
+      }
+    });
   };
 
-  // ── Callback handler para verificar conflito via query params ──
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const googleConflict = params.get('conflict');
-    const googleEmail = params.get('email');
-    const googleToken = params.get('token');
+  // ── Processa a credencial retornada pelo Google ──────────────
+  const handleGoogleCredential = async (response) => {
+    try {
+      const credential = response.credential;
 
-    if (googleConflict === 'existing_account' && googleEmail) {
-      setConflictData({ email: googleEmail, token: googleToken });
-      setShowConflictModal(true);
-    }
+      // Decodifica o JWT do Google para extrair os dados do utilizador
+      const payload = JSON.parse(atob(credential.split('.')[1]));
+      console.log('[Google Auth] Dados recebidos do Google:', payload);
 
-    // Login com sucesso via Google (callback direto)
-    if (googleToken && !googleConflict) {
-      const userData = params.get('user');
-      if (userData) {
-        try {
-          const user = JSON.parse(decodeURIComponent(userData));
-          login(googleToken, user);
-          navigate('/');
-        } catch (e) {
-          console.error('Erro ao processar dados do Google:', e);
-        }
+      const googleData = {
+        email: payload.email,
+        googleId: payload.sub,
+        nome: payload.given_name || payload.name || 'Usuário',
+        sobrenome: payload.family_name || '',
+        profileImageUrl: payload.picture || null,
+      };
+
+      // POST para o backend com os dados do Google
+      const res = await fetch(`${API_URL}/api/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(googleData),
+      });
+
+      const data = await res.json();
+      console.log('[Google Auth] Resposta do servidor:', data);
+
+      if (res.ok && data.success) {
+        login(data.token, data.user);
+        navigate('/');
+      } else if (res.status === 409) {
+        // Conflito: conta já existe com telefone
+        setConflictData({ email: googleData.email, googleId: googleData.googleId });
+        setShowConflictModal(true);
+      } else {
+        setErrorMsg(data.message || 'Erro ao autenticar com Google.');
       }
+    } catch (error) {
+      console.error('[Google Auth] Erro ao processar credencial:', error);
+      setErrorMsg('Erro ao conectar com o Google. Tente novamente.');
     }
-  }, [location.search]);
+  };
 
   // ── Confirmar mesclagem de conta ────────────────────────────
   const handleConfirmMerge = async () => {
     if (!conflictData) return;
     try {
-      const response = await fetch(`${API_URL}/api/auth/google/merge`, {
+      // Reenvia para a rota principal do Google com flag de vinculação
+      const response = await fetch(`${API_URL}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: conflictData.token, email: conflictData.email })
+        body: JSON.stringify({
+          email: conflictData.email,
+          googleId: conflictData.googleId,
+          nome: conflictData.nome || 'Usuário',
+          sobrenome: conflictData.sobrenome || '',
+        })
       });
       const data = await response.json();
+      console.log('[Google Merge] Resposta:', data);
       if (response.ok && data.success) {
         login(data.token, data.user);
         setShowConflictModal(false);
