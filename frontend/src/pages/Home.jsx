@@ -15,18 +15,18 @@ export default function Home() {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    // Fetch popular searches
-    fetch(`${API_URL}/api/search-history/popular`)
+    // Fetch categorias populares (atividades principais) em vez do histórico de buscas
+    fetch(`${API_URL}/api/categories/popular`)
       .then(res => res.json())
       .then(data => {
-        if (data.success) {
-          setPopularSearches(data.data);
+        if (data.success && data.data.length > 0) {
+          setPopularSearches(data.data.map(d => ({ query: d.atividadePrincipal })));
         }
       })
       .catch(err => console.error("Erro popular:", err));
   }, []);
 
-  // ── Debounced autocomplete ────────────────────────────────────
+  // ── Debounced autocomplete (apenas atividades principais) ──────
   useEffect(() => {
     if (searchTerm.length < 3) {
       setSuggestions([]);
@@ -38,7 +38,8 @@ export default function Home() {
         const res = await fetch(`${API_URL}/api/search/suggestions?q=${encodeURIComponent(searchTerm)}`);
         const data = await res.json();
         if (data.success && data.data.length > 0) {
-          setSuggestions(data.data.map(d => ({ type: 'category', label: d.name })));
+          // A API já retorna { type: 'category', label: 'Encanador' }
+          setSuggestions(data.data);
           setShowSuggestions(true);
         } else {
           setSuggestions([]);
@@ -46,6 +47,8 @@ export default function Home() {
         }
       } catch (err) {
         console.error("Erro autocomplete:", err);
+        setSuggestions([]);
+        setShowSuggestions(false);
       }
     }, 300);
 
@@ -81,7 +84,7 @@ export default function Home() {
     e.preventDefault();
     executeSearch(searchTerm);
   };
-  
+
   const selectSuggestion = (label) => {
     setSearchTerm(label);
     setShowSuggestions(false);
@@ -95,10 +98,10 @@ export default function Home() {
   };
 
   const defaultShortcuts = [
-    { query: 'encanador' },
-    { query: 'eletricista' },
-    { query: 'pintor' },
-    { query: 'limpeza' },
+    { query: 'Encanador' },
+    { query: 'Eletricista' },
+    { query: 'Pintor' },
+    { query: 'Pedreiro' },
   ];
 
   const shortcuts = popularSearches.length > 0 ? popularSearches : defaultShortcuts;

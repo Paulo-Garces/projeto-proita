@@ -5,6 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -21,38 +22,44 @@ model User {
   profileImageFileId  String?
   createdAt           DateTime  @default(now())
   profiles            Profile[] // 1:N — um usuário pode ter vários anúncios
-  subcategories       Subcategory[]
 }
 
 model Profile {
   id                    String   @id @default(uuid())
-  userId                String   // Sem @unique: permite múltiplos anúncios por usuário
+  userId                String   
   user                  User     @relation(fields: [userId], references: [id])
-  atividadePrincipal    String
+  
+  // Nomenclatura oficial do MEI e IA
+  atividadePrincipal    String   // Ex: Encanador, Vaqueiro, Digital Maker
+  categoriaGeral        String?  // Ex: "Construção e Reformas" (Nova Trava)
   atividadesSecundarias String[]
+  
   descricaoTrabalho     String
-  // Contato e Redes Sociais (campos explícitos)
+  descricaoCurta        String?  // CORRIGIDO: Estava shortDescription. Max 90 chars.
+
+  // Contato e Redes Sociais
   instagram             String?
   whatsapp              String?
+  servicePhone          String?
+  
   // Localização
   endereco              String?
-  // Portfólio (array de URLs de imagens no ImageKit)
+  serviceBairro         String?
+  
+  // Portfólio e Imagens
   portfolioUrls         String[]
-  // Imagem principal do anúncio
   avatarUrl             String?
   avatarFileId          String?
-  // Campo legado — mantido para não quebrar dados existentes
+  
+  // Campos Legado e Métricas
   redesSociais          Json?
-  // Campos novos de serviço
-  servicePhone          String?   // WhatsApp/Tel específico do serviço
-  serviceBairro         String?   // Bairro/local de atendimento
-  shortDescription      String?   // Descrição curta para o card (max 100 chars)
-  socialLinks           Json?     // [{platform:'instagram',url:'...'}, ...] até 3
+  socialLinks           Json?
   cliquesWhatsapp       Int       @default(0)
   visitasPerfil         Int       @default(0)
   createdAt             DateTime  @default(now())
 }
 
+// Tabelas fixas para alimentar os Menus de Busca/Filtro do Frontend
 model Category {
   id            String         @id @default(uuid())
   name          String         @unique
@@ -64,7 +71,6 @@ model Subcategory {
   name        String    @unique
   categoryId  String
   category    Category  @relation(fields: [categoryId], references: [id])
-  users       User[]
 }
 
 model SearchHistory {

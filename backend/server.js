@@ -229,14 +229,30 @@ app.post('/api/analyze-description', async (req, res) => {
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `Você é um assistente de categorização de serviços de alto nível. Leia a descrição do serviço a seguir.
-    Identifique a ÚNICA PROFISSÃO PRINCIPAL (a especialidade dominante) e gere dois textos de marketing:
-    1. Uma descrição curta de NO MÁXIMO 90 caracteres (para exibição em cards de busca).
-    2. Uma biografia completa, atraente e profissional focada APENAS nessa especialidade (em primeira pessoa, pronta para ser usada como "Bio" na página de perfil do profissional).
+    Identifique a ÚNICA PROFISSÃO PRINCIPAL (a especialidade dominante) e gere dois textos de marketing.
+    
+    REGRA ABSOLUTA DE CATEGORIZAÇÃO:
+    Você é OBRIGADA a classificar o serviço em EXATAMENTE UMA destas categorias abaixo (copie o nome exato):
+    - Alimentação e Gastronomia
+    - Beleza e Estética
+    - Construção e Reformas
+    - Educação e Aulas
+    - Eventos e Produção
+    - Reparos e Assistência Técnica
+    - Serviços Domésticos e Cuidados
+    - Tecnologia e Design
+    - Transporte e Logística
+    - Saúde e Bem-estar
+    - Serviços Rurais e Paisagismo
+    - Moda e Costura
+    - Turismo e Lazer
+    - Serviços Administrativos e Consultoria
+    - Outros Serviços
     
     Retorne um JSON estrito contendo quatro chaves:
-    1. "categoriaGeral": Uma área ampla de atuação (ex: Manutenção, Saúde, Tecnologia, Construção).
-    2. "atividadePrincipal": A profissão exata e principal identificada (ex: Encanador, Fisioterapeuta, Desenvolvedor Frontend).
-    3. "descricaoCurta": Uma frase de impacto com no máximo 90 caracteres descrevendo o profissional (ex: "Encanador com 10 anos de experiência. Atendo a domicílio em Itapipoca.").
+    1. "categoriaGeral": O nome EXATO de uma das categorias da lista acima. Se não se encaixar em nenhuma, use "Outros Serviços".
+    2. "atividadePrincipal": A profissão exata e principal (ex: Encanador, Fisioterapeuta, Vaqueiro, Digital Maker).
+    3. "descricaoCurta": Uma frase de impacto com NO MÁXIMO 90 caracteres descrevendo o profissional.
     4. "biografiaCompleta": O texto de marketing persuasivo completo (cerca de 2 a 3 parágrafos curtos, em primeira pessoa).
     
     Apenas retorne o JSON, sem formatação Markdown.
@@ -292,38 +308,35 @@ app.post('/api/analyze-description', async (req, res) => {
 
 // ── Rotas de Inteligência e Busca (Fase 3) ──
 
-// Autocomplete de profissionais e serviços (Novo Endpoint)
+// Autocomplete de atividades principais (sem nomes de utilizadores)
 app.get('/api/search/suggestions', async (req, res) => {
   try {
     const q = req.query.q || '';
 
-    // Busca Profiles usando modo insensitive
+    // Busca apenas o campo atividadePrincipal dos perfis que correspondam
     const profiles = await prisma.profile.findMany({
       where: {
-        OR: [
-          { atividadePrincipal: { contains: q, mode: 'insensitive' } },
-          { descricaoTrabalho: { contains: q, mode: 'insensitive' } },
-          { user: { nome: { contains: q, mode: 'insensitive' } } }
-        ]
+        atividadePrincipal: { contains: q, mode: 'insensitive' }
       },
-      include: {
-        user: { select: { nome: true } }
-      },
-      take: 5
+      select: {
+        atividadePrincipal: true
+      }
     });
 
-    // Mapeia para retornar id, nome e categoria
-    // Nota: 'name' é incluído como alias de 'nome' para compatibilidade com o frontend atual.
-    const suggestions = profiles.map(p => ({
-      id: p.id,
-      nome: p.user.nome,
-      name: p.user.nome,
-      categoria: p.atividadePrincipal
-    }));
+    // Deduplica as atividades principais
+    const seen = new Set();
+    const suggestions = [];
+    profiles.forEach(p => {
+      const atividade = p.atividadePrincipal;
+      if (atividade && !seen.has(atividade.toLowerCase())) {
+        seen.add(atividade.toLowerCase());
+        suggestions.push({ type: 'category', label: atividade });
+      }
+    });
 
-    res.json({ success: true, data: suggestions });
+    res.json({ success: true, data: suggestions.slice(0, 8) });
   } catch (err) {
-    console.error('Erro autocomplete profissionais:', err);
+    console.error('Erro autocomplete atividades:', err);
     res.status(500).json({ error: 'Erro ao buscar sugestões' });
   }
 });

@@ -264,7 +264,7 @@ export default function Advertise() {
         alert(data.message || 'Erro ao publicar anúncio.');
       }
     } catch (err) {
-      console.error(err);
+      console.error('Falha no salvamento do anúncio:', err);
       alert('Erro de conexão ao salvar anúncio.');
     }
   };
@@ -568,7 +568,6 @@ export default function Advertise() {
                     id="avatar-upload"
                     type="file"
                     accept="image/*"
-                    capture="user"
                     className="hidden"
                     onChange={handleAvatarChange}
                   />

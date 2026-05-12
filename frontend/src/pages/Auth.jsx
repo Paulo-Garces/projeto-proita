@@ -1,5 +1,5 @@
 import { useState, useContext, useEffect } from 'react';
-import { Home, Lock, Phone, CheckCircle, AlertCircle } from 'lucide-react';
+import { Home, Lock, Phone, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
@@ -18,6 +18,7 @@ export default function Auth() {
   const [senha, setSenha] = useState('');
   const [isWhatsapp, setIsWhatsapp] = useState(true);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const { login } = useContext(AuthContext);
@@ -221,7 +222,15 @@ export default function Auth() {
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                     <Lock size={18} />
                   </div>
-                  <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} required className="pl-10 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base" placeholder="••••••••" />
+                  <input type={showPassword ? 'text' : 'password'} value={senha} onChange={(e) => setSenha(e.target.value)} required className="pl-10 pr-12 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-base" placeholder="••••••••" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
 

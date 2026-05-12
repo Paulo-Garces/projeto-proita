@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useContext } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import AdCard from '../components/AdCard';
-import { Search as SearchIcon, Filter, X, User, MapPin, Sparkles } from 'lucide-react';
+import { Search as SearchIcon, Filter, X, MapPin, Sparkles, ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 
@@ -14,10 +14,30 @@ export default function Search() {
 
   const [searchTerm, setSearchTerm] = useState(queryParam);
   const [selectedCategory, setSelectedCategory] = useState(categoryParam);
+  const [selectedBairro, setSelectedBairro] = useState('');
   const [profissionais, setProfissionais] = useState([]);
   const [results, setResults] = useState([]);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Categorias Gerais fixas (sincronizadas com o seed do backend)
+  const categoriasGerais = [
+    "Alimentação e Gastronomia",
+    "Beleza e Estética",
+    "Construção e Reformas",
+    "Educação e Aulas",
+    "Eventos e Produção",
+    "Reparos e Assistência Técnica",
+    "Serviços Domésticos e Cuidados",
+    "Tecnologia e Design",
+    "Transporte e Logística",
+    "Saúde e Bem-estar",
+    "Serviços Rurais e Paisagismo",
+    "Moda e Costura",
+    "Turismo e Lazer",
+    "Serviços Administrativos e Consultoria",
+    "Outros Serviços"
+  ];
 
   // Autocomplete state
   const [suggestions, setSuggestions] = useState([]);
@@ -60,10 +80,11 @@ export default function Search() {
               id: profile.id,
               name: `${profile.user.nome} ${profile.user.sobrenome}`,
               category: profile.atividadePrincipal,
+              categoriaGeral: profile.categoriaGeral || '',
               rating: 5.0,
               reviewsCount: 0,
               location: profile.user.bairro || 'Itapipoca',
-              shortDescription: profile.shortDescription || (profile.descricaoTrabalho?.substring(0, 90) + '...'),
+              shortDescription: profile.descricaoCurta || profile.shortDescription || (profile.descricaoTrabalho?.substring(0, 90) + '...'),
               fullDescription: profile.descricaoTrabalho,
               phone: profile.user.telefone,
               servicePhone: profile.servicePhone || null,
@@ -111,7 +132,7 @@ export default function Search() {
     setSelectedCategory(categoryParam);
   }, [queryParam, categoryParam, profissionais]);
 
-  // ── Debounced autocomplete ────────────────────────────────────
+  // ── Debounced autocomplete (apenas atividades principais) ──────
   useEffect(() => {
     if (searchTerm.length < 3) {
       setSuggestions([]);
@@ -119,39 +140,25 @@ export default function Search() {
       return;
     }
     const timer = setTimeout(async () => {
-      const q = searchTerm.toLowerCase();
-      const seen = new Set();
-      const list = [];
-
-      profissionais.forEach(p => {
-        if (p.name?.toLowerCase().includes(q) && !seen.has(p.name)) {
-          seen.add(p.name);
-          list.push({ type: 'name', label: p.name });
-        }
-      });
-      
       try {
-        const res = await fetch(`${API_URL}/api/subcategories/search?q=${encodeURIComponent(searchTerm)}`);
+        const res = await fetch(`${API_URL}/api/search/suggestions?q=${encodeURIComponent(searchTerm)}`);
         const data = await res.json();
-        if (data.success) {
-          data.data.forEach(sub => {
-            if (!seen.has(sub.name)) {
-              seen.add(sub.name);
-              list.push({ type: 'category', label: sub.name });
-            }
-          });
+        if (data.success && data.data.length > 0) {
+          setSuggestions(data.data);
+          setShowSuggestions(true);
+        } else {
+          setSuggestions([]);
+          setShowSuggestions(false);
         }
       } catch (err) {
-        console.error(err);
+        console.error('Erro no autocomplete:', err);
+        setSuggestions([]);
+        setShowSuggestions(false);
       }
-
-      const top6 = list.slice(0, 6);
-      setSuggestions(top6);
-      setShowSuggestions(top6.length > 0);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, profissionais]);
+  }, [searchTerm]);
 
   // ── Close suggestions on outside click ───────────────────────
   useEffect(() => {
@@ -164,8 +171,9 @@ export default function Search() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // ── Unique categories (dynamic) ───────────────────────────────
+  // ── Unique subcategories and bairros (dynamic) ────────────────
   const uniqueCategories = [...new Set(profissionais.map(p => p.category).filter(Boolean))].sort();
+  const uniqueBairros = [...new Set(profissionais.map(p => p.location).filter(Boolean))].sort();
 
   // ── Handlers ─────────────────────────────────────────────────
   const handleSearch = (e) => {
@@ -175,7 +183,6 @@ export default function Search() {
     if (searchTerm) params.q = searchTerm;
     if (selectedCategory) params.category = selectedCategory;
     setSearchParams(params);
-    setIsFilterOpen(false);
   };
 
   const handleKeyDown = (e) => {
@@ -200,6 +207,7 @@ export default function Search() {
     setSearchParams({});
     setSearchTerm('');
     setSelectedCategory('');
+    setSelectedBairro('');
   };
 
   const handleCtaClick = (e) => {
@@ -219,21 +227,69 @@ export default function Search() {
     return scoreB - scoreA;
   }).slice(0, 4);
 
+  // ── Filtered results (with bairro filter applied locally) ─────
+  const displayResults = selectedBairro
+    ? results.filter(p => p.location?.toLowerCase() === selectedBairro.toLowerCase())
+    : results;
+
   return (
     <div className="bg-slate-50 min-h-screen pt-24 pb-0">
 
       {/* ── SEÇÃO 1: RESULTADOS ─────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
 
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-slate-900">
-            {isLoading ? 'Buscando...' : `${results.length} ${results.length === 1 ? 'Profissional encontrado' : 'Profissionais encontrados'}`}
-          </h1>
+        {/* ── BARRA DE BUSCA NO TOPO (rola com a página) ─────── */}
+        <div className="mb-6">
+          <form onSubmit={handleSearch} className="relative" ref={suggestionsRef}>
+            <div className="flex items-center bg-white rounded-2xl shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all overflow-hidden">
+              <div className="pl-5 text-slate-400">
+                <SearchIcon size={20} />
+              </div>
+              <input
+                ref={inputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                placeholder="Buscar por atividade, ex: Encanador, Eletricista..."
+                className="flex-1 py-3.5 px-4 text-slate-800 text-base focus:outline-none bg-transparent placeholder:text-slate-400"
+                autoComplete="off"
+              />
+              <button type="submit" className="bg-primary hover:bg-primary-hover text-white px-6 py-3.5 font-medium transition-colors text-sm shrink-0">
+                Buscar
+              </button>
+            </div>
+
+            {/* Dropdown de sugestões */}
+            {showSuggestions && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                {suggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onMouseDown={() => selectSuggestion(s.label)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-primary/5 hover:text-primary transition-colors text-left"
+                  >
+                    <MapPin size={13} className="text-slate-400 shrink-0" />
+                    <span className="truncate">{s.label}</span>
+                    <span className="ml-auto text-[10px] text-slate-400 uppercase tracking-wide shrink-0">
+                      Categoria
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </form>
+        </div>
+
+        {/* Botão de toggle de filtros (mobile) */}
+        <div className="flex justify-end items-center mb-4 md:hidden">
           <button
-            className="md:hidden flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm text-slate-700"
+            className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm text-slate-700"
             onClick={() => setIsFilterOpen(!isFilterOpen)}
           >
-            <Filter size={18} /> Filtrar
+            <Filter size={18} /> {isFilterOpen ? 'Ocultar Filtros' : 'Filtrar'}
           </button>
         </div>
 
@@ -263,74 +319,87 @@ export default function Search() {
           {/* Sidebar / Filters */}
           <aside className={`md:w-72 shrink-0 ${isFilterOpen ? 'block' : 'hidden'} md:block`}>
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-24">
-              <div className="flex justify-between items-center mb-4 md:hidden">
+              <div className="flex justify-between items-center mb-5 md:hidden">
                 <h2 className="font-bold text-lg">Filtros</h2>
                 <button onClick={() => setIsFilterOpen(false)}><X size={20} className="text-slate-500" /></button>
               </div>
 
               <form onSubmit={handleSearch}>
-                {/* Input com autocomplete */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Buscar</label>
-                  <div className="relative" ref={suggestionsRef}>
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                      placeholder="Nome ou palavra-chave..."
-                      className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-sm outline-none transition-all"
-                      autoComplete="off"
-                    />
-                    <SearchIcon size={16} className="absolute left-3 top-3 text-slate-400" />
 
-                    {/* Dropdown de sugestões */}
-                    {showSuggestions && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
-                        {suggestions.map((s, i) => (
-                          <button
-                            key={i}
-                            type="button"
-                            onMouseDown={() => selectSuggestion(s.label)}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-primary/5 hover:text-primary transition-colors text-left"
-                          >
-                            {s.type === 'name' ? (
-                              <User size={13} className="text-slate-400 shrink-0" />
-                            ) : (
-                              <MapPin size={13} className="text-slate-400 shrink-0" />
-                            )}
-                            <span className="truncate">{s.label}</span>
-                            <span className="ml-auto text-[10px] text-slate-400 uppercase tracking-wide shrink-0">
-                              {s.type === 'name' ? 'Pessoa' : 'Categoria'}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                {/* ── Bloco 1: Categoria Principal (categoriaGeral) ── */}
+                <div className="mb-5">
+                  <label className="block text-sm font-semibold text-slate-800 mb-2">Categoria Principal</label>
+                  <div className="relative">
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedCategory(val);
+                        if (val) {
+                          setSearchParams(prev => {
+                            const params = Object.fromEntries(prev);
+                            params.category = val;
+                            return params;
+                          });
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-white outline-none appearance-none cursor-pointer"
+                    >
+                      <option value="">Todas as categorias</option>
+                      {categoriasGerais.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
                   </div>
                 </div>
 
-                {/* Categoria (dinâmica) */}
+                {/* ── Bloco 2: Subcategoria (atividadePrincipal) ──── */}
+                <div className="mb-5">
+                  <label className="block text-sm font-semibold text-slate-800 mb-2">Subcategoria / Atividade</label>
+                  <div className="relative">
+                    <select
+                      value={selectedCategory && uniqueCategories.includes(selectedCategory) ? selectedCategory : ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val) {
+                          setSelectedCategory(val);
+                          setSearchParams({ category: val });
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-white outline-none appearance-none cursor-pointer"
+                    >
+                      <option value="">Todas as atividades</option>
+                      {uniqueCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* ── Bloco 3: Localidade / Bairro ────────────────── */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Categoria</label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-white outline-none"
-                  >
-                    <option value="">Todas as categorias</option>
-                    {uniqueCategories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-semibold text-slate-800 mb-2">Localidade / Bairro</label>
+                  <div className="relative">
+                    <select
+                      value={selectedBairro}
+                      onChange={(e) => setSelectedBairro(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-white outline-none appearance-none cursor-pointer"
+                    >
+                      <option value="">Todos os bairros</option>
+                      {uniqueBairros.map(b => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
+                  </div>
                 </div>
 
                 <button type="submit" className="w-full bg-primary hover:bg-primary-hover text-white py-2.5 rounded-xl font-medium transition-colors mb-3">
                   Aplicar Filtros
                 </button>
-                {(queryParam || categoryParam) && (
+                {(queryParam || categoryParam || selectedBairro) && (
                   <button type="button" onClick={clearFilters} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl font-medium transition-colors text-sm">
                     Limpar Filtros
                   </button>
@@ -345,9 +414,9 @@ export default function Search() {
               <div className="flex justify-center py-20">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
-            ) : results.length > 0 ? (
+            ) : displayResults.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                {results.map(pro => (
+                {displayResults.map(pro => (
                   <AdCard key={pro.id} professional={pro} />
                 ))}
               </div>

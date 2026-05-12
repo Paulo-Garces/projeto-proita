@@ -77,6 +77,7 @@ module.exports = (prisma) => {
     const {
       nome, sobrenome, telefone, bairro,
       atividadePrincipal, atividadesSecundarias, descricaoTrabalho,
+      descricaoCurta, bioSugerida,
       instagram, whatsapp, endereco, portfolioUrls,
       redesSociais, avatarUrl, avatarFileId,
       servicePhone, serviceBairro, shortDescription, socialLinks,
@@ -105,7 +106,7 @@ module.exports = (prisma) => {
           redesSociais: redesSociais || null,
           servicePhone: servicePhone || null,
           serviceBairro: serviceBairro || null,
-          shortDescription: shortDescription || null,
+          shortDescription: descricaoCurta || shortDescription || null,
           socialLinks: socialLinks || null,
         },
       });
@@ -141,6 +142,7 @@ module.exports = (prisma) => {
         atividadePrincipal,
         atividadesSecundarias,
         descricaoTrabalho,
+        descricaoCurta,
         shortDescription,
         instagram,
         whatsapp,
@@ -170,7 +172,7 @@ module.exports = (prisma) => {
           ...(atividadePrincipal !== undefined && { atividadePrincipal }),
           ...(atividadesSecundarias !== undefined && { atividadesSecundarias }),
           ...(descricaoTrabalho !== undefined && { descricaoTrabalho }),
-          ...(shortDescription !== undefined && { shortDescription }),
+          ...((descricaoCurta !== undefined || shortDescription !== undefined) && { shortDescription: descricaoCurta || shortDescription }),
           ...(instagram !== undefined && { instagram }),
           ...(whatsapp !== undefined && { whatsapp }),
           ...(servicePhone !== undefined && { servicePhone }),
