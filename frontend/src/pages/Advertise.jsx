@@ -2,11 +2,9 @@ import { useState, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
-import { Briefcase, MapPin, AlignLeft, CheckCircle, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, ChevronDown, X } from 'lucide-react';
+import { Briefcase, MapPin, AlignLeft, CheckCircle, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, X } from 'lucide-react';
 
-const MOCK_BAIRROS = [
-  'Centro', 'Fazendinha', 'Maranhão', 'Boa Vista', 'Cacimbas', 'Cruzeiro', 'Estação', 'Moura Brasil', 'São Francisco', 'Violete'
-];
+
 
 export default function Advertise() {
   const { user, token } = useContext(AuthContext);
@@ -357,24 +355,16 @@ export default function Advertise() {
                   {showExactAddress && (
                     <div className="space-y-5 animate-in slide-in-from-top-2 duration-300">
 
-                      {/* Bairro (select dropdown) */}
+                      {/* Bairro (texto livre — preenchido automaticamente pelo CEP) */}
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Bairro</label>
-                        <div className="relative">
-                          <select
-                            value={bairro}
-                            onChange={(e) => setBairro(e.target.value)}
-                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800 appearance-none cursor-pointer"
-                          >
-                            <option value="">Selecione seu bairro...</option>
-                            {MOCK_BAIRROS.map((b) => (
-                              <option key={b} value={b}>{b}</option>
-                            ))}
-                          </select>
-                          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
-                            <ChevronDown size={18} />
-                          </div>
-                        </div>
+                        <input
+                          type="text"
+                          value={bairro}
+                          onChange={(e) => setBairro(e.target.value)}
+                          placeholder="Digite seu bairro ou preencha o CEP"
+                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary"
+                        />
                       </div>
 
                       {/* CEP + Buscar */}
