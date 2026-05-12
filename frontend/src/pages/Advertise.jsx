@@ -26,6 +26,7 @@ export default function Advertise() {
 
   // Step 2 states
   const [atividadePrincipal, setAtividadePrincipal] = useState('');
+  const [categoriaGeral, setCategoriaGeral] = useState('');
   const [descricaoTrabalho, setDescricaoTrabalho] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [categoryId, setCategoryId] = useState('');
@@ -86,6 +87,7 @@ export default function Advertise() {
       if (response.ok && data.success && data.data?.subcategory?.name) {
         setAtividadePrincipal(data.data.subcategory.name);
         setCategoryId(data.data.category.id);
+        setCategoriaGeral(data.data.category.name || data.data.categoriaGeral || '');
         setDescricaoCurta(data.data.descricaoCurta || '');
         setBioSugerida(data.data.biografiaCompleta || data.data.bioSugerida || '');
         setAiFailed(false);
@@ -268,6 +270,7 @@ export default function Advertise() {
           avatarUrl: uploadedAvatarUrl || null,
           avatarFileId: uploadedAvatarFileId || null,
           categoryId: categoryId || null,
+          categoriaGeral: categoriaGeral || null,
           endereco: showExactAddress ? [rua, numero, complemento].filter(Boolean).join(', ') : null,
           serviceBairro: bairro || null,
           exibirEnderecoCompleto: showExactAddress ? exibirEnderecoCompleto : false,
@@ -569,6 +572,18 @@ export default function Advertise() {
                 </div>
 
                 <div className="pt-4 border-t border-slate-100">
+
+                  {/* Badge da Categoria Geral (somente leitura) */}
+                  {categoriaGeral && (
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Sua Categoria Principal</label>
+                      <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary/10 border border-primary/20 rounded-xl">
+                        <Briefcase size={16} className="text-primary" />
+                        <span className="text-sm font-semibold text-primary">{categoriaGeral}</span>
+                      </div>
+                    </div>
+                  )}
+
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     Sua Atividade Principal {aiFailed ? '(Preencha manualmente)' : '(Definida pela IA)'}
                   </label>

@@ -13,7 +13,8 @@ export default function Search() {
   const categoryParam = searchParams.get('category') || '';
 
   const [searchTerm, setSearchTerm] = useState(queryParam);
-  const [selectedCategory, setSelectedCategory] = useState(categoryParam);
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('cat') || '');
+  const [selectedSubcategory, setSelectedSubcategory] = useState(categoryParam);
   const [selectedBairro, setSelectedBairro] = useState('');
   const [profissionais, setProfissionais] = useState([]);
   const [results, setResults] = useState([]);
@@ -113,24 +114,37 @@ export default function Search() {
   // ── Filter results when params change ────────────────────────
   useEffect(() => {
     let filtered = profissionais;
+
+    // Filtro de texto livre (busca)
     if (queryParam) {
       const q = queryParam.toLowerCase();
       filtered = filtered.filter(p => {
         const name = (p.name || '').toLowerCase();
         const cat  = (p.category || '').toLowerCase();
+        const catGeral = (p.categoriaGeral || '').toLowerCase();
         const desc = (p.fullDescription || '').toLowerCase();
         const short = (p.shortDescription || '').toLowerCase();
-        return name.includes(q) || cat.includes(q) || desc.includes(q) || short.includes(q);
+        return name.includes(q) || cat.includes(q) || catGeral.includes(q) || desc.includes(q) || short.includes(q);
       });
     }
+
+    // Filtro de Categoria Geral (categoriaGeral)
+    const catParam = searchParams.get('cat') || '';
+    if (catParam) {
+      filtered = filtered.filter(p => p.categoriaGeral?.toLowerCase() === catParam.toLowerCase());
+    }
+
+    // Filtro de Subcategoria / Atividade Principal (atividadePrincipal)
     if (categoryParam) {
       const c = categoryParam.toLowerCase();
       filtered = filtered.filter(p => p.category?.toLowerCase() === c);
     }
+
     setResults(filtered);
     setSearchTerm(queryParam);
-    setSelectedCategory(categoryParam);
-  }, [queryParam, categoryParam, profissionais]);
+    setSelectedCategory(catParam);
+    setSelectedSubcategory(categoryParam);
+  }, [queryParam, categoryParam, searchParams, profissionais]);
 
   // ── Debounced autocomplete (apenas atividades principais) ──────
   useEffect(() => {
@@ -172,7 +186,11 @@ export default function Search() {
   }, []);
 
   // ── Unique subcategories and bairros (dynamic) ────────────────
-  const uniqueCategories = [...new Set(profissionais.map(p => p.category).filter(Boolean))].sort();
+  // Se uma categoriaGeral está selecionada, filtra as atividades correspondentes
+  const filteredProfissionais = selectedCategory
+    ? profissionais.filter(p => p.categoriaGeral?.toLowerCase() === selectedCategory.toLowerCase())
+    : profissionais;
+  const uniqueSubcategories = [...new Set(filteredProfissionais.map(p => p.category).filter(Boolean))].sort();
   const uniqueBairros = [...new Set(profissionais.map(p => p.location).filter(Boolean))].sort();
 
   // ── Handlers ─────────────────────────────────────────────────
@@ -181,7 +199,8 @@ export default function Search() {
     setShowSuggestions(false);
     const params = {};
     if (searchTerm) params.q = searchTerm;
-    if (selectedCategory) params.category = selectedCategory;
+    if (selectedCategory) params.cat = selectedCategory;
+    if (selectedSubcategory) params.category = selectedSubcategory;
     setSearchParams(params);
   };
 
@@ -199,7 +218,8 @@ export default function Search() {
     setSearchTerm(label);
     setShowSuggestions(false);
     const params = { q: label };
-    if (selectedCategory) params.category = selectedCategory;
+    if (selectedCategory) params.cat = selectedCategory;
+    if (selectedSubcategory) params.category = selectedSubcategory;
     setSearchParams(params);
   };
 
@@ -207,6 +227,7 @@ export default function Search() {
     setSearchParams({});
     setSearchTerm('');
     setSelectedCategory('');
+    setSelectedSubcategory('');
     setSelectedBairro('');
   };
 
@@ -303,7 +324,7 @@ export default function Search() {
               <button 
                 key={idx}
                 onClick={() => {
-                  setSelectedCategory(cat);
+                  setSelectedSubcategory(cat);
                   setSearchParams({ category: cat });
                 }}
                 className="bg-white border border-slate-200 text-slate-700 hover:border-primary hover:text-primary px-4 py-1.5 rounded-full text-sm font-medium transition-colors"
@@ -335,13 +356,11 @@ export default function Search() {
                       onChange={(e) => {
                         const val = e.target.value;
                         setSelectedCategory(val);
-                        if (val) {
-                          setSearchParams(prev => {
-                            const params = Object.fromEntries(prev);
-                            params.category = val;
-                            return params;
-                          });
-                        }
+                        setSelectedSubcategory(''); // Limpa subcategoria ao mudar categoria pai
+                        const params = {};
+                        if (searchTerm) params.q = searchTerm;
+                        if (val) params.cat = val;
+                        setSearchParams(params);
                       }}
                       className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-white outline-none appearance-none cursor-pointer"
                     >
@@ -359,18 +378,20 @@ export default function Search() {
                   <label className="block text-sm font-semibold text-slate-800 mb-2">Subcategoria / Atividade</label>
                   <div className="relative">
                     <select
-                      value={selectedCategory && uniqueCategories.includes(selectedCategory) ? selectedCategory : ''}
+                      value={selectedSubcategory}
                       onChange={(e) => {
                         const val = e.target.value;
-                        if (val) {
-                          setSelectedCategory(val);
-                          setSearchParams({ category: val });
-                        }
+                        setSelectedSubcategory(val);
+                        const params = {};
+                        if (searchTerm) params.q = searchTerm;
+                        if (selectedCategory) params.cat = selectedCategory;
+                        if (val) params.category = val;
+                        setSearchParams(params);
                       }}
                       className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-sm bg-white outline-none appearance-none cursor-pointer"
                     >
                       <option value="">Todas as atividades</option>
-                      {uniqueCategories.map(cat => (
+                      {uniqueSubcategories.map(cat => (
                         <option key={cat} value={cat}>{cat}</option>
                       ))}
                     </select>
@@ -399,7 +420,7 @@ export default function Search() {
                 <button type="submit" className="w-full bg-primary hover:bg-primary-hover text-white py-2.5 rounded-xl font-medium transition-colors mb-3">
                   Aplicar Filtros
                 </button>
-                {(queryParam || categoryParam || selectedBairro) && (
+                {(queryParam || selectedCategory || selectedSubcategory || selectedBairro) && (
                   <button type="button" onClick={clearFilters} className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-xl font-medium transition-colors text-sm">
                     Limpar Filtros
                   </button>

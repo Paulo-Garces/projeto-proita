@@ -76,7 +76,7 @@ module.exports = (prisma) => {
   router.post('/', authMiddleware, async (req, res) => {
     const {
       nome, sobrenome, telefone, bairro,
-      atividadePrincipal, atividadesSecundarias, descricaoTrabalho,
+      atividadePrincipal, categoriaGeral, atividadesSecundarias, descricaoTrabalho,
       descricaoCurta, bioSugerida, shortDescription,
       instagram, whatsapp, endereco, portfolioUrls,
       redesSociais, socialLinks, avatarUrl, avatarFileId,
@@ -95,6 +95,7 @@ module.exports = (prisma) => {
         data: {
           userId,
           atividadePrincipal,
+          categoriaGeral: categoriaGeral || null,
           atividadesSecundarias: atividadesSecundarias || [],
           descricaoTrabalho,
           instagram: instagram || null,
@@ -137,7 +138,7 @@ module.exports = (prisma) => {
       }
 
       const {
-        atividadePrincipal, atividadesSecundarias, descricaoTrabalho,
+        atividadePrincipal, categoriaGeral, atividadesSecundarias, descricaoTrabalho,
         descricaoCurta, shortDescription, instagram, whatsapp,
         servicePhone, serviceBairro, endereco, portfolioUrls,
         avatarUrl, avatarFileId, socialLinks, exibirEnderecoCompleto,
@@ -156,6 +157,7 @@ module.exports = (prisma) => {
         where: { id },
         data: {
           ...(atividadePrincipal !== undefined && { atividadePrincipal }),
+          ...(categoriaGeral !== undefined && { categoriaGeral }),
           ...(atividadesSecundarias !== undefined && { atividadesSecundarias }),
           ...(descricaoTrabalho !== undefined && { descricaoTrabalho }),
           ...(instagram !== undefined && { instagram }),
