@@ -77,10 +77,10 @@ module.exports = (prisma) => {
     const {
       nome, sobrenome, telefone, bairro,
       atividadePrincipal, atividadesSecundarias, descricaoTrabalho,
-      descricaoCurta, bioSugerida,
+      descricaoCurta, bioSugerida, shortDescription,
       instagram, whatsapp, endereco, portfolioUrls,
-      redesSociais, avatarUrl, avatarFileId,
-      servicePhone, serviceBairro, shortDescription, socialLinks,
+      redesSociais, socialLinks, avatarUrl, avatarFileId,
+      servicePhone, serviceBairro
     } = req.body;
 
     const userId = req.user.id;
@@ -103,11 +103,11 @@ module.exports = (prisma) => {
           portfolioUrls: portfolioUrls || [],
           avatarUrl: avatarUrl || null,
           avatarFileId: avatarFileId || null,
-          redesSociais: redesSociais || null,
-          servicePhone: servicePhone || null,
-          serviceBairro: serviceBairro || null,
-          shortDescription: descricaoCurta || shortDescription || null,
-          socialLinks: socialLinks || null,
+          socialLinks: socialLinks || redesSociais || null,
+          // Mapeamento corrigido para o novo banco de dados
+          descricaoCurta: descricaoCurta || shortDescription || null,
+          telefoneContato: servicePhone || null,
+          bairroAtuacao: serviceBairro || null,
         },
       });
 
@@ -120,14 +120,12 @@ module.exports = (prisma) => {
 
   // ─────────────────────────────────────────────────────────────
   // PATCH /api/ads/:id — Editar anúncio específico (Rota Privada)
-  // Só o dono do anúncio pode editar
   // ─────────────────────────────────────────────────────────────
   router.patch('/:id', authMiddleware, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
     try {
-      // Verifica se o anúncio existe e pertence ao usuário logado
       const existing = await prisma.profile.findUnique({ where: { id } });
 
       if (!existing) {
@@ -139,23 +137,11 @@ module.exports = (prisma) => {
       }
 
       const {
-        atividadePrincipal,
-        atividadesSecundarias,
-        descricaoTrabalho,
-        descricaoCurta,
-        shortDescription,
-        instagram,
-        whatsapp,
-        servicePhone,
-        serviceBairro,
-        endereco,
-        portfolioUrls,
-        avatarUrl,
-        avatarFileId,
-        socialLinks,
+        atividadePrincipal, atividadesSecundarias, descricaoTrabalho,
+        descricaoCurta, shortDescription, instagram, whatsapp,
+        servicePhone, serviceBairro, endereco, portfolioUrls,
+        avatarUrl, avatarFileId, socialLinks,
       } = req.body;
-
-      console.log(`[PATCH /api/ads/${id}] Payload:`, JSON.stringify({ shortDescription, servicePhone, serviceBairro, socialLinks }));
 
       if (socialLinks !== undefined) {
         if (!Array.isArray(socialLinks)) {
@@ -172,20 +158,20 @@ module.exports = (prisma) => {
           ...(atividadePrincipal !== undefined && { atividadePrincipal }),
           ...(atividadesSecundarias !== undefined && { atividadesSecundarias }),
           ...(descricaoTrabalho !== undefined && { descricaoTrabalho }),
-          ...((descricaoCurta !== undefined || shortDescription !== undefined) && { shortDescription: descricaoCurta || shortDescription }),
           ...(instagram !== undefined && { instagram }),
           ...(whatsapp !== undefined && { whatsapp }),
-          ...(servicePhone !== undefined && { servicePhone }),
-          ...(serviceBairro !== undefined && { serviceBairro }),
           ...(endereco !== undefined && { endereco }),
           ...(portfolioUrls !== undefined && { portfolioUrls }),
           ...(avatarUrl !== undefined && { avatarUrl }),
           ...(avatarFileId !== undefined && { avatarFileId }),
           ...(socialLinks !== undefined && { socialLinks }),
+          // Mapeamento corrigido para o novo banco de dados
+          ...((descricaoCurta !== undefined || shortDescription !== undefined) && { descricaoCurta: descricaoCurta || shortDescription }),
+          ...(servicePhone !== undefined && { telefoneContato: servicePhone }),
+          ...(serviceBairro !== undefined && { bairroAtuacao: serviceBairro }),
         },
       });
 
-      console.log(`[PATCH /api/ads/${id}] socialLinks salvo:`, JSON.stringify(updated.socialLinks));
       res.status(200).json({ success: true, profile: updated });
     } catch (error) {
       console.error('[PATCH /api/ads/:id] Erro:', error.message);
