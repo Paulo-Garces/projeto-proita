@@ -25,10 +25,14 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
+    // Permite requisições sem origin (ex: Postman, curl)
     if (!origin) return callback(null, true);
+
+    // Permite qualquer localhost (ex: 5173, 5174, 3000)
     if (origin.startsWith('http://localhost:')) {
       return callback(null, true);
     }
+
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
@@ -49,7 +53,7 @@ const pool = new Pool({
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-// Teste de conexão
+// Teste de conexão (opcional, só para logging)
 if (process.env.DATABASE_URL) {
   pool.connect((err, client, release) => {
     if (err) {
@@ -59,16 +63,19 @@ if (process.env.DATABASE_URL) {
       release();
     }
   });
+} else {
+  console.log('Aviso: DATABASE_URL não configurada no .env. O banco não está conectado.');
 }
 
-// --- ROTAS BASE ---
+// Rotas Base
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'API do proITA rodando com sucesso!' });
 });
 
+// Rota de teste do banco de dados usando Prisma
 app.get('/api/test-db', async (req, res) => {
   try {
-    await prisma.user.count();
+    const userCount = await prisma.user.count();
     res.status(200).send('Conexão com Banco OK');
   } catch (error) {
     console.error('Erro na rota /api/test-db:', error);
@@ -76,14 +83,12 @@ app.get('/api/test-db', async (req, res) => {
   }
 });
 
-// --- AUTENTICAÇÃO E REGISTRO ---
-
-// Rota de Registro Tradicional
+// Rota de Registro
 app.post('/api/register', async (req, res) => {
   try {
     const { nome, sobrenome, telefone, isWhatsapp, senha } = req.body;
 
-    // Trava: Exige telefone e senha no cadastro manual
+    // TRAVA DE SEGURANÇA: Exige telefone e senha
     if (!telefone || !senha) {
       return res.status(400).json({ success: false, message: 'Telefone e senha são obrigatórios.' });
     }
@@ -100,12 +105,12 @@ app.post('/api/register', async (req, res) => {
     });
 
     if (existingUser) {
-      // Se existe mas não tem senha, é uma conta Google que precisa ser vinculada
+      // TRAVA DE CONFLITO GOOGLE: Se não tem senha, entrou pelo Google
       if (!existingUser.senha) {
         return res.status(409).json({
           success: false,
           conflitoGoogle: true,
-          message: 'Este telefone está vinculado a uma conta Google. Entre com Google para continuar.'
+          message: 'Este telefone já está vinculado a uma conta Google. Faça login pelo Google e adicione a senha no seu perfil.'
         });
       }
       return res.status(400).json({ success: false, message: 'Telefone já cadastrado.' });
@@ -113,11 +118,11 @@ app.post('/api/register', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(senha, 10);
 
-    await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         nome,
         sobrenome,
-        telefone: telefoneLimpo,
+        telefone,
         isWhatsapp: isWhatsapp === true || isWhatsapp === 'true',
         senha: hashedPassword
       }
@@ -130,7 +135,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Rota de Login Tradicional
+// Rota de Login
 app.post('/api/login', async (req, res) => {
   try {
     const { telefone, senha } = req.body;
@@ -139,8 +144,10 @@ app.post('/api/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Telefone e senha são obrigatórios.' });
     }
 
+    // Limpa a formatação: remove parênteses, espaços e traços, deixando só números
     const telefoneLimpo = telefone.replace(/\D/g, '');
 
+    // Usa findFirst para procurar o usuário aceitando tanto o formato com símbolos quanto o limpo
     const user = await prisma.user.findFirst({
       where: {
         OR: [
@@ -154,21 +161,46 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Credenciais inválidas.' });
     }
 
-    // Trava: Impede login manual em conta que só tem Google
+    // TRAVA DO GOOGLE: Tenta logar via senha numa conta só de Google
     if (!user.senha) {
       return res.status(403).json({
         success: false,
-        message: 'Conta criada via Google. Clique em "Entrar com o Google".'
+        message: 'Esta conta foi criada com o Google. Por favor, clique em "Entrar com o Google".'
       });
     }
 
-    let isMatch = await bcrypt.compare(senha, user.senha);
+    let isMatch = false;
 
-    // Fallback Texto Plano (Migração de dados antigos)
-    if (!isMatch && senha === user.senha) {
-      isMatch = true;
-      const newHash = await bcrypt.hash(senha, 10);
-      await prisma.user.update({ where: { id: user.id }, data: { senha: newHash } });
+    // Tenta comparar com bcrypt normalmente
+    try {
+      isMatch = await bcrypt.compare(senha, user.senha);
+    } catch (bcryptErr) {
+      console.log(`[Login] Erro ao comparar com bcrypt para utilizador ${user.id}`);
+    }
+
+    // Fallback: se bcrypt falhou (isMatch = false), verifica se a senha foi armazenada em texto plano
+    if (!isMatch) {
+      console.log(`[Login] Tentando fallback de texto plano para utilizador ${user.id}`);
+      // Comparação estrita: senha enviada vs senha armazenada
+      if (senha === user.senha) {
+        // Senha em texto plano encontrada — permitir login e atualizar para hash bcrypt
+        console.log(`[Login] Match em texto plano confirmado para utilizador ${user.id}. Migrando para bcrypt...`);
+        isMatch = true;
+
+        try {
+          const newHash = await bcrypt.hash(senha, 10);
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { senha: newHash }
+          });
+          console.log(`[Login] Senha do utilizador ${user.id} migrada com sucesso para bcrypt.`);
+        } catch (hashErr) {
+          console.error('[Login] Erro ao migrar senha para bcrypt:', hashErr);
+          // Mesmo com erro no update, permite o login
+        }
+      } else {
+        console.log(`[Login] Fallback de texto plano também falhou para utilizador ${user.id}`);
+      }
     }
 
     if (!isMatch) {
@@ -176,8 +208,13 @@ app.post('/api/login', async (req, res) => {
     }
 
     const secret = process.env.JWT_SECRET || 'chave_secreta_proita_123';
-    const token = jwt.sign({ id: user.id, role: user.role }, secret, { expiresIn: '7d' });
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      secret,
+      { expiresIn: '7d' }
+    );
 
+    // Busca profileImageUrl diretamente do usuário (salvo pelo upload do Dashboard)
     res.status(200).json({
       success: true,
       token,
@@ -197,7 +234,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Nova Rota: Login/Cadastro Google com Mesclagem
+// Nova Rota: Login, Cadastro e Mesclagem via Google
 app.post('/api/auth/google', async (req, res) => {
   try {
     const { email, googleId, nome, sobrenome, profileImageUrl, vincularTelefone } = req.body;
@@ -208,33 +245,36 @@ app.post('/api/auth/google', async (req, res) => {
 
     let user;
 
-    // 1. Busca por GoogleId
+    // 1. Tenta achar o usuário pelo googleId
     user = await prisma.user.findUnique({ where: { googleId } });
 
-    // 2. Busca por Email para vincular conta existente
+    // 2. Se não achou pelo ID, tenta achar pelo Email para vincular
     if (!user) {
       user = await prisma.user.findUnique({ where: { email } });
       if (user) {
         user = await prisma.user.update({
           where: { id: user.id },
-          data: { googleId, profileImageUrl: user.profileImageUrl || profileImageUrl }
+          data: { googleId }
         });
       }
     }
 
-    // 3. Mesclagem via Telefone (se solicitado pelo frontend após conflito)
+    // 3. Resolução de Conflito Manual (Vincular telefone)
     if (!user && vincularTelefone) {
-      const telLimpo = vincularTelefone.replace(/\D/g, '');
-      user = await prisma.user.findFirst({ where: { OR: [{ telefone: vincularTelefone }, { telefone: telLimpo }] } });
+      const telefoneLimpo = vincularTelefone.replace(/\D/g, '');
+      user = await prisma.user.findFirst({
+        where: { OR: [{ telefone: vincularTelefone }, { telefone: telefoneLimpo }] }
+      });
+
       if (user) {
         user = await prisma.user.update({
           where: { id: user.id },
-          data: { googleId, email, profileImageUrl: user.profileImageUrl || profileImageUrl }
+          data: { googleId, email, profileImageUrl }
         });
       }
     }
 
-    // 4. Criação de nova conta se nada foi encontrado
+    // 4. Se não achou nenhuma conta vinculável, cria Nova Conta
     if (!user) {
       user = await prisma.user.create({
         data: {
@@ -259,56 +299,102 @@ app.post('/api/auth/google', async (req, res) => {
         sobrenome: user.sobrenome,
         telefone: user.telefone,
         email: user.email,
+        bairro: user.bairro,
         role: user.role,
         profileImageUrl: user.profileImageUrl || null,
       }
     });
   } catch (error) {
-    console.error('Erro auth google:', error);
-    res.status(500).json({ success: false, message: 'Erro no login Google.' });
+    console.error('Erro na autenticação via Google:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao processar login com Google.' });
   }
 });
 
-// --- ROTAS DE DOMÍNIO ---
+// Rotas Administrativas
 const adminRoutes = require('./routes/adminRoutes')(prisma);
 app.use('/api/admin', authMiddleware, adminRoutes);
 
+// Rotas de Anúncios (Profile)
 const adsRoutes = require('./routes/adsRoutes')(prisma);
 app.use('/api/ads', adsRoutes);
 
+// Rota de Upload de Imagens (ImageKit)
 const uploadRoutes = require('./routes/uploadRoutes')(prisma);
 app.use('/api/upload', uploadRoutes);
 
-// --- INTELIGÊNCIA ARTIFICIAL (GEMINI) ---
+// Configuração do Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+// Rota de Análise de Descrição com IA
 app.post('/api/analyze-description', async (req, res) => {
   try {
     const { description } = req.body;
-    if (!description) return res.status(400).json({ error: 'Descrição obrigatória.' });
+    if (!description) {
+      return res.status(400).json({ error: 'Descrição é obrigatória.' });
+    }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const prompt = `Analise a descrição e retorne um JSON estrito (sem markdown) com as chaves: 
-    "categoriaGeral" (escolha entre: Alimentação e Gastronomia, Beleza e Estética, Construção e Reformas, Educação e Aulas, Eventos e Produção, Reparos e Assistência Técnica, Serviços Domésticos e Cuidados, Tecnologia e Design, Transporte e Logística, Saúde e Bem-estar, Serviços Rurais e Paisagismo, Moda e Costura, Turismo e Lazer, Serviços Administrativos e Consultoria, Outros Serviços),
-    "atividadePrincipal" (nome da profissão), 
-    "descricaoCurta" (impacto, max 90 char), 
-    "biografiaCompleta" (persuasivo, 1ª pessoa).
-    Descrição: "${description}"`;
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `Você é um assistente de categorização de serviços de alto nível. Leia a descrição do serviço a seguir.
+    Identifique a ÚNICA PROFISSÃO PRINCIPAL (a especialidade dominante) e gere dois textos de marketing.
+    
+    REGRA ABSOLUTA DE CATEGORIZAÇÃO:
+    Você é OBRIGADA a classificar o serviço em EXATAMENTE UMA destas categorias abaixo (copie o nome exato):
+    - Alimentação e Gastronomia
+    - Beleza e Estética
+    - Construção e Reformas
+    - Educação e Aulas
+    - Eventos e Produção
+    - Reparos e Assistência Técnica
+    - Serviços Domésticos e Cuidados
+    - Tecnologia e Design
+    - Transporte e Logística
+    - Saúde e Bem-estar
+    - Serviços Rurais e Paisagismo
+    - Moda e Costura
+    - Turismo e Lazer
+    - Serviços Administrativos e Consultoria
+    - Outros Serviços
+    
+    Retorne um JSON estrito contendo quatro chaves:
+    1. "categoriaGeral": O nome EXATO de uma das categorias da lista acima. Se não se encaixar em nenhuma, use "Outros Serviços".
+    2. "atividadePrincipal": A profissão exata e principal (ex: Encanador, Fisioterapeuta, Vaqueiro, Digital Maker).
+    3. "descricaoCurta": Uma frase de impacto com NO MÁXIMO 90 caracteres descrevendo o profissional.
+    4. "biografiaCompleta": O texto de marketing persuasivo completo (cerca de 2 a 3 parágrafos curtos, em primeira pessoa).
+    
+    Apenas retorne o JSON, sem formatação Markdown.
+    
+    Descrição original do usuário: "${description}"`;
 
     const result = await model.generateContent(prompt);
-    let text = result.response.text().replace(/```json\n?|\n?```/g, '').trim();
-    const jsonResult = JSON.parse(text);
+    let text = result.response.text();
 
+    // Limpar formatação Markdown se a IA retornar (ex: ```json ... ```)
+    text = text.replace(/```json\n?|\n?```/g, '').trim();
+
+    const jsonResult = JSON.parse(text);
+    const { categoriaGeral, atividadePrincipal, descricaoCurta, biografiaCompleta } = jsonResult;
+
+    if (!categoriaGeral || !atividadePrincipal) {
+      return res.status(500).json({ error: 'Falha ao analisar a descrição pela IA. Campos faltando.' });
+    }
+
+    // Auto-criação ou Busca no Banco de Dados
+    // 1. Upsert da Categoria (busca pelo nome, cria se não existir)
     const categoryRecord = await prisma.category.upsert({
-      where: { name: jsonResult.categoriaGeral },
+      where: { name: categoriaGeral },
       update: {},
-      create: { name: jsonResult.categoriaGeral },
+      create: { name: categoriaGeral },
     });
 
+    // 2. Upsert da Subcategoria (usando a atividadePrincipal identificada)
     const subcategoryRecord = await prisma.subcategory.upsert({
-      where: { name: jsonResult.atividadePrincipal },
+      where: { name: atividadePrincipal },
       update: {},
-      create: { name: jsonResult.atividadePrincipal, categoryId: categoryRecord.id },
+      create: {
+        name: atividadePrincipal,
+        categoryId: categoryRecord.id
+      },
     });
 
     res.status(200).json({
@@ -316,80 +402,20 @@ app.post('/api/analyze-description', async (req, res) => {
       data: {
         category: categoryRecord,
         subcategory: subcategoryRecord,
-        descricaoCurta: jsonResult.descricaoCurta,
-        biografiaCompleta: jsonResult.biografiaCompleta
+        descricaoCurta: descricaoCurta || '',
+        biografiaCompleta: biografiaCompleta || ''
       }
     });
+
   } catch (error) {
-    console.error('Erro IA:', error);
-    res.status(500).json({ error: 'Erro ao processar IA.' });
+    console.error('Erro na análise da descrição:', error);
+    res.status(500).json({ error: 'Erro interno ao processar a requisição com IA.' });
   }
 });
 
-// --- BUSCA E MÉTRICAS ---
+// ── Rotas de Inteligência e Busca (Fase 3) ──
 
+// Autocomplete de atividades principais (sem nomes de utilizadores)
 app.get('/api/search/suggestions', async (req, res) => {
   try {
     const q = req.query.q || '';
-    const profiles = await prisma.profile.findMany({
-      where: { atividadePrincipal: { contains: q, mode: 'insensitive' } },
-      select: { atividadePrincipal: true },
-      take: 20
-    });
-    const suggestions = [...new Set(profiles.map(p => p.atividadePrincipal))]
-      .map(label => ({ type: 'category', label }));
-    res.json({ success: true, data: suggestions.slice(0, 8) });
-  } catch (err) {
-    res.status(500).json({ error: 'Erro sugestões' });
-  }
-});
-
-app.post('/api/search-history', async (req, res) => {
-  try {
-    const { query } = req.body;
-    if (!query) return res.status(400).json({ error: 'Query vazia' });
-    await prisma.searchHistory.upsert({
-      where: { query: query.toLowerCase().trim() },
-      update: { count: { increment: 1 } },
-      create: { query: query.toLowerCase().trim() }
-    });
-    res.json({ success: true });
-  } catch (err) { res.status(500).send(); }
-});
-
-app.get('/api/search-history/popular', async (req, res) => {
-  try {
-    const popular = await prisma.searchHistory.findMany({ orderBy: { count: 'desc' }, take: 4 });
-    res.json({ success: true, data: popular });
-  } catch (err) { res.status(500).send(); }
-});
-
-app.post('/api/ads/:id/click', async (req, res) => {
-  try {
-    await prisma.profile.update({ where: { id: req.params.id }, data: { cliquesWhatsapp: { increment: 1 } } });
-    res.json({ success: true });
-  } catch (err) { res.status(500).send(); }
-});
-
-app.post('/api/ads/:id/view', async (req, res) => {
-  try {
-    await prisma.profile.update({ where: { id: req.params.id }, data: { visitasPerfil: { increment: 1 } } });
-    res.json({ success: true });
-  } catch (err) { res.status(500).send(); }
-});
-
-app.get('/api/categories/popular', async (req, res) => {
-  try {
-    const popular = await prisma.profile.groupBy({
-      by: ['atividadePrincipal'],
-      _count: { atividadePrincipal: true },
-      orderBy: { _count: { atividadePrincipal: 'desc' } },
-      take: 4
-    });
-    res.json({ success: true, data: popular });
-  } catch (err) { res.status(500).send(); }
-});
-
-app.listen(port, () => {
-  console.log(`Servidor proITA rodando na porta ${port}`);
-});
