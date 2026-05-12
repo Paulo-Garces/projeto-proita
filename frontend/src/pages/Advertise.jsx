@@ -194,7 +194,24 @@ export default function Advertise() {
         const data = await response.json();
         if (!data.erro) {
           setRua(data.logradouro || '');
-          setBairro(data.bairro || '');
+
+          const bairroCep = data.bairro || '';
+          const bairroAtual = bairro.trim();
+
+          // Verifica conflito: bairro de atuação preenchido E diferente do bairro do CEP
+          if (bairroAtual && bairroCep && bairroAtual.toLowerCase() !== bairroCep.toLowerCase()) {
+            const confirmar = window.confirm(
+              `Você digitou acima o bairro "${bairroAtual}" de atuação, mas adicionou o bairro "${bairroCep}" no endereço.\n\nQuer atualizar o local de atuação para o novo endereço?`
+            );
+            if (confirmar) {
+              // Atualiza ambos com o dado do CEP
+              setBairro(bairroCep);
+            }
+            // Se cancelou, mantém o bairro de atuação original
+          } else if (!bairroAtual && bairroCep) {
+            // Se o bairro de atuação estava vazio, preenche automaticamente
+            setBairro(bairroCep);
+          }
         }
       } catch (err) {
         console.error("Erro ao buscar CEP", err);

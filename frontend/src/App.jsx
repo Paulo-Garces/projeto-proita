@@ -28,7 +28,7 @@ function App() {
         <ScrollToTop /> {/* <-- OLHA O ELEVADOR AQUI! */}
         <div className="flex flex-col min-h-screen bg-slate-50">
           <Header />
-          <main className="flex-grow">
+          <main className="flex-grow page-fade-in">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/auth" element={<Auth />} />

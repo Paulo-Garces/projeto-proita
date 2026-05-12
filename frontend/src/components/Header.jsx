@@ -157,7 +157,7 @@ export default function Header() {
       {/* Mobile Navigation Overlay - AGORA SOLTO DA CAIXA DO HEADER */}
       {isOpen && (
         <div
-          className="md:hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+          className="md:hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}
