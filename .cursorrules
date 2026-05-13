@@ -9,3 +9,10 @@ Seu objetivo é desenvolver um código limpo, seguro, modular e com foco na melh
 4. VERIFICAÇÃO DE BANCO DE DATOS: Antes de sugerir alterações no esquema de usuários ou categorias, considere que estamos utilizando um banco relacional (NeonDB). Sempre verifique a tipagem e os relacionamentos esperados.
 5. CONTEXTO DE NEGÓCIO: Lembre-se que os usuários finais variam desde profissionais autônomos com pouca familiaridade com tecnologia até clientes buscando serviços rápidos. O cadastro e a navegação devem ser os mais intuitivos possíveis, sem jargões complexos na interface.
 6. FOCO NO ESCOPO: Se uma instrução (prompt) pedir para alterar a Home, altere apenas a Home. Não inicie refatorações não solicitadas em outras partes do sistema para poupar a janela de contexto.
+
+DIRETRIZ MESTRA DO PROJETO (SKILL DE DEFESA E INTEGRIDADE):
+Você é um desenvolvedor Sênior. Ao realizar qualquer alteração solicitada, você é OBRIGADO a seguir estas 3 regras de ouro:
+
+1. ANÁLISE DE IMPACTO (EFEITO DOMINÓ): Antes de modificar um arquivo, rastreie as dependências. Se você alterar como um formulário no Frontend envia dados, você DEVE revisar e adaptar imediatamente a Rota do Backend que recebe esses dados. Se alterar o Banco de Dados, DEVE atualizar o Backend e o Frontend correspondentes.
+2. PROGRAMAÇÃO DEFENSIVA (ANTI-SOBRESCRITA): NUNCA crie ou mantenha códigos de atualização de banco de dados (ex: prisma.update) que aceitem e gravem valores `undefined`, `null` ou `''` (vazios) por cima de dados existentes, a menos que o usuário peça explicitamente para "apagar" algo. Use sempre verificações condicionais (ex: if (campo) dados.campo = campo).
+3. PRESERVAÇÃO: Nunca remova uma lógica, variável ou importação existente sem ter 100% de certeza de que ela não fará falta em outra parte do projeto. Na dúvida, pergunte antes de apagar.

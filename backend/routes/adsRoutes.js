@@ -86,10 +86,18 @@ module.exports = (prisma) => {
     const userId = req.user.id;
 
     try {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { nome, sobrenome, telefone, bairro },
-      });
+      const userDataToUpdate = {};
+      if (nome) userDataToUpdate.nome = nome;
+      if (sobrenome) userDataToUpdate.sobrenome = sobrenome;
+      if (telefone) userDataToUpdate.telefone = telefone;
+      if (bairro) userDataToUpdate.bairro = bairro;
+
+      if (Object.keys(userDataToUpdate).length > 0) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: userDataToUpdate,
+        });
+      }
 
       const profile = await prisma.profile.create({
         data: {

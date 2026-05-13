@@ -573,16 +573,19 @@ export default function Advertise() {
 
                 <div className="pt-4 border-t border-slate-100">
 
-                  {/* Badge da Categoria Geral (somente leitura) */}
-                  {categoriaGeral && (
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Sua Categoria Principal</label>
-                      <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary/10 border border-primary/20 rounded-xl">
-                        <Briefcase size={16} className="text-primary" />
-                        <span className="text-sm font-semibold text-primary">{categoriaGeral}</span>
-                      </div>
-                    </div>
-                  )}
+                  {/* Campo da Categoria Geral (somente leitura) */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Sua Categoria Principal
+                    </label>
+                    <input
+                      type="text"
+                      value={categoriaGeral}
+                      readOnly
+                      placeholder="Preenchido automaticamente após a análise..."
+                      className="w-full px-4 py-3 border rounded-xl transition-colors bg-slate-100 text-slate-600 border-slate-200 focus:outline-none focus:ring-0 cursor-not-allowed"
+                    />
+                  </div>
 
                   <label className="block text-sm font-medium text-slate-700 mb-1">
                     Sua Atividade Principal {aiFailed ? '(Preencha manualmente)' : '(Definida pela IA)'}

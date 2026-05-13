@@ -1,85 +1,110 @@
-import { Mail, MessageSquare, Send } from 'lucide-react';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { 
+  HelpCircle, 
+  MessageSquare, 
+  Briefcase, 
+  AlertTriangle, 
+  Lightbulb, 
+  FileText 
+} from 'lucide-react';
 
-export default function Support() {
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    alert('Sua mensagem foi enviada com sucesso! (Simulação)');
-  };
+const Support = () => {
+  const supportCards = [
+    {
+      title: 'Dúvidas Frequentes (FAQ)',
+      description: 'Encontre respostas rápidas para as dúvidas mais comuns da nossa comunidade.',
+      icon: <HelpCircle className="w-8 h-8 text-blue-600" />,
+      linkTo: '/faq',
+      isExternal: false,
+    },
+    {
+      title: 'Enviar Mensagem',
+      description: 'Fale diretamente com nosso suporte técnico para resolver problemas específicos.',
+      icon: <MessageSquare className="w-8 h-8 text-blue-600" />,
+      linkTo: '/central-de-ajuda',
+      isExternal: false,
+    },
+    {
+      title: 'Contato Comercial',
+      description: 'Parcerias e planos. Fale conosco através do e-mail: comercial@proita.com.br',
+      icon: <Briefcase className="w-8 h-8 text-blue-600" />,
+      linkTo: 'mailto:comercial@proita.com.br',
+      isExternal: true,
+    },
+    {
+      title: 'Denúncias',
+      description: 'Canal seguro para reportar problemas, abusos ou comportamentos inadequados.',
+      icon: <AlertTriangle className="w-8 h-8 text-blue-600" />,
+      linkTo: '/denuncias',
+      isExternal: false,
+    },
+    {
+      title: 'Dicas de Perfil',
+      description: 'Aprenda a destacar seu anúncio e atrair mais clientes para o seu negócio.',
+      icon: <Lightbulb className="w-8 h-8 text-blue-600" />,
+      linkTo: '/dicas',
+      isExternal: false,
+    },
+    {
+      title: 'Termos e Privacidade',
+      description: 'Leia nossas regras de uso, termos de serviço e política de privacidade.',
+      icon: <FileText className="w-8 h-8 text-blue-600" />,
+      linkTo: '/terms',
+      isExternal: false,
+    },
+  ];
 
   return (
-    <div className="bg-slate-50 min-h-screen pt-24 pb-20">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <div className="text-center mb-12">
-          <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <MessageSquare size={32} />
-          </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4">Central de Ajuda</h1>
-          <p className="text-lg text-slate-600">
-            Ficou com alguma dúvida ou precisa reportar um problema? Estamos aqui para ajudar.
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-16">
+          <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl">
+            Como podemos ajudar?
+          </h1>
+          <p className="mt-4 text-xl text-gray-600 max-w-2xl mx-auto">
+            Escolha uma das opções abaixo para encontrar a resposta ou falar com nossa equipe.
           </p>
         </div>
 
-        <div className="bg-white rounded-3xl p-8 md:p-10 border border-slate-200 shadow-sm">
-          <h2 className="text-2xl font-bold text-slate-800 mb-6 border-b border-slate-100 pb-4">Envie uma mensagem</h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Nome Completo</label>
-                <input 
-                  type="text" 
-                  required
-                  placeholder="Seu nome"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {supportCards.map((card, index) => {
+            const CardContent = (
+              <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 p-8 border border-gray-100 h-full flex flex-col items-center text-center group cursor-pointer">
+                <div className="mb-6 p-4 bg-blue-50 rounded-full group-hover:scale-110 transition-transform duration-300">
+                  {card.icon}
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                  {card.title}
+                </h3>
+                <p className="text-gray-600">
+                  {card.description}
+                </p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">E-mail</label>
-                <input 
-                  type="email" 
-                  required
-                  placeholder="seu@email.com"
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
-                />
-              </div>
-            </div>
+            );
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Assunto</label>
-              <select className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all text-slate-700">
-                <option>Dúvida sobre a plataforma</option>
-                <option>Problemas técnicos</option>
-                <option>Sugestões</option>
-                <option>Outros</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Mensagem</label>
-              <textarea 
-                required
-                rows={5}
-                placeholder="Descreva como podemos ajudar..."
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all resize-none"
-              ></textarea>
-            </div>
-
-            <button 
-              type="submit" 
-              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-bold py-4 rounded-xl transition-colors"
-            >
-              <Send size={18} />
-              Enviar Mensagem
-            </button>
-          </form>
+            return card.isExternal ? (
+              <a 
+                key={index} 
+                href={card.linkTo}
+                className="block outline-none focus:ring-2 focus:ring-blue-500 rounded-xl"
+              >
+                {CardContent}
+              </a>
+            ) : (
+              <Link 
+                key={index} 
+                to={card.linkTo}
+                className="block outline-none focus:ring-2 focus:ring-blue-500 rounded-xl"
+              >
+                {CardContent}
+              </Link>
+            );
+          })}
         </div>
-
-        <div className="mt-12 text-center text-slate-500 flex items-center justify-center gap-2">
-          <Mail size={16} /> <span>Ou envie um e-mail direto para: <strong>contato@proita.com.br</strong></span>
-        </div>
-
       </div>
     </div>
   );
-}
+};
+
+export default Support;
