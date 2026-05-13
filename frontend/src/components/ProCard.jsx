@@ -1,5 +1,6 @@
 import { Star, MapPin, Phone, Share2, ChevronRight, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getProfileDisplayName } from '../utils/profileDisplayName';
 
 // Ícones de plataforma como SVGs inline (sem dependência de versão do lucide)
 const SocialIcon = ({ platform }) => {
@@ -43,6 +44,8 @@ const platformColors = {
 };
 
 export default function ProCard({ professional }) {
+  const displayName =
+    professional.name || getProfileDisplayName(professional) || 'Profissional';
   const phone = professional.servicePhone || professional.phone;
   const location = professional.serviceBairro || professional.location || 'Itapipoca';
   const description = professional.shortDescription || professional.fullDescription?.substring(0, 90) || '';
@@ -82,7 +85,7 @@ export default function ProCard({ professional }) {
           <div className="relative">
             <img
               src={professional.avatar}
-              alt={professional.name}
+              alt={displayName}
               className="w-20 h-20 md:w-24 md:h-24 rounded-2xl object-cover border border-slate-100 shadow-sm"
             />
             {professional.verified && (
@@ -118,7 +121,7 @@ export default function ProCard({ professional }) {
           {/* Nome e Avaliação */}
           <div className="mb-2">
             <h3 className="text-lg font-bold text-slate-800 leading-tight truncate group-hover:text-primary transition-colors">
-              {professional.name}
+              {displayName}
             </h3>
             <div className="flex items-center gap-1 mt-1">
               {[1, 2, 3, 4, 5].map(i => (

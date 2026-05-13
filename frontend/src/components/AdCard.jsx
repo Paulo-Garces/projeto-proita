@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { Star, MapPin, Phone, Share2, CheckCircle, Edit2, Trash2, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { API_URL } from '../config';
+import { getProfileDisplayName } from '../utils/profileDisplayName';
 
 // ─── SVG das plataformas ──────────────────────────────────────────────────────
 const INSTAGRAM_SVG = (
@@ -38,6 +39,9 @@ const formatPhone = (phone) => {
 // ─── Componente ──────────────────────────────────────────────────────────────
 export default function AdCard({ professional, showEdit = false, onEdit, onDelete }) {
   const [copied, setCopied] = useState(false);
+
+  const displayName =
+    professional.name || getProfileDisplayName(professional) || 'Profissional';
 
   const phone = professional.servicePhone || professional.phone;
   const location = professional.serviceBairro || professional.location || 'Itapipoca';
@@ -109,12 +113,12 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             {avatar ? (
               <img
                 src={avatar}
-                alt={professional.name}
+                alt={displayName}
                 className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md"
               />
             ) : (
               <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white text-2xl font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none">
-                {professional.name?.[0]?.toUpperCase() || 'P'}
+                {displayName?.[0]?.toUpperCase() || 'P'}
               </div>
             )}
             {professional.verified && (
@@ -155,7 +159,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
           {/* Nome e Avaliação */}
           <div className="mb-2">
             <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate group-hover:text-primary transition-colors">
-              {professional.name}
+              {displayName}
             </h3>
             <div className="flex items-center gap-1 mt-1">
               {[1, 2, 3, 4, 5].map(i => (

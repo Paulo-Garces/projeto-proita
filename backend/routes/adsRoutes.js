@@ -1,6 +1,48 @@
 const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
 
+/** String preenchida: não nula, não indefinida e não vazia após trim. */
+function isNonEmptyString(value) {
+  if (value == null) return false;
+  if (typeof value !== 'string') return false;
+  return value.trim().length > 0;
+}
+
+/** Primeiro valor string não vazio entre candidatos, ou null se nenhum servir. */
+function pickFirstNonEmptyString(...candidates) {
+  for (const v of candidates) {
+    if (isNonEmptyString(v)) return v.trim();
+  }
+  return null;
+}
+
+/**
+ * PATCH: atualiza servicePhone só se `telefone` ou `servicePhone` vierem no body.
+ * Aceita o alias `telefone` usado no fluxo de criação do anúncio.
+ */
+function pickProfileServicePhone(body) {
+  const { telefone, servicePhone } = body;
+  if (telefone === undefined && servicePhone === undefined) return undefined;
+  return pickFirstNonEmptyString(telefone, servicePhone) ?? null;
+}
+
+/**
+ * PATCH: atualiza serviceBairro só se `bairro` ou `serviceBairro` vierem no body.
+ */
+function pickProfileServiceBairro(body) {
+  const { bairro, serviceBairro } = body;
+  if (bairro === undefined && serviceBairro === undefined) return undefined;
+  return pickFirstNonEmptyString(bairro, serviceBairro) ?? null;
+}
+
+/** String opcional para o Profile: trim; vazio vira null. */
+function pickOptionalProfileString(value) {
+  if (value == null) return null;
+  if (typeof value !== 'string') return null;
+  const t = value.trim();
+  return t.length > 0 ? t : null;
+}
+
 // Campos que retornamos do User em consultas públicas
 const publicUserSelect = {
   nome: true,
@@ -72,32 +114,26 @@ module.exports = (prisma) => {
 
   // ─────────────────────────────────────────────────────────────
   // POST /api/ads — Criar um novo anúncio (Rota Privada)
+  // Contato e bairro do formulário ficam só no Profile (não altera User).
   // ─────────────────────────────────────────────────────────────
   router.post('/', authMiddleware, async (req, res) => {
     const {
-      nome, sobrenome, telefone, bairro,
       atividadePrincipal, categoriaGeral, atividadesSecundarias, descricaoTrabalho,
       descricaoCurta, bioSugerida, shortDescription,
       instagram, whatsapp, endereco, portfolioUrls,
       redesSociais, socialLinks, avatarUrl, avatarFileId,
-      servicePhone, serviceBairro, exibirEnderecoCompleto
+      servicePhone, serviceBairro, exibirEnderecoCompleto,
+      telefone, bairro,
+      nome, sobrenome,
     } = req.body;
 
     const userId = req.user.id;
 
     try {
-      const userDataToUpdate = {};
-      if (nome) userDataToUpdate.nome = nome;
-      if (sobrenome) userDataToUpdate.sobrenome = sobrenome;
-      if (telefone) userDataToUpdate.telefone = telefone;
-      if (bairro) userDataToUpdate.bairro = bairro;
-
-      if (Object.keys(userDataToUpdate).length > 0) {
-        await prisma.user.update({
-          where: { id: userId },
-          data: userDataToUpdate,
-        });
-      }
+      const resolvedServicePhone = pickFirstNonEmptyString(servicePhone, telefone) ?? null;
+      const resolvedServiceBairro = pickFirstNonEmptyString(serviceBairro, bairro) ?? null;
+      const profileWhatsapp =
+        pickFirstNonEmptyString(whatsapp, servicePhone, telefone) ?? null;
 
       const profile = await prisma.profile.create({
         data: {
@@ -107,15 +143,17 @@ module.exports = (prisma) => {
           atividadesSecundarias: atividadesSecundarias || [],
           descricaoTrabalho,
           instagram: instagram || null,
-          whatsapp: whatsapp || null,
+          whatsapp: profileWhatsapp,
           endereco: endereco || null,
           portfolioUrls: portfolioUrls || [],
           avatarUrl: avatarUrl || null,
           avatarFileId: avatarFileId || null,
           socialLinks: socialLinks || redesSociais || null,
           descricaoCurta: descricaoCurta || shortDescription || null,
-          servicePhone: servicePhone || null,
-          serviceBairro: serviceBairro || null,
+          nomeExibicao: pickOptionalProfileString(nome),
+          sobrenomeExibicao: pickOptionalProfileString(sobrenome),
+          servicePhone: resolvedServicePhone,
+          serviceBairro: resolvedServiceBairro,
           exibirEnderecoCompleto: exibirEnderecoCompleto !== undefined ? exibirEnderecoCompleto : true,
         },
       });
@@ -148,8 +186,9 @@ module.exports = (prisma) => {
       const {
         atividadePrincipal, categoriaGeral, atividadesSecundarias, descricaoTrabalho,
         descricaoCurta, shortDescription, instagram, whatsapp,
-        servicePhone, serviceBairro, endereco, portfolioUrls,
+        servicePhone, serviceBairro, telefone, bairro, endereco, portfolioUrls,
         avatarUrl, avatarFileId, socialLinks, exibirEnderecoCompleto,
+        nome, sobrenome,
       } = req.body;
 
       if (socialLinks !== undefined) {
@@ -161,6 +200,9 @@ module.exports = (prisma) => {
         }
       }
 
+      const nextServicePhone = pickProfileServicePhone(req.body);
+      const nextServiceBairro = pickProfileServiceBairro(req.body);
+
       const updated = await prisma.profile.update({
         where: { id },
         data: {
@@ -169,15 +211,21 @@ module.exports = (prisma) => {
           ...(atividadesSecundarias !== undefined && { atividadesSecundarias }),
           ...(descricaoTrabalho !== undefined && { descricaoTrabalho }),
           ...(instagram !== undefined && { instagram }),
-          ...(whatsapp !== undefined && { whatsapp }),
+          ...(whatsapp !== undefined && {
+            whatsapp: isNonEmptyString(whatsapp)
+              ? String(whatsapp).trim()
+              : pickFirstNonEmptyString(servicePhone, telefone) ?? null,
+          }),
           ...(endereco !== undefined && { endereco }),
           ...(portfolioUrls !== undefined && { portfolioUrls }),
           ...(avatarUrl !== undefined && { avatarUrl }),
           ...(avatarFileId !== undefined && { avatarFileId }),
           ...(socialLinks !== undefined && { socialLinks }),
           ...((descricaoCurta !== undefined || shortDescription !== undefined) && { descricaoCurta: descricaoCurta || shortDescription }),
-          ...(servicePhone !== undefined && { servicePhone }),
-          ...(serviceBairro !== undefined && { serviceBairro }),
+          ...(nextServicePhone !== undefined && { servicePhone: nextServicePhone }),
+          ...(nextServiceBairro !== undefined && { serviceBairro: nextServiceBairro }),
+          ...(nome !== undefined && { nomeExibicao: pickOptionalProfileString(nome) }),
+          ...(sobrenome !== undefined && { sobrenomeExibicao: pickOptionalProfileString(sobrenome) }),
           ...(exibirEnderecoCompleto !== undefined && { exibirEnderecoCompleto }),
         },
       });

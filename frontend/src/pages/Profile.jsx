@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Star, MapPin, CheckCircle, MessageCircle, Share2, Shield, Clock, Camera } from 'lucide-react';
 import { API_URL } from '../config';
+import { getProfileDisplayName, getProfileAvatarNameParam } from '../utils/profileDisplayName';
 
 export default function Profile() {
   const { id } = useParams();
@@ -27,17 +28,17 @@ export default function Profile() {
 
             setProfessional({
               id: profile.id,
-              name: `${profile.user.nome} ${profile.user.sobrenome}`,
+              name: getProfileDisplayName(profile),
               category: profile.atividadePrincipal,
               rating: 5.0,
               reviewsCount: 0,
               reviews: [],
-              location: profile.user.bairro || 'Itapipoca',
+              location: profile.serviceBairro || profile.user?.bairro || 'Itapipoca',
               fullDescription: profile.descricaoTrabalho,
-              phone: profile.user.telefone,
+              phone: profile.servicePhone || profile.whatsapp || profile.user?.telefone || null,
               instagram: instagram,
               socialLinks: Array.isArray(profile.socialLinks) ? profile.socialLinks : [],
-              avatar: profile.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.user.nome)}+${encodeURIComponent(profile.user.sobrenome)}&background=0ea5e9&color=fff&bold=true`,
+              avatar: profile.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(getProfileAvatarNameParam(profile))}&background=0ea5e9&color=fff&bold=true`,
               verified: true
             });
         }

@@ -38,14 +38,18 @@ model Profile {
   descricaoTrabalho     String
   descricaoCurta        String?  // Max 90 chars.
 
-  // Contato e Redes Sociais
+  // Nome público do anúncio (independente do cadastro em User)
+  nomeExibicao          String?
+  sobrenomeExibicao     String?
+
+  // Contato e Redes Sociais (por anúncio — não espelham User.telefone)
   instagram             String?
   whatsapp              String?
-  servicePhone          String?
-  
+  servicePhone          String?  // Telefone profissional / do anúncio (formulário pode enviar como telefone ou servicePhone)
+
   // Localização
   endereco              String?
-  serviceBairro         String?  // Usado para o "Bairro de Atuação Principal"
+  serviceBairro         String?  // Bairro de atuação / exibição do anúncio (formulário pode enviar como bairro ou serviceBairro)
   bairroEndereco        String?  // NOVO: Usado para o Bairro exato retornado pelo CEP
   exibirEnderecoCompleto Boolean  @default(true) // false = mostra apenas o bairro
   

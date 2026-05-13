@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import AdCard from '../components/AdCard';
 import { API_URL } from '../config';
+import { getProfileDisplayName, getProfileAvatarNameParam } from '../utils/profileDisplayName';
 
 // ── Sub-componente: Avatar (foto real ou iniciais) ──────────────
 function AvatarDisplay({ user, sizeClass = 'w-20 h-20', textClass = 'text-2xl' }) {
@@ -490,7 +491,7 @@ export default function Dashboard() {
               {activeTab === 'professional' && (
                 <div className="animate-in fade-in duration-300">
                   {editingAd ? (
-                    <AdEditForm ad={editingAd} token={token} onSaved={handleAdSaved} onCancel={() => setEditingAd(null)} />
+                    <AdEditForm ad={editingAd} token={token} user={user} onSaved={handleAdSaved} onCancel={() => setEditingAd(null)} />
                   ) : (
                     <>
                       <div className="flex items-center justify-between mb-6">
@@ -515,10 +516,10 @@ export default function Dashboard() {
                             // Normaliza o objeto do anúncio para o shape esperado pelo AdCard
                             const cardPro = {
                               id: ad.id,
-                              name: ad.user ? `${ad.user.nome} ${ad.user.sobrenome}` : `${user?.nome} ${user?.sobrenome}`,
+                              name: getProfileDisplayName(ad, user),
                               category: ad.atividadePrincipal,
                               shortDescription: ad.shortDescription || ad.descricaoTrabalho?.substring(0, 90),
-                              servicePhone: ad.servicePhone || user?.telefone,
+                              servicePhone: ad.servicePhone || ad.whatsapp || user?.telefone,
                               serviceBairro: ad.serviceBairro,
                               location: ad.serviceBairro || user?.bairro || 'Itapipoca',
                               // Prioridade: foto do perfil do usuário → avatarUrl do anúncio → null (fallback de iniciais)

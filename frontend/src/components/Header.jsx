@@ -65,7 +65,7 @@ export default function Header() {
                   <Search size={18} /> Explorar
                 </Link>
                 {isAuthenticated ? (
-                  <Link to="/support" className="text-slate-600 hover:text-primary font-medium transition-colors flex items-center gap-2">
+                  <Link to="/central-de-ajuda" className="text-slate-600 hover:text-primary font-medium transition-colors flex items-center gap-2">
                     <HelpCircle size={18} /> Suporte
                   </Link>
                 ) : (
@@ -183,7 +183,7 @@ export default function Header() {
             <Search size={20} className="text-slate-400" /> Explorar Profissionais
           </Link>
           {isAuthenticated ? (
-            <Link to="/support" className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
+            <Link to="/central-de-ajuda" className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
               <HelpCircle size={20} className="text-slate-400" /> Suporte
             </Link>
           ) : (

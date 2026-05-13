@@ -4,6 +4,7 @@ import AdCard from '../components/AdCard';
 import { Search as SearchIcon, Filter, X, MapPin, Sparkles, ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
+import { getProfileDisplayName, getProfileAvatarNameParam } from '../utils/profileDisplayName';
 
 export default function Search() {
   const { user } = useContext(AuthContext);
@@ -79,24 +80,24 @@ export default function Search() {
             }
             return {
               id: profile.id,
-              name: `${profile.user.nome} ${profile.user.sobrenome}`,
+              name: getProfileDisplayName(profile),
               category: profile.atividadePrincipal,
               categoriaGeral: profile.categoriaGeral || '',
               rating: 5.0,
               reviewsCount: 0,
-              location: profile.user.bairro || 'Itapipoca',
+              location: profile.serviceBairro || profile.user?.bairro || 'Itapipoca',
               shortDescription: profile.descricaoCurta || profile.shortDescription || (profile.descricaoTrabalho?.substring(0, 90) + '...'),
               fullDescription: profile.descricaoTrabalho,
-              phone: profile.user.telefone,
-              servicePhone: profile.servicePhone || null,
+              phone: profile.servicePhone || profile.whatsapp || profile.user?.telefone || null,
+              servicePhone: profile.servicePhone || profile.whatsapp || null,
               serviceBairro: profile.serviceBairro || null,
               socialLinks: Array.isArray(profile.socialLinks) ? profile.socialLinks : [],
               instagram,
               visitasPerfil: profile.visitasPerfil || 0,
               cliquesWhatsapp: profile.cliquesWhatsapp || 0,
-              avatar: profile.user.profileImageUrl
+              avatar: profile.user?.profileImageUrl
                 || profile.avatarUrl
-                || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.user.nome)}+${encodeURIComponent(profile.user.sobrenome)}&background=0ea5e9&color=fff&bold=true`,
+                || `https://ui-avatars.com/api/?name=${encodeURIComponent(getProfileAvatarNameParam(profile))}&background=0ea5e9&color=fff&bold=true`,
             };
           });
           setProfissionais(mappedData);
