@@ -158,7 +158,7 @@ app.post('/api/login', async (req, res) => {
     });
 
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Credenciais inválidas.' });
+      return res.status(401).json({ success: false, message: 'Usuário ou senha inválido' });
     }
 
     // TRAVA DO GOOGLE: Tenta logar via senha numa conta só de Google
@@ -204,7 +204,7 @@ app.post('/api/login', async (req, res) => {
     }
 
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Credenciais inválidas.' });
+      return res.status(401).json({ success: false, message: 'Usuário ou senha inválido' });
     }
 
     const secret = process.env.JWT_SECRET || 'chave_secreta_proita_123';

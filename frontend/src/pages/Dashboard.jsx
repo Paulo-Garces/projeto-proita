@@ -20,16 +20,38 @@ function AvatarDisplay({ user, sizeClass = 'w-20 h-20', textClass = 'text-2xl' }
 
 // (AdCard é importado de ../components/AdCard)
 
+/** Converte socialLinks / redesSociais (legado network+link) para o shape do formulário de edição. */
+function mapStoredSocialLinksToForm(raw) {
+  const arr = Array.isArray(raw) ? raw : [];
+  return arr
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null;
+      const platform = (item.platform ?? item.network ?? 'instagram').toString().toLowerCase().trim();
+      const url = (item.url ?? item.link ?? '').toString();
+      return { platform: platform || 'instagram', url: url.trim() };
+    })
+    .filter(Boolean)
+    .slice(0, 3);
+}
+
 // ── Sub-componente: Portfólio com upload real ───────────────────
 function PortfolioSection({ ad, token }) {
   const [urls, setUrls] = useState(ad.portfolioUrls || []);
+  const urlsRef = useRef(urls);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
   const inputRef = useRef(null);
 
-  const handleUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  useEffect(() => {
+    urlsRef.current = urls;
+  }, [urls]);
+
+  const uploadPortfolioFile = async (file) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    if (urlsRef.current.length >= 8) {
+      setError('Máximo de 8 fotos no portfólio.');
+      return;
+    }
     setError('');
     setIsUploading(true);
     try {
@@ -43,14 +65,43 @@ function PortfolioSection({ ad, token }) {
         body: fd,
       });
       const data = await res.json();
-      if (res.ok && data.success) setUrls(data.portfolioUrls);
-      else setError(data.message || 'Erro ao enviar.');
+      if (res.ok && data.success) {
+        setUrls(data.portfolioUrls);
+        urlsRef.current = data.portfolioUrls;
+      } else setError(data.message || 'Erro ao enviar.');
     } catch (err) {
       setError('Erro ao processar imagem.');
     } finally {
       setIsUploading(false);
-      e.target.value = '';
     }
+  };
+
+  const handleUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    await uploadPortfolioFile(file);
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = [...(e.dataTransfer?.files || [])].filter((f) => f.type.startsWith('image/'));
+    for (const file of files) {
+      if (urlsRef.current.length >= 8) break;
+      await uploadPortfolioFile(file);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   const handleDelete = async (url) => {
@@ -62,7 +113,10 @@ function PortfolioSection({ ad, token }) {
         body: JSON.stringify({ url }),
       });
       const data = await res.json();
-      if (res.ok && data.success) setUrls(data.portfolioUrls);
+      if (res.ok && data.success) {
+        setUrls(data.portfolioUrls);
+        urlsRef.current = data.portfolioUrls;
+      }
     } catch {}
   };
 
@@ -86,14 +140,24 @@ function PortfolioSection({ ad, token }) {
 
       {urls.length === 0 ? (
         <div
+          role="presentation"
           onClick={() => inputRef.current?.click()}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
           className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center text-slate-400 text-sm cursor-pointer hover:border-primary/40 transition-colors"
         >
-          <UploadCloud size={28} className="mx-auto mb-2 opacity-40" />
-          Clique para adicionar fotos do seu trabalho
+          <UploadCloud size={28} className="mx-auto mb-2 opacity-40 pointer-events-none" />
+          <span className="pointer-events-none">Clique ou arraste imagens para adicionar ao portfólio</span>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div
+          role="presentation"
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          className="grid grid-cols-2 sm:grid-cols-3 gap-3"
+        >
           {urls.map((url, i) => (
             <div key={i} className="relative group rounded-xl overflow-hidden aspect-square border border-slate-200">
               <img src={url} alt={`Portfólio ${i + 1}`} className="w-full h-full object-cover" />
@@ -107,7 +171,6 @@ function PortfolioSection({ ad, token }) {
               </button>
             </div>
           ))}
-          {/* Botão de adicionar mais */}
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
@@ -129,14 +192,13 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
     atividadePrincipal: ad.atividadePrincipal || '',
     atividadesSecundarias: (ad.atividadesSecundarias || []).join(', '),
     descricaoTrabalho: ad.descricaoTrabalho || '',
-    shortDescription: ad.shortDescription || '',
-    // Passo 1: se servicePhone vazio, usa telefone base do usuário
+    shortDescription: ad.descricaoCurta || ad.shortDescription || '',
     servicePhone: ad.servicePhone || user?.telefone || '',
     serviceBairro: ad.serviceBairro || '',
     endereco: ad.endereco || '',
   });
-  const [socialLinks, setSocialLinks] = useState(
-    Array.isArray(ad.socialLinks) ? ad.socialLinks : []
+  const [socialLinks, setSocialLinks] = useState(() =>
+    mapStoredSocialLinksToForm(ad.socialLinks ?? ad.redesSociais)
   );
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -162,7 +224,10 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
         body: JSON.stringify({
           ...form,
           atividadesSecundarias: form.atividadesSecundarias.split(',').map(s => s.trim()).filter(Boolean),
-          socialLinks: socialLinks.filter(s => s.url.trim()),
+          socialLinks: socialLinks
+            .map((s) => ({ platform: String(s.platform || '').toLowerCase().trim(), url: String(s.url || '').trim() }))
+            .filter((s) => s.url)
+            .slice(0, 3),
         }),
       });
       const data = await res.json();
@@ -189,7 +254,6 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
       </button>
       <h3 className="text-xl font-bold text-slate-800">Editando: {ad.atividadePrincipal}</h3>
 
-      {/* Informações Básicas */}
       <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
         <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Informações Básicas</h4>
         <div>
@@ -211,7 +275,6 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
         </div>
       </section>
 
-      {/* Localização */}
       <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
         <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Localização</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -226,7 +289,6 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
         </div>
       </section>
 
-      {/* Contato e Redes Sociais */}
       <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
         <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Contato e Redes Sociais</h4>
         <div>
@@ -277,7 +339,6 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
         </div>
       </section>
 
-      {/* Portfólio — Upload real */}
       <PortfolioSection ad={ad} token={token} />
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -302,20 +363,16 @@ export default function Dashboard() {
   const { user, token, logout, updateUser } = useContext(AuthContext);
   const [activeTab, setActiveTab] = useState('profile');
 
-  // Estados de foto de perfil
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState('');
   const fileInputRef = useRef(null);
 
-  // Estados da aba "Meus Anúncios"
   const [myAds, setMyAds] = useState([]);
   const [adsLoading, setAdsLoading] = useState(false);
-  const [editingAd, setEditingAd] = useState(null); // null = grid, objeto = editar
+  const [editingAd, setEditingAd] = useState(null);
 
-  // Favoritos (placeholder)
   const favorites = [];
 
-  // Carrega anúncios do usuário (usado pela sidebar para label e pela aba Meus Anúncios)
   useEffect(() => {
     if (!token) return;
     setAdsLoading(true);
@@ -328,14 +385,12 @@ export default function Dashboard() {
       .finally(() => setAdsLoading(false));
   }, [token]);
 
-  // Upload de foto de perfil com compressão automática
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setPhotoError('');
     setIsUploadingPhoto(true);
     try {
-      // Comprime silenciosamente — o usuário não sabe o tamanho original
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1024,
@@ -343,8 +398,6 @@ export default function Dashboard() {
         fileType: 'image/jpeg',
       };
       const compressed = await imageCompression(file, options);
-      console.log(`[UPLOAD] Original: ${(file.size / 1024).toFixed(0)}KB → Comprimido: ${(compressed.size / 1024).toFixed(0)}KB`);
-
       const fd = new FormData();
       fd.append('profileImage', compressed, 'profile.jpg');
 
@@ -368,7 +421,6 @@ export default function Dashboard() {
     }
   };
 
-  // Excluir anúncio
   const handleDeleteAd = async (adId) => {
     if (!confirm('Excluir este anúncio?')) return;
     try {
@@ -380,7 +432,6 @@ export default function Dashboard() {
     } catch (e) { console.error(e); }
   };
 
-  // Callback após salvar edição
   const handleAdSaved = (updatedProfile) => {
     setMyAds(prev => prev.map(a => a.id === updatedProfile.id ? updatedProfile : a));
     setEditingAd(null);
@@ -398,7 +449,6 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row gap-8">
 
-          {/* Sidebar */}
           <aside className="md:w-64 shrink-0">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden sticky top-24">
               <div className="p-6 text-center border-b border-slate-100 bg-slate-50/50">
@@ -433,11 +483,9 @@ export default function Dashboard() {
 
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
 
-          {/* Conteúdo principal */}
           <main className="flex-1">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-10">
 
-              {/* ── MEUS DADOS ── */}
               {activeTab === 'profile' && (
                 <div className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-slate-900 mb-8">Meus Dados</h2>
@@ -476,7 +524,6 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* ── FAVORITOS ── */}
               {activeTab === 'favorites' && (
                 <div className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-slate-900 mb-6">Profissionais Favoritos</h2>
@@ -487,7 +534,6 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* ── MEUS ANÚNCIOS ── */}
               {activeTab === 'professional' && (
                 <div className="animate-in fade-in duration-300">
                   {editingAd ? (
@@ -513,18 +559,16 @@ export default function Dashboard() {
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                           {myAds.map(ad => {
-                            // Normaliza o objeto do anúncio para o shape esperado pelo AdCard
                             const cardPro = {
                               id: ad.id,
                               name: getProfileDisplayName(ad, user),
                               category: ad.atividadePrincipal,
-                              shortDescription: ad.shortDescription || ad.descricaoTrabalho?.substring(0, 90),
+                              shortDescription: ad.descricaoCurta || ad.shortDescription || ad.descricaoTrabalho?.substring(0, 90),
                               servicePhone: ad.servicePhone || ad.whatsapp || user?.telefone,
                               serviceBairro: ad.serviceBairro,
                               location: ad.serviceBairro || user?.bairro || 'Itapipoca',
-                              // Prioridade: foto do perfil do usuário → avatarUrl do anúncio → null (fallback de iniciais)
                               avatar: user?.profileImageUrl || ad.avatarUrl || null,
-                              socialLinks: Array.isArray(ad.socialLinks) ? ad.socialLinks : [],
+                              socialLinks: mapStoredSocialLinksToForm(ad.socialLinks ?? ad.redesSociais),
                             };
                             return (
                               <AdCard
@@ -543,7 +587,6 @@ export default function Dashboard() {
                 </div>
               )}
 
-              {/* ── SEGURANÇA ── */}
               {activeTab === 'security' && (
                 <div className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-slate-900 mb-6">Segurança e Senha</h2>

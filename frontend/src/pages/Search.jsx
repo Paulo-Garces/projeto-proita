@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useContext } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import AdCard from '../components/AdCard';
-import { Search as SearchIcon, Filter, X, MapPin, Sparkles, ChevronDown } from 'lucide-react';
+import { Search as SearchIcon, Filter, X, ChevronDown } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 import { getProfileDisplayName, getProfileAvatarNameParam } from '../utils/profileDisplayName';
@@ -19,10 +19,16 @@ export default function Search() {
   const [selectedBairro, setSelectedBairro] = useState('');
   const [profissionais, setProfissionais] = useState([]);
   const [results, setResults] = useState([]);
-  const [isFilterOpen, setIsFilterOpen] = useState(true);
+  // Em mobile (< 768px): filtros iniciam FECHADOS quando há `q` na URL (vindo de "Buscar")
+  // e ABERTOS quando não há (modo "Explorar"). Desktop ignora — o aside é sempre md:block.
+  const [isFilterOpen, setIsFilterOpen] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const isMobile = window.innerWidth < 768;
+    return !(isMobile && queryParam);
+  });
   const [isLoading, setIsLoading] = useState(true);
 
-  // Categorias Gerais fixas (sincronizadas com o seed do backend)
+  // Categorias Gerais fixas
   const categoriasGerais = [
     "Alimentação e Gastronomia",
     "Beleza e Estética",
@@ -46,20 +52,18 @@ export default function Search() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsRef = useRef(null);
   const inputRef = useRef(null);
+  // Suprime o próximo disparo do autocomplete (usado após clicar numa sugestão ou submeter busca),
+  // evitando que o dropdown reabra automaticamente quando setSearchTerm dispara o useEffect [searchTerm].
+  const skipAutocompleteRef = useRef(false);
 
-  // Popular Categories state
-  const [popularCategories, setPopularCategories] = useState([]);
-
+  // Sempre que houver um termo de busca na URL, força os filtros fechados em mobile.
+  // Em desktop, o aside permanece visível (md:block) — esse estado não o afeta.
   useEffect(() => {
-    fetch(`${API_URL}/api/categories/popular`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setPopularCategories(data.data.map(d => d.atividadePrincipal));
-        }
-      })
-      .catch(err => console.error(err));
-  }, []);
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (queryParam && isMobile) {
+      setIsFilterOpen(false);
+    }
+  }, [queryParam]);
 
   // ── Fetch ads ────────────────────────────────────────────────
   useEffect(() => {
@@ -69,29 +73,34 @@ export default function Search() {
         const data = await res.json();
         if (res.ok && data.success) {
           const mappedData = data.data.map(profile => {
-            let instagram = '';
-            if (profile.redesSociais) {
-              if (Array.isArray(profile.redesSociais)) {
-                const instaMatch = profile.redesSociais.find(r => r.includes('instagram'));
-                if (instaMatch) instagram = instaMatch;
-              } else if (typeof profile.redesSociais === 'object') {
-                instagram = profile.redesSociais.instagram || '';
-              }
-            }
+            const rawSocial = profile.socialLinks ?? profile.redesSociais;
+            const socialLinks = Array.isArray(rawSocial)
+              ? rawSocial
+                .map((item) => {
+                  if (!item || typeof item !== 'object') return null;
+                  const platform = (item.platform ?? item.network ?? '').toString().toLowerCase().trim();
+                  const url = (item.url ?? item.link ?? '').toString().trim();
+                  if (!platform || !url) return null;
+                  return { platform, url };
+                })
+                .filter(Boolean)
+              : [];
+            const instagramEntry = socialLinks.find((s) => s.platform === 'instagram');
+            const instagram = instagramEntry?.url || '';
             return {
               id: profile.id,
               name: getProfileDisplayName(profile),
               category: profile.atividadePrincipal,
               categoriaGeral: profile.categoriaGeral || '',
-              rating: 5.0,
-              reviewsCount: 0,
+              rating: profile.rating || 0, // ← AQUI ESTAVA O 5.0 FIXO! AGORA ESTÁ DINÂMICO.
+              reviewCount: profile.reviewCount || 0, // ← AQUI TAMBÉM!
               location: profile.serviceBairro || profile.user?.bairro || 'Itapipoca',
               shortDescription: profile.descricaoCurta || profile.shortDescription || (profile.descricaoTrabalho?.substring(0, 90) + '...'),
               fullDescription: profile.descricaoTrabalho,
               phone: profile.servicePhone || profile.whatsapp || profile.user?.telefone || null,
               servicePhone: profile.servicePhone || profile.whatsapp || null,
               serviceBairro: profile.serviceBairro || null,
-              socialLinks: Array.isArray(profile.socialLinks) ? profile.socialLinks : [],
+              socialLinks,
               instagram,
               visitasPerfil: profile.visitasPerfil || 0,
               cliquesWhatsapp: profile.cliquesWhatsapp || 0,
@@ -116,12 +125,11 @@ export default function Search() {
   useEffect(() => {
     let filtered = profissionais;
 
-    // Filtro de texto livre (busca)
     if (queryParam) {
       const q = queryParam.toLowerCase();
       filtered = filtered.filter(p => {
         const name = (p.name || '').toLowerCase();
-        const cat  = (p.category || '').toLowerCase();
+        const cat = (p.category || '').toLowerCase();
         const catGeral = (p.categoriaGeral || '').toLowerCase();
         const desc = (p.fullDescription || '').toLowerCase();
         const short = (p.shortDescription || '').toLowerCase();
@@ -129,13 +137,11 @@ export default function Search() {
       });
     }
 
-    // Filtro de Categoria Geral (categoriaGeral)
     const catParam = searchParams.get('cat') || '';
     if (catParam) {
       filtered = filtered.filter(p => p.categoriaGeral?.toLowerCase() === catParam.toLowerCase());
     }
 
-    // Filtro de Subcategoria / Atividade Principal (atividadePrincipal)
     if (categoryParam) {
       const c = categoryParam.toLowerCase();
       filtered = filtered.filter(p => p.category?.toLowerCase() === c);
@@ -147,8 +153,15 @@ export default function Search() {
     setSelectedSubcategory(categoryParam);
   }, [queryParam, categoryParam, searchParams, profissionais]);
 
-  // ── Debounced autocomplete (apenas atividades principais) ──────
+  // ── Debounced autocomplete ──────
   useEffect(() => {
+    // Se acabamos de selecionar uma sugestão / submeter a busca, suprime este disparo.
+    if (skipAutocompleteRef.current) {
+      skipAutocompleteRef.current = false;
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
     if (searchTerm.length < 3) {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -175,7 +188,6 @@ export default function Search() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // ── Close suggestions on outside click ───────────────────────
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (suggestionsRef.current && !suggestionsRef.current.contains(e.target)) {
@@ -186,23 +198,25 @@ export default function Search() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // ── Unique subcategories and bairros (dynamic) ────────────────
-  // Se uma categoriaGeral está selecionada, filtra as atividades correspondentes
   const filteredProfissionais = selectedCategory
     ? profissionais.filter(p => p.categoriaGeral?.toLowerCase() === selectedCategory.toLowerCase())
     : profissionais;
   const uniqueSubcategories = [...new Set(filteredProfissionais.map(p => p.category).filter(Boolean))].sort();
   const uniqueBairros = [...new Set(profissionais.map(p => p.location).filter(Boolean))].sort();
 
-  // ── Handlers ─────────────────────────────────────────────────
   const handleSearch = (e) => {
     e?.preventDefault();
+    skipAutocompleteRef.current = true;
     setShowSuggestions(false);
+    setSuggestions([]);
     const params = {};
     if (searchTerm) params.q = searchTerm;
     if (selectedCategory) params.cat = selectedCategory;
     if (selectedSubcategory) params.category = selectedSubcategory;
     setSearchParams(params);
+    // Após buscar, recolhe filtros para os cards ganharem a tela toda (relevante em mobile).
+    setIsFilterOpen(false);
+    inputRef.current?.blur();
   };
 
   const handleKeyDown = (e) => {
@@ -216,12 +230,16 @@ export default function Search() {
   };
 
   const selectSuggestion = (label) => {
+    skipAutocompleteRef.current = true;
     setSearchTerm(label);
     setShowSuggestions(false);
+    setSuggestions([]);
     const params = { q: label };
     if (selectedCategory) params.cat = selectedCategory;
     if (selectedSubcategory) params.category = selectedSubcategory;
     setSearchParams(params);
+    setIsFilterOpen(false);
+    inputRef.current?.blur();
   };
 
   const clearFilters = () => {
@@ -249,7 +267,6 @@ export default function Search() {
     return scoreB - scoreA;
   }).slice(0, 4);
 
-  // ── Filtered results (with bairro filter applied locally) ─────
   const displayResults = selectedBairro
     ? results.filter(p => p.location?.toLowerCase() === selectedBairro.toLowerCase())
     : results;
@@ -260,7 +277,6 @@ export default function Search() {
       {/* ── SEÇÃO 1: RESULTADOS ─────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20">
 
-        {/* ── BARRA DE BUSCA NO TOPO (rola com a página) ─────── */}
         <div className="mb-6">
           <form onSubmit={handleSearch} className="relative" ref={suggestionsRef}>
             <div className="flex items-center bg-white rounded-2xl shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all overflow-hidden">
@@ -283,7 +299,6 @@ export default function Search() {
               </button>
             </div>
 
-            {/* Dropdown de sugestões */}
             {showSuggestions && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden">
                 {suggestions.map((s, i) => (
@@ -293,11 +308,8 @@ export default function Search() {
                     onMouseDown={() => selectSuggestion(s.label)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-primary/5 hover:text-primary transition-colors text-left"
                   >
-                    <MapPin size={13} className="text-slate-400 shrink-0" />
+                    <SearchIcon size={13} className="text-slate-400 shrink-0" />
                     <span className="truncate">{s.label}</span>
-                    <span className="ml-auto text-[10px] text-slate-400 uppercase tracking-wide shrink-0">
-                      Categoria
-                    </span>
                   </button>
                 ))}
               </div>
@@ -305,7 +317,6 @@ export default function Search() {
           </form>
         </div>
 
-        {/* Botão de toggle de filtros (mobile) */}
         <div className="flex justify-end items-center mb-4 md:hidden">
           <button
             className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm text-slate-700"
@@ -315,30 +326,9 @@ export default function Search() {
           </button>
         </div>
 
-        {/* Categorias Populares (Chips) */}
-        {popularCategories.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-8 items-center">
-            <span className="text-sm font-medium text-slate-500 mr-2 flex items-center gap-1">
-              <Sparkles size={16} className="text-amber-500" /> Em alta:
-            </span>
-            {popularCategories.map((cat, idx) => (
-              <button 
-                key={idx}
-                onClick={() => {
-                  setSelectedSubcategory(cat);
-                  setSearchParams({ category: cat });
-                }}
-                className="bg-white border border-slate-200 text-slate-700 hover:border-primary hover:text-primary px-4 py-1.5 rounded-full text-sm font-medium transition-colors"
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        )}
 
         <div className="flex flex-col md:flex-row gap-8">
 
-          {/* Sidebar / Filters */}
           <aside className={`md:w-72 shrink-0 ${isFilterOpen ? 'block' : 'hidden'} md:block`}>
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 sticky top-24">
               <div className="flex justify-between items-center mb-5 md:hidden">
@@ -347,8 +337,6 @@ export default function Search() {
               </div>
 
               <form onSubmit={handleSearch}>
-
-                {/* ── Bloco 1: Categoria Principal (categoriaGeral) ── */}
                 <div className="mb-5">
                   <label className="block text-sm font-semibold text-slate-800 mb-2">Categoria Principal</label>
                   <div className="relative">
@@ -357,7 +345,7 @@ export default function Search() {
                       onChange={(e) => {
                         const val = e.target.value;
                         setSelectedCategory(val);
-                        setSelectedSubcategory(''); // Limpa subcategoria ao mudar categoria pai
+                        setSelectedSubcategory('');
                         const params = {};
                         if (searchTerm) params.q = searchTerm;
                         if (val) params.cat = val;
@@ -374,7 +362,6 @@ export default function Search() {
                   </div>
                 </div>
 
-                {/* ── Bloco 2: Subcategoria (atividadePrincipal) ──── */}
                 <div className="mb-5">
                   <label className="block text-sm font-semibold text-slate-800 mb-2">Subcategoria / Atividade</label>
                   <div className="relative">
@@ -400,7 +387,6 @@ export default function Search() {
                   </div>
                 </div>
 
-                {/* ── Bloco 3: Localidade / Bairro ────────────────── */}
                 <div className="mb-6">
                   <label className="block text-sm font-semibold text-slate-800 mb-2">Localidade / Bairro</label>
                   <div className="relative">
@@ -430,7 +416,6 @@ export default function Search() {
             </div>
           </aside>
 
-          {/* Results Grid */}
           <main className="flex-1 min-w-0">
             {isLoading ? (
               <div className="flex justify-center py-20">

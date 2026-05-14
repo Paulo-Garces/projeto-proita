@@ -43,6 +43,51 @@ function pickOptionalProfileString(value) {
   return t.length > 0 ? t : null;
 }
 
+/**
+ * Normaliza redes vindas do body (socialLinks ou redesSociais / legado network+link)
+ * para o formato salvo no Prisma: [{ platform: string minúsculo, url: string }, ...] (máx. 3).
+ * @returns {{ value?: unknown[], error?: string }}
+ */
+function normalizeSocialLinksFromBody(raw) {
+  if (raw === undefined) return {};
+  let list = raw;
+  if (typeof raw === 'string') {
+    try {
+      list = JSON.parse(raw);
+    } catch {
+      return { error: 'Formato inválido: não foi possível interpretar redes sociais (JSON).' };
+    }
+  }
+  if (!Array.isArray(list)) {
+    return { error: 'Redes sociais devem ser uma lista (array).' };
+  }
+
+  const PLATFORM_ALIASES = {
+    instagram: 'instagram',
+    youtube: 'youtube',
+    facebook: 'facebook',
+    tiktok: 'tiktok',
+    whatsapp: 'whatsapp',
+    site: 'website',
+    website: 'website',
+  };
+
+  const out = [];
+  for (const item of list) {
+    if (!item || typeof item !== 'object') continue;
+    const rawPlatform = item.platform ?? item.network;
+    let platform = typeof rawPlatform === 'string' ? rawPlatform.trim().toLowerCase() : '';
+    platform = PLATFORM_ALIASES[platform] ?? platform;
+    const urlRaw = item.url ?? item.link;
+    const url = typeof urlRaw === 'string' ? urlRaw.trim() : '';
+    if (!url) continue;
+    if (!platform) platform = 'website';
+    out.push({ platform, url });
+    if (out.length >= 3) break;
+  }
+  return { value: out };
+}
+
 // Campos que retornamos do User em consultas públicas
 const publicUserSelect = {
   nome: true,
@@ -130,6 +175,16 @@ module.exports = (prisma) => {
     const userId = req.user.id;
 
     try {
+      let socialLinksToSave = null;
+      if (socialLinks !== undefined || redesSociais !== undefined) {
+        const rawSocial = socialLinks !== undefined ? socialLinks : redesSociais;
+        const { value, error } = normalizeSocialLinksFromBody(rawSocial);
+        if (error) {
+          return res.status(400).json({ success: false, message: error });
+        }
+        socialLinksToSave = value;
+      }
+
       const resolvedServicePhone = pickFirstNonEmptyString(servicePhone, telefone) ?? null;
       const resolvedServiceBairro = pickFirstNonEmptyString(serviceBairro, bairro) ?? null;
       const profileWhatsapp =
@@ -148,7 +203,7 @@ module.exports = (prisma) => {
           portfolioUrls: portfolioUrls || [],
           avatarUrl: avatarUrl || null,
           avatarFileId: avatarFileId || null,
-          socialLinks: socialLinks || redesSociais || null,
+          socialLinks: socialLinksToSave,
           descricaoCurta: descricaoCurta || shortDescription || null,
           nomeExibicao: pickOptionalProfileString(nome),
           sobrenomeExibicao: pickOptionalProfileString(sobrenome),
@@ -187,17 +242,18 @@ module.exports = (prisma) => {
         atividadePrincipal, categoriaGeral, atividadesSecundarias, descricaoTrabalho,
         descricaoCurta, shortDescription, instagram, whatsapp,
         servicePhone, serviceBairro, telefone, bairro, endereco, portfolioUrls,
-        avatarUrl, avatarFileId, socialLinks, exibirEnderecoCompleto,
+        avatarUrl, avatarFileId, socialLinks, redesSociais, exibirEnderecoCompleto,
         nome, sobrenome,
       } = req.body;
 
-      if (socialLinks !== undefined) {
-        if (!Array.isArray(socialLinks)) {
-          return res.status(400).json({ success: false, message: 'socialLinks deve ser um array.' });
+      let nextSocialLinks = undefined;
+      if (socialLinks !== undefined || redesSociais !== undefined) {
+        const rawSocial = socialLinks !== undefined ? socialLinks : redesSociais;
+        const { value, error } = normalizeSocialLinksFromBody(rawSocial);
+        if (error) {
+          return res.status(400).json({ success: false, message: error });
         }
-        if (socialLinks.length > 3) {
-          return res.status(400).json({ success: false, message: 'Máximo de 3 redes sociais permitidas.' });
-        }
+        nextSocialLinks = value;
       }
 
       const nextServicePhone = pickProfileServicePhone(req.body);
@@ -220,7 +276,7 @@ module.exports = (prisma) => {
           ...(portfolioUrls !== undefined && { portfolioUrls }),
           ...(avatarUrl !== undefined && { avatarUrl }),
           ...(avatarFileId !== undefined && { avatarFileId }),
-          ...(socialLinks !== undefined && { socialLinks }),
+          ...(nextSocialLinks !== undefined && { socialLinks: nextSocialLinks }),
           ...((descricaoCurta !== undefined || shortDescription !== undefined) && { descricaoCurta: descricaoCurta || shortDescription }),
           ...(nextServicePhone !== undefined && { servicePhone: nextServicePhone }),
           ...(nextServiceBairro !== undefined && { serviceBairro: nextServiceBairro }),

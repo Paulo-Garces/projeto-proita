@@ -16,15 +16,20 @@ export default function Profile() {
         const data = await res.json();
         if (res.ok && data.success) {
           const profile = data.data;
-          let instagram = '';
-          if (profile.redesSociais) {
-            if (Array.isArray(profile.redesSociais)) {
-              const instaMatch = profile.redesSociais.find(r => r.includes('instagram'));
-              if (instaMatch) instagram = instaMatch;
-            } else if (typeof profile.redesSociais === 'object') {
-              instagram = profile.redesSociais.instagram || '';
-            }
-          }
+          const rawSocial = profile.socialLinks ?? profile.redesSociais;
+          const socialLinks = Array.isArray(rawSocial)
+            ? rawSocial
+              .map((item) => {
+                if (!item || typeof item !== 'object') return null;
+                const platform = (item.platform ?? item.network ?? '').toString().toLowerCase().trim();
+                const url = (item.url ?? item.link ?? '').toString().trim();
+                if (!platform || !url) return null;
+                return { platform, url };
+              })
+              .filter(Boolean)
+            : [];
+          const instagramEntry = socialLinks.find((s) => s.platform === 'instagram');
+          const instagram = instagramEntry?.url || profile.instagram || '';
 
             setProfessional({
               id: profile.id,
@@ -37,7 +42,7 @@ export default function Profile() {
               fullDescription: profile.descricaoTrabalho,
               phone: profile.servicePhone || profile.whatsapp || profile.user?.telefone || null,
               instagram: instagram,
-              socialLinks: Array.isArray(profile.socialLinks) ? profile.socialLinks : [],
+              socialLinks,
               avatar: profile.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(getProfileAvatarNameParam(profile))}&background=0ea5e9&color=fff&bold=true`,
               verified: true
             });
@@ -132,8 +137,9 @@ export default function Profile() {
                     title={link.platform || 'Link'}
                     onClick={(e) => { 
                       e.preventDefault(); 
-                      const isUrl = link.url.startsWith('http');
-                      const linkUrl = isUrl ? link.url : `https://${link.url}`;
+                      const raw = link.url || '';
+                      const isUrl = raw.startsWith('http');
+                      const linkUrl = isUrl ? raw : `https://${raw}`;
                       window.open(linkUrl, '_blank'); 
                     }}
                   >

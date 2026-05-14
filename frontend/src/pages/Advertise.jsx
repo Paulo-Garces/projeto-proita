@@ -1,8 +1,20 @@
-import { useState, useContext, useRef } from 'react';
+import { useState, useContext, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
-import { Briefcase, MapPin, AlignLeft, CheckCircle, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, X } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
+import { Briefcase, MapPin, AlignLeft, CheckCircle, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2 } from 'lucide-react';
+
+const MAX_PORTFOLIO_FILES = 8;
+const MAX_PORTFOLIO_MB = 2;
+
+const NETWORK_TO_PLATFORM = {
+  Instagram: 'instagram',
+  YouTube: 'youtube',
+  Facebook: 'facebook',
+  TikTok: 'tiktok',
+  Site: 'website',
+};
 
 
 
@@ -46,6 +58,9 @@ export default function Advertise() {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [avatarFileId, setAvatarFileId] = useState(null);
 
+  const [portfolioQueue, setPortfolioQueue] = useState([]);
+  const portfolioInputRef = useRef(null);
+
   const addSocialNetwork = () => {
     setSocialNetworks([...socialNetworks, { network: 'Instagram', link: '' }]);
   };
@@ -67,6 +82,65 @@ export default function Advertise() {
     if (!file) return;
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const appendPortfolioFiles = useCallback((fileList) => {
+    const incoming = Array.from(fileList || []).filter((f) => f.type.startsWith('image/'));
+    if (!incoming.length) return;
+    setPortfolioQueue((prev) => {
+      const next = [...prev];
+      for (const file of incoming) {
+        if (next.length >= MAX_PORTFOLIO_FILES) break;
+        if (file.size > MAX_PORTFOLIO_MB * 1024 * 1024) {
+          alert(`Cada foto deve ter no máximo ${MAX_PORTFOLIO_MB}MB. Ignorada: ${file.name}`);
+          continue;
+        }
+        const id = `${file.name}-${file.size}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        next.push({ id, file, preview: URL.createObjectURL(file) });
+      }
+      return next;
+    });
+  }, []);
+
+  const removePortfolioItem = (id) => {
+    setPortfolioQueue((prev) => {
+      const item = prev.find((p) => p.id === id);
+      if (item?.preview) URL.revokeObjectURL(item.preview);
+      return prev.filter((p) => p.id !== id);
+    });
+  };
+
+  const handlePortfolioDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handlePortfolioDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handlePortfolioDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    appendPortfolioFiles(e.dataTransfer?.files);
+  };
+
+  const handlePortfolioInputChange = (e) => {
+    appendPortfolioFiles(e.target.files);
+    e.target.value = '';
+  };
+
+  const buildSocialLinksPayload = () => {
+    if (!showSocialNetworks) return [];
+    return socialNetworks
+      .map((n) => ({
+        platform: NETWORK_TO_PLATFORM[n.network] || String(n.network || '').toLowerCase(),
+        url: (n.link || '').trim(),
+      }))
+      .filter((n) => n.url)
+      .slice(0, 3);
   };
 
   const handleAnalyzeDescription = async () => {
@@ -251,6 +325,8 @@ export default function Advertise() {
         setIsUploading(false);
       }
 
+      const descricaoFinal = (bioSugerida && bioSugerida.trim()) ? bioSugerida.trim() : descricaoTrabalho.trim();
+
       const response = await fetch(`${API_URL}/api/ads`, {
         method: 'POST',
         headers: {
@@ -263,10 +339,10 @@ export default function Advertise() {
           telefone,
           bairro,
           atividadePrincipal,
-          descricaoTrabalho,
+          descricaoTrabalho: descricaoFinal,
           descricaoCurta,
           bioSugerida,
-          redesSociais: showSocialNetworks ? socialNetworks.filter(n => n.link.trim() !== '') : [],
+          socialLinks: buildSocialLinksPayload(),
           avatarUrl: uploadedAvatarUrl || null,
           avatarFileId: uploadedAvatarFileId || null,
           categoryId: categoryId || null,
@@ -278,6 +354,33 @@ export default function Advertise() {
       });
       const data = await response.json();
       if (response.ok) {
+        const profileId = data.profile?.id;
+        if (profileId && portfolioQueue.length > 0) {
+          setIsUploading(true);
+          try {
+            for (const item of portfolioQueue) {
+              const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: true, fileType: 'image/jpeg' };
+              const compressed = await imageCompression(item.file, options);
+              const fd = new FormData();
+              fd.append('portfolioImage', compressed, 'portfolio.jpg');
+              const up = await fetch(`${API_URL}/api/upload/portfolio/${profileId}`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: fd,
+              });
+              const upData = await up.json();
+              if (!up.ok || !upData.success) {
+                alert(upData.message || 'Erro ao enviar uma foto do portfólio. Você pode adicionar depois no painel.');
+                break;
+              }
+            }
+          } catch (uploadErr) {
+            console.error(uploadErr);
+            alert('Erro ao enviar o portfólio. Você pode adicionar fotos depois editando o anúncio.');
+          } finally {
+            setIsUploading(false);
+          }
+        }
         setStep(4);
         setTimeout(() => {
           navigate('/dashboard');
@@ -744,16 +847,58 @@ export default function Advertise() {
                 {/* Portfolio Drag & Drop */}
                 <div>
                   <h4 className="font-medium text-slate-800 mb-2">Portfólio (Fotos do seu trabalho)</h4>
-                  <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm text-primary mb-4">
+                  <input
+                    ref={portfolioInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handlePortfolioInputChange}
+                  />
+                  <div
+                    role="presentation"
+                    onClick={() => portfolioInputRef.current?.click()}
+                    onDragEnter={handlePortfolioDragEnter}
+                    onDragOver={handlePortfolioDragOver}
+                    onDrop={handlePortfolioDrop}
+                    className="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer flex flex-col items-center justify-center"
+                  >
+                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm text-primary mb-4 pointer-events-none">
                       <UploadCloud size={28} />
                     </div>
-                    <p className="text-slate-700 font-medium text-base mb-1">Arraste e solte imagens aqui</p>
-                    <p className="text-slate-500 text-sm">Adicione até 8 fotos do seu trabalho. Max 2MB por foto.</p>
-                    <button type="button" className="mt-4 px-6 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+                    <p className="text-slate-700 font-medium text-base mb-1 pointer-events-none">Arraste e solte imagens aqui</p>
+                    <p className="text-slate-500 text-sm pointer-events-none">Adicione até {MAX_PORTFOLIO_FILES} fotos do seu trabalho. Max {MAX_PORTFOLIO_MB}MB por foto.</p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        portfolioInputRef.current?.click();
+                      }}
+                      className="mt-4 px-6 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                    >
                       Procurar arquivos
                     </button>
                   </div>
+                  {portfolioQueue.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {portfolioQueue.map((item) => (
+                        <div key={item.id} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 group">
+                          <img src={item.preview} alt="" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removePortfolioItem(item.id);
+                            }}
+                            className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                            title="Remover"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Termos */}

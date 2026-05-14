@@ -34,13 +34,8 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Links Rápidos */}
-          <div>
-            <h3 className="text-white font-semibold mb-4 tracking-wide uppercase text-sm">Explorar</h3>
-            <ul className="space-y-3">
-              {/* Espaço reservado para links futuros */}
-            </ul>
-          </div>
+          {/* Coluna 2 — reservada (mantida vazia para preservar layout de 4 colunas) */}
+          <div></div>
 
           {/* Para Profissionais */}
           <div>

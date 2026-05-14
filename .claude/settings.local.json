@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls \"C:/Users/pr-ga/.claude/projects/c--Users-pr-ga-Desktop-projeto-proita/memory/\" 2>&1)",
+      "Read(//c/Users/pr-ga/.claude/projects/c--Users-pr-ga-Desktop-projeto-proita/memory/**)",
+      "Bash(dir \"C:\\\\Users\\\\pr-ga\\\\.claude\\\\projects\\\\c--Users-pr-ga-Desktop-projeto-proita\\\\memory\\\\\" 2>&1 || echo \"Empty or not found\")"
+    ]
+  }
+}
