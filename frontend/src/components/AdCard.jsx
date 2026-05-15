@@ -66,7 +66,9 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
       } catch (err) {
         console.error(err);
       }
-      window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=Olá! Vi seu perfil no proITA.`, '_blank');
+      const cleanPhone = phone.replace(/\D/g, '');
+      const finalPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+      window.open(`https://wa.me/${finalPhone}?text=Olá! Vi seu perfil no proITA.`, '_blank');
     }
   };
 
