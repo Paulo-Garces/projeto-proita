@@ -144,7 +144,7 @@ export default function Advertise() {
   };
 
   const handleAnalyzeDescription = async () => {
-    if (!descricaoTrabalho.trim() || isAnalyzing) return;
+    if (!descricaoTrabalho?.trim() || isAnalyzing) return;
     setIsAnalyzing(true);
     setAiFailed(false);
     setAiErrorMsg('');
@@ -158,22 +158,23 @@ export default function Advertise() {
         body: JSON.stringify({ description: descricaoTrabalho })
       });
       const data = await response.json();
-      if (response.ok && data.success && data.data?.subcategory?.name) {
-        setAtividadePrincipal(data.data.subcategory.name);
-        setCategoryId(data.data.category.id);
-        setCategoriaGeral(data.data.category.name || data.data.categoriaGeral || '');
-        setDescricaoCurta(data.data.descricaoCurta || '');
-        setBioSugerida(data.data.biografiaCompleta || data.data.bioSugerida || '');
+      if (response.ok && data?.success && data?.data?.subcategory?.name) {
+        setAtividadePrincipal(data.data.subcategory.name || '');
+        setCategoryId(data.data.category?.id || '');
+        setCategoriaGeral(data.data.category?.name || data.data?.categoriaGeral || '');
+        setDescricaoCurta(data.data?.descricaoCurta || '');
+        setBioSugerida(data.data?.biografiaCompleta || data.data?.bioSugerida || '');
         setAiFailed(false);
       } else {
         // IA retornou mas sem atividade principal — desbloqueia campo
         setAiFailed(true);
         setAiErrorMsg('A IA não conseguiu identificar sua atividade. Por favor, preencha manualmente.');
-        if (data.data?.biografiaCompleta) setBioSugerida(data.data.biografiaCompleta);
-        else if (data.data?.bioSugerida) setBioSugerida(data.data.bioSugerida);
+        if (data?.data?.biografiaCompleta) setBioSugerida(data.data.biografiaCompleta);
+        else if (data?.data?.bioSugerida) setBioSugerida(data.data.bioSugerida);
       }
     } catch (err) {
       console.error('Erro ao analisar com IA:', err);
+      alert('Ocorreu um erro ao analisar a descrição. Por favor, preencha os campos manualmente.');
       setAiFailed(true);
       setAiErrorMsg('Erro de conexão com a IA. Por favor, preencha a atividade principal manualmente.');
     } finally {
@@ -615,7 +616,7 @@ export default function Advertise() {
                     ></textarea>
 
                     {/* Botão Limpar Descrição */}
-                    {descricaoTrabalho.trim() && (
+                    {descricaoTrabalho?.trim() && (
                       <button
                         type="button"
                         onClick={() => {
@@ -662,7 +663,7 @@ export default function Advertise() {
                     <button
                       type="button"
                       onClick={handleAnalyzeDescription}
-                      disabled={isAnalyzing || !descricaoTrabalho.trim()}
+                      disabled={isAnalyzing || !descricaoTrabalho?.trim()}
                       className="w-full sm:w-auto text-xs font-bold bg-primary text-white hover:bg-primary-hover px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     >
                       {isAnalyzing ? (
@@ -683,7 +684,7 @@ export default function Advertise() {
                     </label>
                     <input
                       type="text"
-                      value={categoriaGeral}
+                      value={categoriaGeral || ''}
                       readOnly
                       placeholder="Preenchido automaticamente após a análise..."
                       className="w-full px-4 py-3 border rounded-xl transition-colors bg-slate-100 text-slate-600 border-slate-200 focus:outline-none focus:ring-0 cursor-not-allowed"
@@ -695,7 +696,7 @@ export default function Advertise() {
                   </label>
                   <input
                     type="text"
-                    value={atividadePrincipal}
+                    value={atividadePrincipal || ''}
                     readOnly={!aiFailed}
                     onChange={aiFailed ? (e) => setAtividadePrincipal(e.target.value) : undefined}
                     placeholder={aiFailed ? 'Ex: Encanador, Eletricista, Cabeleireira...' : 'Preenchido automaticamente após a análise...'}
@@ -771,11 +772,11 @@ export default function Advertise() {
                 <div>
                   <div className="flex justify-between items-end mb-2">
                     <label className="block text-sm font-medium text-slate-700">Descrição Curta (para o card)</label>
-                    <span className={`text-xs ${descricaoCurta.length > 90 ? 'text-red-500' : 'text-slate-400'}`}>{descricaoCurta.length}/90</span>
+                    <span className={`text-xs ${descricaoCurta?.length > 90 ? 'text-red-500' : 'text-slate-400'}`}>{descricaoCurta?.length || 0}/90</span>
                   </div>
                   <input
                     type="text"
-                    value={descricaoCurta}
+                    value={descricaoCurta || ''}
                     onChange={(e) => setDescricaoCurta(e.target.value.slice(0, 90))}
                     placeholder="Ex: Encanador com 10 anos de experiência. Atendo a domicílio."
                     className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-slate-800"
@@ -790,7 +791,7 @@ export default function Advertise() {
                   </div>
                   <textarea
                     rows={6}
-                    value={bioSugerida}
+                    value={bioSugerida || ''}
                     onChange={(e) => setBioSugerida(e.target.value)}
                     className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors resize-none text-slate-800"
                   ></textarea>
@@ -810,7 +811,7 @@ export default function Advertise() {
                   {showSocialNetworks && (
                     <div className="space-y-4 mt-4 animate-in slide-in-from-top-2 duration-300">
                       <p className="text-sm text-slate-600 mb-2">Deseja adicionar suas redes sociais?</p>
-                      {socialNetworks.map((net, index) => (
+                      {socialNetworks?.map((net, index) => (
                         <div key={index} className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
                           <select
                             value={net.network}
@@ -879,9 +880,9 @@ export default function Advertise() {
                       Procurar arquivos
                     </button>
                   </div>
-                  {portfolioQueue.length > 0 && (
+                  {portfolioQueue?.length > 0 && (
                     <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {portfolioQueue.map((item) => (
+                      {portfolioQueue?.map((item) => (
                         <div key={item.id} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 group">
                           <img src={item.preview} alt="" className="w-full h-full object-cover" />
                           <button

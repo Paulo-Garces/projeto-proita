@@ -27,6 +27,7 @@ export default function Search() {
     return !(isMobile && queryParam);
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isFiltering, setIsFiltering] = useState(true);
 
   // Categorias Gerais fixas
   const categoriasGerais = [
@@ -55,6 +56,7 @@ export default function Search() {
   // Suprime o próximo disparo do autocomplete (usado após clicar numa sugestão ou submeter busca),
   // evitando que o dropdown reabra automaticamente quando setSearchTerm dispara o useEffect [searchTerm].
   const skipAutocompleteRef = useRef(false);
+  const lastAutoFilledQ = useRef(null);
 
   // Sempre que houver um termo de busca na URL, força os filtros fechados em mobile.
   // Em desktop, o aside permanece visível (md:block) — esse estado não o afeta.
@@ -110,7 +112,7 @@ export default function Search() {
             };
           });
           setProfissionais(mappedData);
-          setResults(mappedData);
+          // A filtragem inicial definirá os resultados no outro useEffect
         }
       } catch (err) {
         console.error('Erro ao buscar profissionais:', err);
@@ -125,6 +127,35 @@ export default function Search() {
   useEffect(() => {
     let filtered = profissionais;
 
+    let derivedCat = searchParams.get('cat') || '';
+    let derivedSubcat = categoryParam || '';
+
+    // Quando houver um parâmetro q, vasculhar a estrutura de categorias
+    // e preencher os filtros automaticamente se houver correspondência exata,
+    // mas apenas uma vez por termo de busca para permitir que o usuário limpe os filtros depois.
+    if (queryParam && !derivedCat && !derivedSubcat && lastAutoFilledQ.current !== queryParam) {
+      // Procurar se o termo de busca bate exatamente com alguma subcategoria existente
+      const exactMatch = profissionais.find(
+        p => p.category?.toLowerCase() === queryParam.toLowerCase()
+      );
+      if (exactMatch) {
+        derivedCat = exactMatch.categoriaGeral || '';
+        derivedSubcat = exactMatch.category || '';
+        
+        // Sincroniza a URL imediatamente para que a UI não sofra um reset
+        const newParams = new URLSearchParams(searchParams);
+        if (derivedCat) newParams.set('cat', derivedCat);
+        if (derivedSubcat) newParams.set('category', derivedSubcat);
+        setSearchParams(newParams, { replace: true });
+      }
+      // Se profissionais já foi carregado, marcamos que verificamos este termo
+      if (profissionais.length > 0) {
+        lastAutoFilledQ.current = queryParam;
+      }
+    } else if (!queryParam) {
+      lastAutoFilledQ.current = null;
+    }
+
     if (queryParam) {
       const q = queryParam.toLowerCase();
       filtered = filtered.filter(p => {
@@ -137,21 +168,25 @@ export default function Search() {
       });
     }
 
-    const catParam = searchParams.get('cat') || '';
-    if (catParam) {
-      filtered = filtered.filter(p => p.categoriaGeral?.toLowerCase() === catParam.toLowerCase());
+    if (derivedCat) {
+      filtered = filtered.filter(p => p.categoriaGeral?.toLowerCase() === derivedCat.toLowerCase());
     }
 
-    if (categoryParam) {
-      const c = categoryParam.toLowerCase();
+    if (derivedSubcat) {
+      const c = derivedSubcat.toLowerCase();
       filtered = filtered.filter(p => p.category?.toLowerCase() === c);
     }
 
     setResults(filtered);
     setSearchTerm(queryParam);
-    setSelectedCategory(catParam);
-    setSelectedSubcategory(categoryParam);
-  }, [queryParam, categoryParam, searchParams, profissionais]);
+    setSelectedCategory(derivedCat);
+    setSelectedSubcategory(derivedSubcat);
+    
+    // Quando não estiver mais buscando a API, libera a renderização da lista
+    if (!isLoading) {
+      setIsFiltering(false);
+    }
+  }, [queryParam, categoryParam, searchParams, profissionais, setSearchParams, isLoading]);
 
   // ── Debounced autocomplete ──────
   useEffect(() => {
@@ -167,10 +202,18 @@ export default function Search() {
       setShowSuggestions(false);
       return;
     }
+    if (searchTerm.trim().toLowerCase() === (queryParam || '').trim().toLowerCase()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
     const timer = setTimeout(async () => {
+      if (skipAutocompleteRef.current) return;
       try {
         const res = await fetch(`${API_URL}/api/search/suggestions?q=${encodeURIComponent(searchTerm)}`);
         const data = await res.json();
+        if (skipAutocompleteRef.current) return;
         if (data.success && data.data.length > 0) {
           setSuggestions(data.data);
           setShowSuggestions(true);
@@ -186,7 +229,7 @@ export default function Search() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, queryParam]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -417,7 +460,7 @@ export default function Search() {
           </aside>
 
           <main className="flex-1 min-w-0">
-            {isLoading ? (
+            {isLoading || isFiltering ? (
               <div className="flex justify-center py-20">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
