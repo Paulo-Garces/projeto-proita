@@ -667,9 +667,9 @@ export default function Advertise() {
                       className="w-full sm:w-auto text-xs font-bold bg-primary text-white hover:bg-primary-hover px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     >
                       {isAnalyzing ? (
-                        <><Loader2 size={14} className="animate-spin" /> Analisando Perfil...</>
+                        <span className="flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> <span>Analisando Perfil...</span></span>
                       ) : (
-                        <><Sparkles size={14} /> Clique aqui antes de continuar</>
+                        <span className="flex items-center gap-2"><Sparkles size={14} /> <span>Clique aqui antes de continuar</span></span>
                       )}
                     </button>
                   </div>
