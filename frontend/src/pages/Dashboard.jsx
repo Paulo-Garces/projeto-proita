@@ -117,7 +117,7 @@ function PortfolioSection({ ad, token }) {
         setUrls(data.portfolioUrls);
         urlsRef.current = data.portfolioUrls;
       }
-    } catch {}
+    } catch { }
   };
 
   return (
@@ -591,13 +591,37 @@ export default function Dashboard() {
                 <div className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-slate-900 mb-6">Segurança e Senha</h2>
                   <form className="space-y-6 max-w-md">
-                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Senha Atual</label>
-                      <input type="password" placeholder="••••••••" className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary" /></div>
-                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Nova Senha</label>
-                      <input type="password" placeholder="••••••••" className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary" /></div>
-                    <div className="pt-4">
-                      <button type="button" className="bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-lg font-medium transition-colors">Alterar Senha</button>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Senha Atual</label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength="6"
+                        placeholder="Digite sua senha de 6 números"
+                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary"
+                      />
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Nova Senha</label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength="6"
+                        placeholder="Digite o novo PIN de 6 números"
+                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary"
+                      />
+                    </div>
+
+                    <div className="pt-4">
+                      <button type="button" className="bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                        Alterar Senha
+                      </button>
+                    </div>
+
                   </form>
                 </div>
               )}
