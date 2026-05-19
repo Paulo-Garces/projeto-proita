@@ -1,7 +1,7 @@
 import { useState, useContext, useRef, useEffect } from 'react';
-import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2 } from 'lucide-react';
+import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import AdCard from '../components/AdCard';
 import { API_URL } from '../config';
@@ -361,6 +361,7 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
 // ── Componente principal ────────────────────────────────────────
 export default function Dashboard() {
   const { user, token, logout, updateUser } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
 
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -373,6 +374,44 @@ export default function Dashboard() {
 
   const favorites = [];
 
+  const [senhaAtual, setSenhaAtual] = useState('');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [loadingSenha, setLoadingSenha] = useState(false);
+  const [securityError, setSecurityError] = useState('');
+  const [securitySuccess, setSecuritySuccess] = useState('');
+
+  const [novoEmail, setNovoEmail] = useState('');
+  const [loadingLinkEmail, setLoadingLinkEmail] = useState(false);
+
+  const [novoTelefone, setNovoTelefone] = useState('');
+  const [loadingLinkPhone, setLoadingLinkPhone] = useState(false);
+
+  const handleGoogleCredentialForLink = async (response) => {
+    try {
+      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      const res = await fetch(`${API_URL}/api/admin/link-google`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ email: payload.email, googleId: payload.sub })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSecuritySuccess(data.message);
+        setSecurityError('');
+        updateUser({ email: payload.email, googleId: payload.sub });
+      } else {
+        setSecurityError(data.message || 'Erro ao vincular conta Google.');
+        setSecuritySuccess('');
+      }
+    } catch (err) {
+      setSecurityError('Erro de conexão ao vincular Google.');
+      setSecuritySuccess('');
+    }
+  };
+
   useEffect(() => {
     if (!token) return;
     setAdsLoading(true);
@@ -384,6 +423,35 @@ export default function Dashboard() {
       .catch(console.error)
       .finally(() => setAdsLoading(false));
   }, [token]);
+
+  useEffect(() => {
+    if (activeTab !== 'security' || user?.googleId) return;
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) return;
+
+    const initGoogle = () => {
+      if (typeof google === 'undefined' || !google.accounts) return false;
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCredentialForLink,
+        auto_select: false,
+      });
+      const btn = document.getElementById('google-link-btn');
+      if (btn) {
+        btn.innerHTML = '';
+        google.accounts.id.renderButton(btn, { theme: 'outline', size: 'large' });
+      }
+      return true;
+    };
+
+    if (!initGoogle()) {
+      const retryId = setInterval(() => {
+        if (initGoogle()) clearInterval(retryId);
+      }, 300);
+      setTimeout(() => clearInterval(retryId), 5000);
+      return () => clearInterval(retryId);
+    }
+  }, [activeTab, user?.googleId, token]);
 
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
@@ -437,6 +505,129 @@ export default function Dashboard() {
     setEditingAd(null);
   };
 
+  const handleMudarSenha = async (e) => {
+    e.preventDefault();
+    setSecurityError('');
+    setSecuritySuccess('');
+
+    if (!senhaAtual || !novaSenha) {
+      setSecurityError('Por favor, preencha a senha atual e a nova senha.');
+      return;
+    }
+    setLoadingSenha(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/change-password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ senhaAtual, novaSenha })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSecuritySuccess('Senha alterada com sucesso!');
+        setSenhaAtual('');
+        setNovaSenha('');
+      } else {
+        setSecurityError(data.message || 'Erro ao alterar a senha.');
+      }
+    } catch (err) {
+      console.error(err);
+      setSecurityError('Erro de conexão ao alterar a senha.');
+    } finally {
+      setLoadingSenha(false);
+    }
+  };
+
+
+
+  const handleLinkEmail = async (e) => {
+    e.preventDefault();
+    if (!novoEmail) return;
+    setSecurityError('');
+    setSecuritySuccess('');
+    setLoadingLinkEmail(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/link-email`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ email: novoEmail })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSecuritySuccess(data.message);
+        updateUser({ email: novoEmail });
+        setNovoEmail('');
+      } else {
+        setSecurityError(data.message || 'Erro ao vincular e-mail.');
+      }
+    } catch (err) {
+      setSecurityError('Erro de conexão ao vincular e-mail.');
+    } finally {
+      setLoadingLinkEmail(false);
+    }
+  };
+
+  const handleLinkPhone = async (e) => {
+    e.preventDefault();
+    if (!novoTelefone) return;
+    setSecurityError('');
+    setSecuritySuccess('');
+    setLoadingLinkPhone(true);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/link-phone`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ telefone: novoTelefone })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSecuritySuccess(data.message);
+        updateUser({ telefone: novoTelefone.replace(/\D/g, '') });
+        setNovoTelefone('');
+      } else {
+        setSecurityError(data.message || 'Erro ao vincular telefone.');
+      }
+    } catch (err) {
+      setSecurityError('Erro de conexão ao vincular telefone.');
+    } finally {
+      setLoadingLinkPhone(false);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const handleUnlinkGoogle = async () => {
+    if (!confirm('Deseja desvincular sua conta Google? Você precisará usar telefone e senha para entrar.')) return;
+    setSecurityError('');
+    setSecuritySuccess('');
+    try {
+      const res = await fetch(`${API_URL}/api/admin/unlink-google`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSecuritySuccess(data.message);
+        updateUser({ googleId: null });
+      } else {
+        setSecurityError(data.message || 'Erro ao desvincular Google.');
+      }
+    } catch (err) {
+      setSecurityError('Erro de conexão ao desvincular Google.');
+    }
+  };
+
   const tabs = [
     { key: 'profile', label: 'Meus Dados', Icon: User },
     { key: 'favorites', label: 'Favoritos', Icon: Heart },
@@ -474,7 +665,7 @@ export default function Dashboard() {
                 ))}
               </nav>
               <div className="p-2 border-t border-slate-100 mt-2">
-                <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors">
+                <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors">
                   <LogOut size={18} /> Sair
                 </button>
               </div>
@@ -590,7 +781,22 @@ export default function Dashboard() {
               {activeTab === 'security' && (
                 <div className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-slate-900 mb-6">Segurança e Senha</h2>
-                  <form className="space-y-6 max-w-md">
+
+                  {securityError && (
+                    <div className="mb-6 max-w-md bg-red-50 text-red-600 p-4 rounded-xl flex items-start gap-3 border border-red-100 animate-in fade-in slide-in-from-top-2">
+                      <AlertCircle className="shrink-0 mt-0.5" size={20} />
+                      <p className="text-sm font-medium">{securityError}</p>
+                    </div>
+                  )}
+
+                  {securitySuccess && (
+                    <div className="mb-6 max-w-md bg-emerald-50 text-emerald-600 p-4 rounded-xl flex items-start gap-3 border border-emerald-100 animate-in fade-in slide-in-from-top-2">
+                      <CheckCircle className="shrink-0 mt-0.5" size={20} />
+                      <p className="text-sm font-medium">{securitySuccess}</p>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleMudarSenha} className="space-y-6 max-w-md">
 
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Senha Atual</label>
@@ -599,7 +805,9 @@ export default function Dashboard() {
                         inputMode="numeric"
                         pattern="[0-9]*"
                         maxLength="6"
-                        placeholder="Digite sua senha de 6 números"
+                        placeholder="Digite sua senha atual de 6 números"
+                        value={senhaAtual}
+                        onChange={(e) => setSenhaAtual(e.target.value)}
                         className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary"
                       />
                     </div>
@@ -612,17 +820,121 @@ export default function Dashboard() {
                         pattern="[0-9]*"
                         maxLength="6"
                         placeholder="Digite o novo PIN de 6 números"
+                        value={novaSenha}
+                        onChange={(e) => setNovaSenha(e.target.value)}
                         className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary"
                       />
                     </div>
 
                     <div className="pt-4">
-                      <button type="button" className="bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-lg font-medium transition-colors">
-                        Alterar Senha
+                      <button 
+                        type="submit"
+                        disabled={loadingSenha}
+                        className="bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70"
+                      >
+                        {loadingSenha ? 'Alterando...' : 'Alterar Senha'}
                       </button>
                     </div>
 
                   </form>
+
+                  <div className="mt-12 pt-8 border-t border-slate-200">
+                    <h3 className="text-xl font-bold text-slate-900 mb-6">Segurança da Conta</h3>
+                    
+                    <div className="space-y-5 max-w-md">
+
+                        {/* ── 1. Google ── */}
+                        <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Shield size={16} className="text-slate-500" />
+                              <span className="text-sm font-semibold text-slate-800">Conta Google</span>
+                            </div>
+                            {user?.googleId ? (
+                              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">Vinculado</span>
+                            ) : (
+                              <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
+                            )}
+                          </div>
+                          {user?.googleId ? (
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs text-slate-500">Login rápido com Google ativado.</p>
+                              <button type="button" onClick={handleUnlinkGoogle} className="text-xs font-medium text-red-500 hover:text-red-700 transition-colors cursor-pointer">Desvincular Google</button>
+                            </div>
+                          ) : (
+                            <div>
+                              <div id="google-link-btn" className="w-full flex justify-center"></div>
+                              <p className="text-xs text-slate-500 mt-2 text-center">Ative o login rápido pelo Google.</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* ── 2. E-mail Principal ── */}
+                        <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Shield size={16} className="text-slate-500" />
+                              <span className="text-sm font-semibold text-slate-800">E-mail de Recuperação</span>
+                            </div>
+                            {user?.email ? (
+                              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">Vinculado</span>
+                            ) : (
+                              <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
+                            )}
+                          </div>
+                          {user?.email ? (
+                            <p className="text-xs text-slate-500">{user.email}</p>
+                          ) : (
+                            <form onSubmit={handleLinkEmail} className="flex gap-3">
+                              <input
+                                type="email"
+                                placeholder="seu@email.com"
+                                value={novoEmail}
+                                onChange={(e) => setNovoEmail(e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                                required
+                              />
+                              <button type="submit" disabled={loadingLinkEmail} className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0 disabled:opacity-70 cursor-pointer">
+                                {loadingLinkEmail ? 'Vinculando...' : 'Vincular'}
+                              </button>
+                            </form>
+                          )}
+                        </div>
+
+                        {/* ── 3. Telefone / WhatsApp ── */}
+                        <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Shield size={16} className="text-slate-500" />
+                              <span className="text-sm font-semibold text-slate-800">Telefone / WhatsApp</span>
+                            </div>
+                            {user?.telefone ? (
+                              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">Vinculado</span>
+                            ) : (
+                              <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
+                            )}
+                          </div>
+                          {user?.telefone ? (
+                            <p className="text-xs text-slate-500">{user.telefone}</p>
+                          ) : (
+                            <form onSubmit={handleLinkPhone} className="flex gap-3">
+                              <input
+                                type="tel"
+                                placeholder="(88) 99999-9999"
+                                value={novoTelefone}
+                                onChange={(e) => setNovoTelefone(e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                                required
+                              />
+                              <button type="submit" disabled={loadingLinkPhone} className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0 disabled:opacity-70 cursor-pointer">
+                                {loadingLinkPhone ? 'Vinculando...' : 'Vincular'}
+                              </button>
+                            </form>
+                          )}
+                        </div>
+
+                    </div>
+                  </div>
                 </div>
               )}
 

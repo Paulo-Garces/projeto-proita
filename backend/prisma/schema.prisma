@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "library"
 }
 
@@ -23,53 +23,58 @@ model User {
   profileImageFileId String?
   createdAt          DateTime  @default(now())
   profiles           Profile[] // 1:N — um usuário pode ter vários anúncios
+  resetCode          String?
+  resetCodeExpires   DateTime?
 }
 
 model Profile {
-  id                    String   @id @default(uuid())
-  userId                String   
-  user                  User     @relation(fields: [userId], references: [id])
+  id                     String   @id @default(uuid())
+  userId                 String   
+  user                   User     @relation(fields: [userId], references: [id])
   
   // Nomenclatura oficial do MEI e IA
-  atividadePrincipal    String   // Ex: Encanador, Vaqueiro, Digital Maker
-  categoriaGeral        String?  // Ex: "Construção e Reformas" (Nova Trava)
+  atividadePrincipal     String   // Ex: Encanador, Vaqueiro, Digital Maker
+  categoriaGeral         String?  // Ex: "Construção e Reformas" (Nova Trava)
   atividadesSecundarias String[]
   
-  descricaoTrabalho     String
-  descricaoCurta        String?  // Max 90 chars.
+  descricaoTrabalho      String
+  descricaoCurta         String?  // Max 90 chars.
 
   // Nome público do anúncio (independente do cadastro em User)
-  nomeExibicao          String?
-  sobrenomeExibicao     String?
+  nomeExibicao           String?
+  sobrenomeExibicao      String?
 
   // Contato e Redes Sociais (por anúncio — não espelham User.telefone)
-  instagram             String?
-  whatsapp              String?
-  servicePhone          String?  // Telefone profissional / do anúncio (formulário pode enviar como telefone ou servicePhone)
+  instagram              String?
+  whatsapp               String?
+  servicePhone           String?  // Telefone profissional / do anúncio
 
   // Localização
-  endereco              String?
-  serviceBairro         String?  // Bairro de atuação / exibição do anúncio (formulário pode enviar como bairro ou serviceBairro)
-  bairroEndereco        String?  // NOVO: Usado para o Bairro exato retornado pelo CEP
+  endereco               String?
+  serviceBairro          String?  // Bairro de atuação / exibição do anúncio
+  bairroEndereco         String?  // NOVO: Usado para o Bairro exato retornado pelo CEP
   exibirEnderecoCompleto Boolean  @default(true) // false = mostra apenas o bairro
   
   // Portfólio e Imagens
-  portfolioUrls         String[]
-  avatarUrl             String?
-  avatarFileId          String?
+  portfolioUrls          String[]
+  avatarUrl              String?
+  avatarFileId           String?
   
   // Campos Legado e Métricas
-  redesSociais          Json?
-  socialLinks           Json?
-  cliquesWhatsapp       Int      @default(0)
-  visitasPerfil         Int      @default(0)
-  createdAt             DateTime @default(now())
+  redesSociais           Json?
+  socialLinks            Json?
+  cliquesWhatsapp        Int      @default(0)
+  visitasPerfil          Int      @default(0)
+  createdAt              DateTime @default(now())
+  rating                 Float?   @default(0)
+  reviewCount            Int      @default(0)
+  reviews                Review[]
 }
 
 // Tabelas fixas para alimentar os Menus de Busca/Filtro do Frontend
 model Category {
-  id            String        @id @default(uuid())
-  name          String        @unique
+  id           String        @id @default(uuid())
+  name         String        @unique
   subcategories Subcategory[]
 }
 
@@ -86,4 +91,14 @@ model SearchHistory {
   count     Int      @default(1)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  profileId   String
+  profile     Profile  @relation(fields: [profileId], references: [id])
+  authorName  String   @default("Anônimo")
+  rating      Int
+  comment     String?
+  createdAt   DateTime @default(now())
 }

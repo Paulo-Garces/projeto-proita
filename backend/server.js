@@ -13,6 +13,7 @@ const port = process.env.PORT || 5000;
 
 // Rotas Importadas
 const authMiddleware = require('./middleware/authMiddleware');
+const sendEmail = require('./utils/sendEmail');
 
 // Configuração do CORS
 const allowedOrigins = [
@@ -138,21 +139,23 @@ app.post('/api/register', async (req, res) => {
 // Rota de Login
 app.post('/api/login', async (req, res) => {
   try {
-    const { telefone, senha } = req.body;
+    const { telefone, telefoneLimpo, senha } = req.body;
 
     if (!telefone || !senha) {
       return res.status(400).json({ success: false, message: 'Telefone e senha são obrigatórios.' });
     }
 
     // Limpa a formatação: remove parênteses, espaços e traços, deixando só números
-    const telefoneLimpo = telefone.replace(/\D/g, '');
+    const cleanPhone = telefoneLimpo || telefone.replace(/\D/g, '');
+
+    console.log(`[Login] Buscando usuário: telefone="${telefone}", limpo="${cleanPhone}"`);
 
     // Usa findFirst para procurar o usuário aceitando tanto o formato com símbolos quanto o limpo
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           { telefone: telefone },
-          { telefone: telefoneLimpo }
+          { telefone: cleanPhone }
         ]
       }
     });
@@ -223,6 +226,8 @@ app.post('/api/login', async (req, res) => {
         nome: user.nome,
         sobrenome: user.sobrenome,
         telefone: user.telefone,
+        email: user.email || null,
+        googleId: user.googleId || null,
         bairro: user.bairro,
         role: user.role,
         profileImageUrl: user.profileImageUrl || null,
@@ -231,6 +236,115 @@ app.post('/api/login', async (req, res) => {
   } catch (error) {
     console.error('Erro ao realizar login:', error);
     res.status(500).json({ success: false, message: 'Erro interno ao realizar login.' });
+  }
+});
+
+// Rota de Solicitar Recuperação de Senha (pública, sem authMiddleware)
+app.post('/api/forgot-password', async (req, res) => {
+  try {
+    const { identificador } = req.body;
+    if (!identificador) {
+      return res.status(400).json({ success: false, message: 'O e-mail ou telefone é obrigatório.' });
+    }
+
+    // Higieniza o identificador para busca por telefone
+    const identificadorLimpo = identificador.replace(/\D/g, '');
+    console.log(`[forgot-password] Buscando usuário por: "${identificador}" / limpo: "${identificadorLimpo}"`);
+
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identificador },
+          { telefone: identificador },
+          ...(identificadorLimpo ? [{ telefone: identificadorLimpo }] : [])
+        ]
+      }
+    });
+
+    if (!user) {
+      console.log(`[forgot-password] Usuário NÃO encontrado para: "${identificador}"`);
+      return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+    }
+
+    console.log(`[forgot-password] Usuário encontrado: id=${user.id}, email=${user.email || 'N/A'}, telefone=${user.telefone || 'N/A'}`);
+
+    if (!user.email) {
+      return res.status(400).json({ success: false, message: 'Conta sem e-mail cadastrado. Por favor, acione o suporte.' });
+    }
+
+    // Gerar código numérico de 6 dígitos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 3600000); // 1 hora
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { resetCode: code, resetCodeExpires: expires }
+    });
+
+    const emailResult = await sendEmail(
+      user.email,
+      'Recuperação de Senha - ProITA',
+      `Seu código de recuperação é: ${code}`
+    );
+
+    if (emailResult.success) {
+      res.status(200).json({ success: true, message: 'Código de recuperação enviado para o seu e-mail.' });
+    } else {
+      res.status(500).json({ success: false, message: 'Erro ao enviar o e-mail de recuperação.' });
+    }
+  } catch (error) {
+    console.error('Erro no forgot-password:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao processar a requisição.' });
+  }
+});
+
+// Rota de Redefinir Senha (pública, sem authMiddleware)
+app.post('/api/reset-password', async (req, res) => {
+  try {
+    const { identificador, email, code, novaSenha } = req.body;
+    const targetId = identificador || email;
+
+    if (!targetId || !code || !novaSenha) {
+      return res.status(400).json({ success: false, message: 'Todos os campos são obrigatórios.' });
+    }
+
+    if (!/^\d{6}$/.test(novaSenha)) {
+      return res.status(400).json({ success: false, message: 'A nova senha deve conter exatamente 6 números.' });
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: targetId },
+          { telefone: targetId },
+          { telefone: targetId.replace(/\D/g, '') }
+        ]
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+    }
+
+    if (user.resetCode !== code || !user.resetCodeExpires || user.resetCodeExpires < new Date()) {
+      return res.status(400).json({ success: false, message: 'Código inválido ou expirado.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(novaSenha, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        senha: hashedPassword,
+        resetCode: null,
+        resetCodeExpires: null
+      }
+    });
+
+    res.status(200).json({ success: true, message: 'Senha redefinida com sucesso!' });
+  } catch (error) {
+    console.error('Erro no reset-password:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao redefinir a senha.' });
   }
 });
 

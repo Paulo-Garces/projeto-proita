@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, User, Search, Home, PlusCircle, HelpCircle, Info, LogOut, Shield, Heart } from 'lucide-react';
 import { useState, useRef, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
@@ -8,6 +8,7 @@ export default function Header() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const { user, isAuthenticated, logout } = useContext(AuthContext);
 
@@ -127,7 +128,7 @@ export default function Header() {
                           <User size={16} /> Minha Conta
                         </Link>
                         <button
-                          onClick={() => { logout(); setIsDropdownOpen(false); }}
+                          onClick={() => { logout(); setIsDropdownOpen(false); navigate('/'); }}
                           className="w-full text-left block px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                         >
                           <LogOut size={16} /> Sair
@@ -227,7 +228,7 @@ export default function Header() {
                   <Heart size={20} className="text-slate-400" /> Favoritos
                 </Link>
                 <div className="border-t border-slate-100 mt-2 pt-2">
-                  <button onClick={() => logout()} className="block w-full text-left px-3 py-3 text-base font-medium text-red-500 hover:bg-red-50 rounded-md flex items-center gap-3">
+                  <button onClick={() => { logout(); navigate('/'); }} className="block w-full text-left px-3 py-3 text-base font-medium text-red-500 hover:bg-red-50 rounded-md flex items-center gap-3">
                     <LogOut size={20} /> Sair
                   </button>
                 </div>

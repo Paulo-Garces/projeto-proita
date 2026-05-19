@@ -111,8 +111,13 @@ module.exports = (prisma) => {
         return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
       }
 
+      // Se o usuário não tiver senha (entrou via Google, por exemplo)
+      if (!user.senha) {
+         return res.status(400).json({ success: false, message: 'Usuários cadastrados via Google não podem alterar a senha por aqui.' });
+      }
+
       // 3. Verificar se a senha atual digitada está correta
-      const isMatch = await bcrypt.compare(senhaAtual, user.password);
+      const isMatch = await bcrypt.compare(senhaAtual, user.senha);
       if (!isMatch) {
         return res.status(400).json({ success: false, message: 'A senha atual está incorreta.' });
       }
@@ -124,13 +129,149 @@ module.exports = (prisma) => {
       // 5. Salvar a nova senha criptografada no banco
       await prisma.user.update({
         where: { id: userId },
-        data: { password: hashedPassword }
+        data: { senha: hashedPassword }
       });
 
       res.status(200).json({ success: true, message: 'Senha alterada com sucesso!' });
     } catch (error) {
       console.error("Erro ao mudar senha no backend:", error);
       res.status(500).json({ success: false, message: 'Erro interno no servidor ao alterar a senha.' });
+    }
+  });
+
+  // Rota 4: Vincular E-mail
+  router.put('/link-email', async (req, res) => {
+    try {
+      const { email } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId || !email) {
+        return res.status(400).json({ success: false, message: 'Dados inválidos.' });
+      }
+
+      const existingUser = await prisma.user.findUnique({ where: { email } });
+      if (existingUser && existingUser.id !== userId) {
+        return res.status(409).json({ success: false, message: 'Este e-mail já está sendo utilizado por outra conta.' });
+      }
+
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: { email },
+        select: { id: true, email: true, googleId: true }
+      });
+
+      res.status(200).json({ success: true, message: 'E-mail vinculado com sucesso!', user: updated });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: 'Erro interno ao vincular e-mail.' });
+    }
+  });
+
+  // Rota 5: Vincular Conta Google
+  router.put('/link-google', async (req, res) => {
+    try {
+      const { email, googleId } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId || !googleId || !email) {
+        return res.status(400).json({ success: false, message: 'Dados inválidos.' });
+      }
+
+      const existingGoogle = await prisma.user.findUnique({ where: { googleId } });
+      if (existingGoogle && existingGoogle.id !== userId) {
+        return res.status(409).json({ success: false, message: 'Esta conta Google já está vinculada a outro perfil.' });
+      }
+
+      const existingEmail = await prisma.user.findUnique({ where: { email } });
+      if (existingEmail && existingEmail.id !== userId) {
+        return res.status(409).json({ success: false, message: 'Este e-mail do Google já está sendo utilizado por outra conta.' });
+      }
+
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: { email, googleId },
+        select: { id: true, email: true, googleId: true }
+      });
+
+      res.status(200).json({ success: true, message: 'Conta Google vinculada com sucesso!', user: updated });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: 'Erro interno ao vincular conta Google.' });
+    }
+  });
+
+  // Rota 6: Vincular Telefone/WhatsApp
+  router.put('/link-phone', async (req, res) => {
+    try {
+      const { telefone } = req.body;
+      const userId = req.user?.id;
+
+      if (!userId || !telefone) {
+        return res.status(400).json({ success: false, message: 'Dados inválidos.' });
+      }
+
+      // Remove caracteres não numéricos
+      const telefoneLimpo = telefone.replace(/\D/g, '');
+
+      if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
+        return res.status(400).json({ success: false, message: 'Telefone inválido. Use o formato (XX) XXXXX-XXXX.' });
+      }
+
+      // Verifica se já está em uso por outra conta
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { telefone: telefone },
+            { telefone: telefoneLimpo }
+          ],
+          NOT: { id: userId }
+        }
+      });
+
+      if (existingUser) {
+        return res.status(409).json({ success: false, message: 'Este telefone já está sendo utilizado por outra conta.' });
+      }
+
+      const updated = await prisma.user.update({
+        where: { id: userId },
+        data: { telefone: telefoneLimpo },
+        select: { id: true, telefone: true }
+      });
+
+      res.status(200).json({ success: true, message: 'Telefone vinculado com sucesso!', user: updated });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: 'Erro interno ao vincular telefone.' });
+    }
+  });
+
+  // Rota 7: Desvincular Conta Google
+  router.delete('/unlink-google', async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'Usuário não autenticado.' });
+      }
+
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+      }
+
+      // Segurança: só permite desvincular se o utilizador tiver senha + telefone (método alternativo de login)
+      if (!user.senha || !user.telefone) {
+        return res.status(400).json({ success: false, message: 'Você precisa ter telefone e senha cadastrados antes de desvincular o Google, para não perder o acesso à conta.' });
+      }
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: { googleId: null }
+      });
+
+      res.status(200).json({ success: true, message: 'Conta Google desvinculada com sucesso.' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, message: 'Erro interno ao desvincular conta Google.' });
     }
   });
 
