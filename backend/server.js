@@ -424,6 +424,34 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
+// Rota para salvar o e-mail secundário do usuário
+app.put('/api/user/email-secundario', async (req, res) => {
+  try {
+    const { userId, emailSecundario } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'O ID do usuário é obrigatório.' });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { emailSecundario }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'E-mail alternativo atualizado com sucesso!',
+      user: {
+        id: updatedUser.id,
+        emailSecundario: updatedUser.emailSecundario
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar e-mail secundário:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao salvar o e-mail alternativo.' });
+  }
+});
+
 // Rotas Administrativas
 const adminRoutes = require('./routes/adminRoutes')(prisma);
 app.use('/api/admin', authMiddleware, adminRoutes);

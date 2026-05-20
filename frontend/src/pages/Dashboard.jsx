@@ -382,6 +382,9 @@ export default function Dashboard() {
 
   const [novoEmail, setNovoEmail] = useState('');
   const [loadingLinkEmail, setLoadingLinkEmail] = useState(false);
+  
+  const [novoEmailSecundario, setNovoEmailSecundario] = useState('');
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
 
   const [novoTelefone, setNovoTelefone] = useState('');
   const [loadingLinkPhone, setLoadingLinkPhone] = useState(false);
@@ -600,6 +603,34 @@ export default function Dashboard() {
       setSecurityError('Erro de conexão ao vincular telefone.');
     } finally {
       setLoadingLinkPhone(false);
+    }
+  };
+
+  const handleSaveEmailSecundario = async () => {
+    if (!novoEmailSecundario) return;
+    setSecurityError('');
+    setSecuritySuccess('');
+    try {
+      const res = await fetch(`${API_URL}/api/user/email-secundario`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ userId: user.id, emailSecundario: novoEmailSecundario })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSecuritySuccess(data.message);
+        updateUser({ emailSecundario: novoEmailSecundario });
+        setIsEditingEmail(false);
+        setNovoEmailSecundario('');
+      } else {
+        setSecurityError(data.message || 'Erro ao salvar o e-mail alternativo.');
+      }
+    } catch (err) {
+      console.error(err);
+      setSecurityError('Erro de conexão ao salvar o e-mail alternativo.');
     }
   };
 
@@ -859,7 +890,7 @@ export default function Dashboard() {
                           </div>
                           {user?.googleId ? (
                             <div className="flex items-center justify-between">
-                              <p className="text-xs text-slate-500">Login rápido com Google ativado.</p>
+                              <p className="text-sm text-slate-600">{user?.email}</p>
                               <button type="button" onClick={() => setShowUnlinkModal(true)} className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Desvincular Google</button>
                             </div>
                           ) : (
@@ -909,28 +940,35 @@ export default function Dashboard() {
                               <Shield size={16} className="text-slate-500" />
                               <span className="text-sm font-semibold text-slate-800">E-mail de Recuperação</span>
                             </div>
-                            {user?.email ? (
+                            {user?.emailSecundario ? (
                               <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle size={16} /> Vinculado</span>
                             ) : (
                               <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
                             )}
                           </div>
-                          {user?.email ? (
-                            <p className="text-xs text-slate-500">{user.email}</p>
-                          ) : (
-                            <form onSubmit={handleLinkEmail} className="flex gap-3">
+                          {isEditingEmail ? (
+                            <div className="flex gap-3">
                               <input
                                 type="email"
                                 placeholder="seu@email.com"
-                                value={novoEmail}
-                                onChange={(e) => setNovoEmail(e.target.value)}
+                                value={novoEmailSecundario}
+                                onChange={(e) => setNovoEmailSecundario(e.target.value)}
                                 className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm"
-                                required
                               />
-                              <button type="submit" disabled={loadingLinkEmail} className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0 disabled:opacity-70 cursor-pointer">
-                                {loadingLinkEmail ? 'Vinculando...' : 'Vincular'}
+                              <button type="button" onClick={handleSaveEmailSecundario} className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0 cursor-pointer">
+                                Salvar
                               </button>
-                            </form>
+                            </div>
+                          ) : user?.emailSecundario ? (
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs text-slate-500">{user.emailSecundario}</p>
+                              <button type="button" onClick={() => setIsEditingEmail(true)} className="text-slate-600 hover:text-slate-800 text-sm font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Alterar E-mail</button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs text-slate-500">Nenhum e-mail alternativo.</p>
+                              <button type="button" onClick={() => setIsEditingEmail(true)} className="text-slate-600 hover:text-slate-800 text-sm font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Adicionar e-mail alternativo</button>
+                            </div>
                           )}
                         </div>
 
