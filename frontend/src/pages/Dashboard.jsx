@@ -385,6 +385,7 @@ export default function Dashboard() {
 
   const [novoTelefone, setNovoTelefone] = useState('');
   const [loadingLinkPhone, setLoadingLinkPhone] = useState(false);
+  const [showUnlinkModal, setShowUnlinkModal] = useState(false);
 
   const handleGoogleCredentialForLink = async (response) => {
     try {
@@ -608,7 +609,7 @@ export default function Dashboard() {
   };
 
   const handleUnlinkGoogle = async () => {
-    if (!confirm('Deseja desvincular sua conta Google? Você precisará usar telefone e senha para entrar.')) return;
+    setShowUnlinkModal(false);
     setSecurityError('');
     setSecuritySuccess('');
     try {
@@ -851,7 +852,7 @@ export default function Dashboard() {
                               <span className="text-sm font-semibold text-slate-800">Conta Google</span>
                             </div>
                             {user?.googleId ? (
-                              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">Vinculado</span>
+                              <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle size={16} /> Vinculado</span>
                             ) : (
                               <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
                             )}
@@ -859,7 +860,7 @@ export default function Dashboard() {
                           {user?.googleId ? (
                             <div className="flex items-center justify-between">
                               <p className="text-xs text-slate-500">Login rápido com Google ativado.</p>
-                              <button type="button" onClick={handleUnlinkGoogle} className="text-xs font-medium text-red-500 hover:text-red-700 transition-colors cursor-pointer">Desvincular Google</button>
+                              <button type="button" onClick={() => setShowUnlinkModal(true)} className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Desvincular Google</button>
                             </div>
                           ) : (
                             <div>
@@ -869,39 +870,7 @@ export default function Dashboard() {
                           )}
                         </div>
 
-                        {/* ── 2. E-mail Principal ── */}
-                        <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Shield size={16} className="text-slate-500" />
-                              <span className="text-sm font-semibold text-slate-800">E-mail de Recuperação</span>
-                            </div>
-                            {user?.email ? (
-                              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">Vinculado</span>
-                            ) : (
-                              <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
-                            )}
-                          </div>
-                          {user?.email ? (
-                            <p className="text-xs text-slate-500">{user.email}</p>
-                          ) : (
-                            <form onSubmit={handleLinkEmail} className="flex gap-3">
-                              <input
-                                type="email"
-                                placeholder="seu@email.com"
-                                value={novoEmail}
-                                onChange={(e) => setNovoEmail(e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm"
-                                required
-                              />
-                              <button type="submit" disabled={loadingLinkEmail} className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0 disabled:opacity-70 cursor-pointer">
-                                {loadingLinkEmail ? 'Vinculando...' : 'Vincular'}
-                              </button>
-                            </form>
-                          )}
-                        </div>
-
-                        {/* ── 3. Telefone / WhatsApp ── */}
+                        {/* ── 2. Telefone / WhatsApp ── */}
                         <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
@@ -909,7 +878,7 @@ export default function Dashboard() {
                               <span className="text-sm font-semibold text-slate-800">Telefone / WhatsApp</span>
                             </div>
                             {user?.telefone ? (
-                              <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">Vinculado</span>
+                              <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle size={16} /> Vinculado</span>
                             ) : (
                               <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
                             )}
@@ -933,6 +902,38 @@ export default function Dashboard() {
                           )}
                         </div>
 
+                        {/* ── 3. E-mail de Recuperação ── */}
+                        <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Shield size={16} className="text-slate-500" />
+                              <span className="text-sm font-semibold text-slate-800">E-mail de Recuperação</span>
+                            </div>
+                            {user?.email ? (
+                              <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle size={16} /> Vinculado</span>
+                            ) : (
+                              <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
+                            )}
+                          </div>
+                          {user?.email ? (
+                            <p className="text-xs text-slate-500">{user.email}</p>
+                          ) : (
+                            <form onSubmit={handleLinkEmail} className="flex gap-3">
+                              <input
+                                type="email"
+                                placeholder="seu@email.com"
+                                value={novoEmail}
+                                onChange={(e) => setNovoEmail(e.target.value)}
+                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                                required
+                              />
+                              <button type="submit" disabled={loadingLinkEmail} className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0 disabled:opacity-70 cursor-pointer">
+                                {loadingLinkEmail ? 'Vinculando...' : 'Vincular'}
+                              </button>
+                            </form>
+                          )}
+                        </div>
+
                     </div>
                   </div>
                 </div>
@@ -942,6 +943,33 @@ export default function Dashboard() {
           </main>
         </div>
       </div>
+
+      {showUnlinkModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Desvincular Conta Google?</h3>
+            <p className="text-sm text-slate-600 mb-6">
+              Tem certeza que deseja desvincular sua conta Google? Você precisará usar seu telefone e senha cadastrados para entrar na conta.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowUnlinkModal(false)}
+                className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleUnlinkGoogle}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer"
+              >
+                Sim, Desvincular
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
