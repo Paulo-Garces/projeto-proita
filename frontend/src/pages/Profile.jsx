@@ -40,10 +40,16 @@ export default function Profile() {
               reviews: [],
               location: profile.serviceBairro || profile.user?.bairro || 'Itapipoca',
               fullDescription: profile.descricaoTrabalho,
-              phone: profile.servicePhone || profile.whatsapp || profile.user?.telefone || null,
+              phone: (profile.telefoneComercial && profile.telefoneComercial.trim() !== '')
+                ? profile.telefoneComercial
+                : (profile.user?.telefone || profile.servicePhone || profile.whatsapp || null),
               instagram: instagram,
               socialLinks,
-              avatar: profile.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(getProfileAvatarNameParam(profile))}&background=0ea5e9&color=fff&bold=true`,
+              avatar: (profile.fotoAnuncioUrl && profile.fotoAnuncioUrl.trim() !== '')
+                ? profile.fotoAnuncioUrl
+                : (profile.user?.profileImageUrl
+                  || profile.avatarUrl
+                  || `https://ui-avatars.com/api/?name=${encodeURIComponent(getProfileAvatarNameParam(profile))}&background=0ea5e9&color=fff&bold=true`),
               verified: true
             });
         }
@@ -77,8 +83,11 @@ export default function Profile() {
   }
 
   const handleWhatsApp = () => {
-    // In a real app, this would open WhatsApp with a pre-filled message
-    window.open(`https://wa.me/${professional.phone}?text=Olá! Encontrei seu perfil no proITA e gostaria de um orçamento.`, '_blank');
+    if (professional.phone) {
+      const cleanPhone = professional.phone.replace(/\D/g, '');
+      const finalPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+      window.open(`https://wa.me/${finalPhone}?text=Olá! Encontrei seu perfil no proITA e gostaria de um orçamento.`, '_blank');
+    }
   };
 
   return (

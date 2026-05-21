@@ -99,16 +99,22 @@ export default function Search() {
               location: profile.serviceBairro || profile.user?.bairro || 'Itapipoca',
               shortDescription: profile.descricaoCurta || profile.shortDescription || (profile.descricaoTrabalho?.substring(0, 90) + '...'),
               fullDescription: profile.descricaoTrabalho,
-              phone: profile.servicePhone || profile.whatsapp || profile.user?.telefone || null,
-              servicePhone: profile.servicePhone || profile.whatsapp || null,
+              phone: (profile.telefoneComercial && profile.telefoneComercial.trim() !== '')
+                ? profile.telefoneComercial
+                : (profile.user?.telefone || profile.servicePhone || profile.whatsapp || null),
+              servicePhone: (profile.telefoneComercial && profile.telefoneComercial.trim() !== '')
+                ? profile.telefoneComercial
+                : (profile.user?.telefone || profile.servicePhone || profile.whatsapp || null),
               serviceBairro: profile.serviceBairro || null,
               socialLinks,
               instagram,
               visitasPerfil: profile.visitasPerfil || 0,
               cliquesWhatsapp: profile.cliquesWhatsapp || 0,
-              avatar: profile.user?.profileImageUrl
-                || profile.avatarUrl
-                || `https://ui-avatars.com/api/?name=${encodeURIComponent(getProfileAvatarNameParam(profile))}&background=0ea5e9&color=fff&bold=true`,
+              avatar: (profile.fotoAnuncioUrl && profile.fotoAnuncioUrl.trim() !== '')
+                ? profile.fotoAnuncioUrl
+                : (profile.user?.profileImageUrl
+                  || profile.avatarUrl
+                  || `https://ui-avatars.com/api/?name=${encodeURIComponent(getProfileAvatarNameParam(profile))}&background=0ea5e9&color=fff&bold=true`),
             };
           });
           setProfissionais(mappedData);

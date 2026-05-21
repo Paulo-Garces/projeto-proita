@@ -7,6 +7,30 @@ import AdCard from '../components/AdCard';
 import { API_URL } from '../config';
 import { getProfileDisplayName, getProfileAvatarNameParam } from '../utils/profileDisplayName';
 
+// ── Auxiliares de Formatação e Máscara de Telefone ───────────────
+const formatPhone = (val) => {
+  if (!val) return '';
+  let value = val.replace(/\D/g, '');
+  if (value.length > 11) value = value.slice(0, 11);
+  if (value.length > 2) {
+    value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+  }
+  if (value.length > 10) {
+    value = `${value.slice(0, 10)}-${value.slice(10)}`;
+  }
+  return value;
+};
+
+const convertToInternationalPhone = (phone) => {
+  if (!phone) return '';
+  const clean = phone.replace(/\D/g, '');
+  if (!clean) return '';
+  if (clean.startsWith('55') && (clean.length === 12 || clean.length === 13)) {
+    return `+${clean}`;
+  }
+  return `+55${clean}`;
+};
+
 // ── Sub-componente: Avatar (foto real ou iniciais) ──────────────
 function AvatarDisplay({ user, sizeClass = 'w-20 h-20', textClass = 'text-2xl' }) {
   return user?.profileImageUrl ? (
@@ -196,6 +220,9 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
     servicePhone: ad.servicePhone || user?.telefone || '',
     serviceBairro: ad.serviceBairro || '',
     endereco: ad.endereco || '',
+    telefoneComercial: ad.telefoneComercial ? formatPhone(ad.telefoneComercial.replace(/^\+55/, '')) : '',
+    fotoAnuncioUrl: ad.fotoAnuncioUrl || '',
+    fotoAnuncioFileId: ad.fotoAnuncioFileId || '',
   });
   const [socialLinks, setSocialLinks] = useState(() =>
     mapStoredSocialLinksToForm(ad.socialLinks ?? ad.redesSociais)
@@ -204,7 +231,59 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
+  const logoInputRef = useRef(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [logoError, setLogoError] = useState('');
+
   const set = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setLogoError('Por favor, selecione um arquivo de imagem.');
+      return;
+    }
+
+    setLogoError('');
+    setIsUploadingLogo(true);
+
+    try {
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1024,
+        useWebWorker: true,
+        fileType: 'image/jpeg',
+      };
+      const compressed = await imageCompression(file, options);
+      const fd = new FormData();
+      fd.append('fotoAnuncio', compressed, 'fotoAnuncio.jpg');
+
+      const res = await fetch(`${API_URL}/api/upload/foto-anuncio`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: fd,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setForm(prev => ({
+          ...prev,
+          fotoAnuncioUrl: data.url,
+          fotoAnuncioFileId: data.fileId,
+        }));
+      } else {
+        setLogoError(data.message || 'Erro ao fazer upload da imagem.');
+      }
+    } catch (err) {
+      console.error('[LOGO UPLOAD] Erro:', err);
+      setLogoError('Erro de conexão ou processamento da imagem.');
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
 
   const addSocialLink = () => {
     if (socialLinks.length >= 3) return;
@@ -223,6 +302,7 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           ...form,
+          telefoneComercial: convertToInternationalPhone(form.telefoneComercial),
           atividadesSecundarias: form.atividadesSecundarias.split(',').map(s => s.trim()).filter(Boolean),
           socialLinks: socialLinks
             .map((s) => ({ platform: String(s.platform || '').toLowerCase().trim(), url: String(s.url || '').trim() }))
@@ -253,6 +333,71 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
         <ArrowLeft size={16} /> Voltar aos meus anúncios
       </button>
       <h3 className="text-xl font-bold text-slate-800">Editando: {ad.atividadePrincipal}</h3>
+
+      {/* ── 1. LOGO / FOTO COMERCIAL DO ANÚNCIO (Topo Absoluto) ── */}
+      <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
+        <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Logo / Foto Comercial do Anúncio</h4>
+        <div className="flex flex-col sm:flex-row gap-4 items-center">
+          <div className="relative shrink-0">
+            {form.fotoAnuncioUrl ? (
+              <div className="relative group">
+                <img src={form.fotoAnuncioUrl} alt="Logo comercial" className="w-20 h-20 rounded-xl object-cover border border-slate-200 shadow-sm bg-white" />
+                <button
+                  type="button"
+                  onClick={() => setForm(prev => ({ ...prev, fotoAnuncioUrl: '', fotoAnuncioFileId: '' }))}
+                  className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                  title="Remover foto"
+                >
+                  <Trash2 size={10} />
+                </button>
+              </div>
+            ) : (
+              <div className="w-20 h-20 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center font-bold text-xs uppercase border border-dashed border-slate-300 shadow-sm">
+                Sem Logo
+              </div>
+            )}
+          </div>
+          <div className="flex-1 w-full space-y-2">
+            <label className={labelClass}>URL da Imagem do Anúncio</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                value={form.fotoAnuncioUrl}
+                onChange={set('fotoAnuncioUrl')}
+                placeholder="https://exemplo.com/sua-foto.jpg"
+                className={inputClass + ' flex-1'}
+              />
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={isUploadingLogo}
+                className="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition-colors shrink-0 flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
+              >
+                {isUploadingLogo ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" /> Carregando...
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud size={14} /> Upload
+                  </>
+                )}
+              </button>
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleLogoUpload}
+              />
+            </div>
+            {logoError && <p className="text-xs text-red-500">{logoError}</p>}
+            <p className="text-xs text-slate-500">
+              Personalize o anúncio com uma foto profissional ou logo diferente do seu perfil pessoal.
+            </p>
+          </div>
+        </div>
+      </section>
 
       <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
         <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Informações Básicas</h4>
@@ -291,9 +436,31 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
 
       <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
         <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Contato e Redes Sociais</h4>
-        <div>
-          <label className={labelClass}>WhatsApp do Serviço <span className="text-slate-400">(pode ser diferente do cadastro)</span></label>
-          <input value={form.servicePhone} onChange={set('servicePhone')} placeholder="Ex: 88999999999" className={inputClass} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>WhatsApp do Serviço <span className="text-slate-400">(pode ser diferente do cadastro)</span></label>
+            <input value={form.servicePhone} onChange={set('servicePhone')} placeholder="Ex: 88999999999" className={inputClass} />
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-sm font-medium text-slate-700">Telefone Comercial Dedicado</label>
+              {ad.telefoneComercialVerificado ? (
+                <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-0.5">
+                  <CheckCircle size={10} /> Verificado
+                </span>
+              ) : (
+                <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-0.5">
+                  <AlertCircle size={10} /> Não Verificado
+                </span>
+              )}
+            </div>
+            <input
+              value={form.telefoneComercial}
+              onChange={(e) => setForm(prev => ({ ...prev, telefoneComercial: formatPhone(e.target.value) }))}
+              placeholder="Ex: (88) 99999-9999"
+              className={inputClass}
+            />
+          </div>
         </div>
 
         <div>
@@ -358,6 +525,7 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
   );
 }
 
+
 // ── Componente principal ────────────────────────────────────────
 export default function Dashboard() {
   const { user, token, logout, updateUser } = useContext(AuthContext);
@@ -382,7 +550,7 @@ export default function Dashboard() {
 
   const [novoEmail, setNovoEmail] = useState('');
   const [loadingLinkEmail, setLoadingLinkEmail] = useState(false);
-  
+
   const [novoEmailSecundario, setNovoEmailSecundario] = useState('');
   const [isEditingEmail, setIsEditingEmail] = useState(false);
 
@@ -394,6 +562,25 @@ export default function Dashboard() {
   const [codigoVerificacaoEmail, setCodigoVerificacaoEmail] = useState('');
   const [loadingVerificacaoEmail, setLoadingVerificacaoEmail] = useState(false);
   const [loadingRequestVerificacao, setLoadingRequestVerificacao] = useState(false);
+
+  // Estados controlados para o formulário de "Meus Dados"
+  const [profileNome, setProfileNome] = useState('');
+  const [profileSobrenome, setProfileSobrenome] = useState('');
+  const [profileTelefone, setProfileTelefone] = useState('');
+  const [profileBairro, setProfileBairro] = useState('');
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState('');
+  const [profileError, setProfileError] = useState('');
+
+  // Sincroniza os estados locais quando o usuário carregar ou for atualizado
+  useEffect(() => {
+    if (user) {
+      setProfileNome(user.nome || '');
+      setProfileSobrenome(user.sobrenome || '');
+      setProfileTelefone(user.telefone ? formatPhone(user.telefone.replace(/^\+55/, '')) : '');
+      setProfileBairro(user.bairro || '');
+    }
+  }, [user]);
 
   const handleGoogleCredentialForLink = async (response) => {
     try {
@@ -594,12 +781,12 @@ export default function Dashboard() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ telefone: novoTelefone })
+        body: JSON.stringify({ telefone: convertToInternationalPhone(novoTelefone) })
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setSecuritySuccess(data.message);
-        updateUser({ telefone: novoTelefone.replace(/\D/g, '') });
+        updateUser({ telefone: convertToInternationalPhone(novoTelefone) });
         setNovoTelefone('');
       } else {
         setSecurityError(data.message || 'Erro ao vincular telefone.');
@@ -755,6 +942,48 @@ export default function Dashboard() {
     }
   };
 
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    setLoadingProfile(true);
+    setProfileSuccess('');
+    setProfileError('');
+
+    try {
+      const res = await fetch(`${API_URL}/api/user/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nome: profileNome,
+          sobrenome: profileSobrenome,
+          telefone: convertToInternationalPhone(profileTelefone),
+          bairro: profileBairro
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setProfileSuccess('Dados atualizados com sucesso!');
+        updateUser(data.user);
+        setProfileError('');
+
+        setTimeout(() => {
+          setProfileSuccess('');
+        }, 4000);
+      } else {
+        setProfileError(data.message || 'Erro ao atualizar dados do perfil.');
+      }
+    } catch (err) {
+      console.error(err);
+      setProfileError('Erro de conexão ao atualizar perfil.');
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
   const tabs = [
     { key: 'profile', label: 'Meus Dados', Icon: User },
     { key: 'favorites', label: 'Favoritos', Icon: Heart },
@@ -786,13 +1015,13 @@ export default function Dashboard() {
               <nav className="p-2">
                 {tabs.map(({ key, label, Icon }) => (
                   <button key={key} onClick={() => { setActiveTab(key); setEditingAd(null); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${activeTab === key ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:bg-slate-50'}`}>
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer ${activeTab === key ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:bg-slate-50'}`}>
                     <Icon size={18} /> {label}
                   </button>
                 ))}
               </nav>
               <div className="p-2 border-t border-slate-100 mt-2">
-                <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors">
+                <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors cursor-pointer">
                   <LogOut size={18} /> Sair
                 </button>
               </div>
@@ -824,19 +1053,70 @@ export default function Dashboard() {
                       {photoError && <p className="text-xs text-red-500 mt-1">{photoError}</p>}
                     </div>
                   </div>
-                  <form className="space-y-6 max-w-2xl">
+                  <form onSubmit={handleUpdateProfile} className="space-y-6 max-w-2xl">
+                    {profileSuccess && (
+                      <div className="p-4 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2">
+                        <CheckCircle size={16} className="text-emerald-600" />
+                        <span>{profileSuccess}</span>
+                      </div>
+                    )}
+                    {profileError && (
+                      <div className="p-4 text-sm text-red-800 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2">
+                        <AlertCircle size={16} className="text-red-600" />
+                        <span>{profileError}</span>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div><label className="block text-sm font-medium text-slate-700 mb-1">Nome</label>
-                        <input type="text" defaultValue={user?.nome || ''} className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary" /></div>
-                      <div><label className="block text-sm font-medium text-slate-700 mb-1">Sobrenome</label>
-                        <input type="text" defaultValue={user?.sobrenome || ''} className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary" /></div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Nome</label>
+                        <input
+                          type="text"
+                          value={profileNome}
+                          onChange={(e) => setProfileNome(e.target.value)}
+                          className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Sobrenome</label>
+                        <input
+                          type="text"
+                          value={profileSobrenome}
+                          onChange={(e) => setProfileSobrenome(e.target.value)}
+                          className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
                     </div>
-                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Telefone / WhatsApp</label>
-                      <input type="text" defaultValue={user?.telefone || ''} className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary" /></div>
-                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Bairro Padrão</label>
-                      <input type="text" defaultValue={user?.bairro || ''} className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary" /></div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Telefone / WhatsApp</label>
+                      <input
+                        type="text"
+                        value={profileTelefone}
+                        onChange={(e) => setProfileTelefone(formatPhone(e.target.value))}
+                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary"
+                        placeholder="(88) 99999-9999"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Bairro Padrão</label>
+                      <input
+                        type="text"
+                        value={profileBairro}
+                        onChange={(e) => setProfileBairro(e.target.value)}
+                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary"
+                        placeholder="Ex: Centro"
+                      />
+                    </div>
                     <div className="pt-4">
-                      <button type="button" className="bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-lg font-medium transition-colors">Salvar Alterações</button>
+                      <button
+                        type="submit"
+                        disabled={loadingProfile}
+                        className="bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70 flex items-center gap-2 cursor-pointer"
+                      >
+                        {loadingProfile && <Loader2 size={16} className="animate-spin" />}
+                        {loadingProfile ? 'Salvando...' : 'Salvar Alterações'}
+                      </button>
                     </div>
                   </form>
                 </div>
@@ -860,9 +1140,24 @@ export default function Dashboard() {
                     <>
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-slate-900">Meus Anúncios</h2>
-                        <Link to="/advertise" className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors">
-                          <Plus size={16} /> Novo Anúncio
-                        </Link>
+                        {myAds.length >= 4 ? (
+                          <div className="flex flex-col items-end">
+                            <button
+                              disabled
+                              className="flex items-center gap-2 bg-slate-200 text-slate-400 px-4 py-2 rounded-xl text-sm font-medium cursor-not-allowed border border-slate-300"
+                              title="Você atingiu o limite máximo de 4 anúncios por conta."
+                            >
+                              <Plus size={16} /> Novo Anúncio
+                            </button>
+                            <span className="text-xs text-slate-500 mt-1 font-medium bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                              Limite máximo de 4 anúncios atingido
+                            </span>
+                          </div>
+                        ) : (
+                          <Link to="/advertise" className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors">
+                            <Plus size={16} /> Novo Anúncio
+                          </Link>
+                        )}
                       </div>
                       {adsLoading ? (
                         <div className="flex justify-center py-16"><Loader2 size={32} className="animate-spin text-primary" /></div>
@@ -877,15 +1172,23 @@ export default function Dashboard() {
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                           {myAds.map(ad => {
+                            const fotoAnuncio = (ad.fotoAnuncioUrl && ad.fotoAnuncioUrl.trim() !== '')
+                              ? ad.fotoAnuncioUrl
+                              : (user?.profileImageUrl || ad.avatarUrl || null);
+
+                            const telefoneExibicao = (ad.telefoneComercial && ad.telefoneComercial.trim() !== '')
+                              ? ad.telefoneComercial
+                              : (user?.telefone || ad.servicePhone || ad.whatsapp || '');
+
                             const cardPro = {
                               id: ad.id,
                               name: getProfileDisplayName(ad, user),
                               category: ad.atividadePrincipal,
                               shortDescription: ad.descricaoCurta || ad.shortDescription || ad.descricaoTrabalho?.substring(0, 90),
-                              servicePhone: ad.servicePhone || ad.whatsapp || user?.telefone,
+                              servicePhone: telefoneExibicao,
                               serviceBairro: ad.serviceBairro,
                               location: ad.serviceBairro || user?.bairro || 'Itapipoca',
-                              avatar: user?.profileImageUrl || ad.avatarUrl || null,
+                              avatar: fotoAnuncio,
                               socialLinks: mapStoredSocialLinksToForm(ad.socialLinks ?? ad.redesSociais),
                             };
                             return (
@@ -954,7 +1257,7 @@ export default function Dashboard() {
                     </div>
 
                     <div className="pt-4">
-                      <button 
+                      <button
                         type="submit"
                         disabled={loadingSenha}
                         className="bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70"
@@ -967,142 +1270,142 @@ export default function Dashboard() {
 
                   <div className="mt-12 pt-8 border-t border-slate-200">
                     <h3 className="text-xl font-bold text-slate-900 mb-6">Segurança da Conta</h3>
-                    
+
                     <div className="space-y-5 max-w-md">
 
-                        {/* ── 1. Google ── */}
-                        <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Shield size={16} className="text-slate-500" />
-                              <span className="text-sm font-semibold text-slate-800">Conta Google</span>
-                            </div>
-                            {user?.googleId ? (
-                              <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
-                                <CheckCircle size={14} /> Verificado
-                              </span>
-                            ) : (
-                              <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
-                            )}
+                      {/* ── 1. Google ── */}
+                      <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Shield size={16} className="text-slate-500" />
+                            <span className="text-sm font-semibold text-slate-800">Conta Google</span>
                           </div>
                           {user?.googleId ? (
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm text-slate-600">{user?.email}</p>
-                              <button type="button" onClick={() => setShowUnlinkModal(true)} className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Desvincular Google</button>
-                            </div>
+                            <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
+                              <CheckCircle size={14} /> Verificado
+                            </span>
                           ) : (
-                            <div>
-                              <div id="google-link-btn" className="w-full flex justify-center"></div>
-                              <p className="text-xs text-slate-500 mt-2 text-center">Ative o login rápido pelo Google.</p>
-                            </div>
+                            <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
                           )}
                         </div>
-
-                        {/* ── 2. Telefone / WhatsApp ── */}
-                        <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
+                        {user?.googleId ? (
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Shield size={16} className="text-slate-500" />
-                              <span className="text-sm font-semibold text-slate-800">Telefone / WhatsApp</span>
-                            </div>
-                            {user?.telefone ? (
-                              <span className="text-slate-500 text-xs font-medium">Vinculado</span>
-                            ) : (
-                              <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
-                            )}
+                            <p className="text-sm text-slate-600">{user?.email}</p>
+                            <button type="button" onClick={() => setShowUnlinkModal(true)} className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Desvincular Google</button>
+                          </div>
+                        ) : (
+                          <div>
+                            <div id="google-link-btn" className="w-full flex justify-center"></div>
+                            <p className="text-xs text-slate-500 mt-2 text-center">Ative o login rápido pelo Google.</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ── 2. Telefone / WhatsApp ── */}
+                      <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Shield size={16} className="text-slate-500" />
+                            <span className="text-sm font-semibold text-slate-800">Telefone / WhatsApp</span>
                           </div>
                           {user?.telefone ? (
-                            <div className="space-y-1.5">
-                              <p className="text-xs text-slate-500">{user.telefone}</p>
-                              <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1">
-                                <AlertCircle size={14} /> Não verificado
-                              </span>
-                            </div>
+                            <span className="text-slate-500 text-xs font-medium">Vinculado</span>
                           ) : (
-                            <form onSubmit={handleLinkPhone} className="flex gap-3">
-                              <input
-                                type="tel"
-                                placeholder="(88) 99999-9999"
-                                value={novoTelefone}
-                                onChange={(e) => setNovoTelefone(e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm"
-                                required
-                              />
-                              <button type="submit" disabled={loadingLinkPhone} className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0 disabled:opacity-70 cursor-pointer">
-                                {loadingLinkPhone ? 'Vinculando...' : 'Vincular'}
-                              </button>
-                            </form>
+                            <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
                           )}
                         </div>
-
-                        {/* ── 3. E-mail de Recuperação ── */}
-                        <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Shield size={16} className="text-slate-500" />
-                              <span className="text-sm font-semibold text-slate-800">E-mail de Recuperação</span>
-                            </div>
-                            {!isEditingEmail && (
-                              user?.emailSecundario ? (
-                                user?.emailSecundarioVerificado ? (
-                                  <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
-                                    <CheckCircle size={14} /> Verificado
-                                  </span>
-                                ) : (
-                                  <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">Pendente</span>
-                                )
-                              ) : (
-                                <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
-                              )
-                            )}
+                        {user?.telefone ? (
+                          <div className="space-y-1.5">
+                            <p className="text-xs text-slate-500">{user.telefone}</p>
+                            <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1">
+                              <AlertCircle size={14} /> Não verificado
+                            </span>
                           </div>
-                          {isEditingEmail ? (
-                            <div className="flex gap-3">
-                              <input
-                                type="email"
-                                placeholder="seu@email.com"
-                                value={novoEmailSecundario}
-                                onChange={(e) => setNovoEmailSecundario(e.target.value)}
-                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm"
-                              />
-                              <div className="flex items-center gap-2 shrink-0">
-                                <button type="button" onClick={handleSaveEmailSecundario} className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">
-                                  Salvar
-                                </button>
-                                <button type="button" onClick={() => setIsEditingEmail(false)} className="text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">
-                                  Cancelar
-                                </button>
-                              </div>
-                            </div>
-                          ) : user?.emailSecundario ? (
-                            <div>
-                              <p className="text-sm text-slate-800 font-medium mb-3">{user.emailSecundario}</p>
-                              <div className="flex items-center gap-3 text-sm">
-                                {!user?.emailSecundarioVerificado && (
-                                  <>
-                                    <button 
-                                      type="button" 
-                                      onClick={handleVerifyEmailSecundario} 
-                                      disabled={loadingRequestVerificacao}
-                                      className="text-blue-600 hover:text-blue-800 font-medium transition-colors bg-transparent border-none p-0 cursor-pointer disabled:opacity-50"
-                                    >
-                                      {loadingRequestVerificacao ? 'Enviando...' : 'Verificar'}
-                                    </button>
-                                    <span className="text-slate-300">|</span>
-                                  </>
-                                )}
-                                <button type="button" onClick={() => setIsEditingEmail(true)} className="text-slate-600 hover:text-slate-800 font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Alterar</button>
-                                <span className="text-slate-300">|</span>
-                                <button type="button" onClick={handleDeleteEmailSecundario} className="text-red-600 hover:text-red-800 font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Excluir</button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs text-slate-500">Nenhum e-mail alternativo.</p>
-                              <button type="button" onClick={() => setIsEditingEmail(true)} className="text-slate-600 hover:text-slate-800 text-sm font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Adicionar e-mail alternativo</button>
-                            </div>
+                        ) : (
+                          <form onSubmit={handleLinkPhone} className="flex gap-3">
+                            <input
+                              type="tel"
+                              placeholder="(88) 99999-9999"
+                              value={novoTelefone}
+                              onChange={(e) => setNovoTelefone(formatPhone(e.target.value))}
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                              required
+                            />
+                            <button type="submit" disabled={loadingLinkPhone} className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0 disabled:opacity-70 cursor-pointer">
+                              {loadingLinkPhone ? 'Vinculando...' : 'Vincular'}
+                            </button>
+                          </form>
+                        )}
+                      </div>
+
+                      {/* ── 3. E-mail de Recuperação ── */}
+                      <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Shield size={16} className="text-slate-500" />
+                            <span className="text-sm font-semibold text-slate-800">E-mail de Recuperação</span>
+                          </div>
+                          {!isEditingEmail && (
+                            user?.emailSecundario ? (
+                              user?.emailSecundarioVerificado ? (
+                                <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
+                                  <CheckCircle size={14} /> Verificado
+                                </span>
+                              ) : (
+                                <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">Pendente</span>
+                              )
+                            ) : (
+                              <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
+                            )
                           )}
                         </div>
+                        {isEditingEmail ? (
+                          <div className="flex gap-3">
+                            <input
+                              type="email"
+                              placeholder="seu@email.com"
+                              value={novoEmailSecundario}
+                              onChange={(e) => setNovoEmailSecundario(e.target.value)}
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm"
+                            />
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button type="button" onClick={handleSaveEmailSecundario} className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer">
+                                Salvar
+                              </button>
+                              <button type="button" onClick={() => setIsEditingEmail(false)} className="text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        ) : user?.emailSecundario ? (
+                          <div>
+                            <p className="text-sm text-slate-800 font-medium mb-3">{user.emailSecundario}</p>
+                            <div className="flex items-center gap-3 text-sm">
+                              {!user?.emailSecundarioVerificado && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={handleVerifyEmailSecundario}
+                                    disabled={loadingRequestVerificacao}
+                                    className="text-blue-600 hover:text-blue-800 font-medium transition-colors bg-transparent border-none p-0 cursor-pointer disabled:opacity-50"
+                                  >
+                                    {loadingRequestVerificacao ? 'Enviando...' : 'Verificar'}
+                                  </button>
+                                  <span className="text-slate-300">|</span>
+                                </>
+                              )}
+                              <button type="button" onClick={() => setIsEditingEmail(true)} className="text-slate-600 hover:text-slate-800 font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Alterar</button>
+                              <span className="text-slate-300">|</span>
+                              <button type="button" onClick={handleDeleteEmailSecundario} className="text-red-600 hover:text-red-800 font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Excluir</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-slate-500">Nenhum e-mail alternativo.</p>
+                            <button type="button" onClick={() => setIsEditingEmail(true)} className="text-slate-600 hover:text-slate-800 text-sm font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Adicionar e-mail alternativo</button>
+                          </div>
+                        )}
+                      </div>
 
                     </div>
                   </div>

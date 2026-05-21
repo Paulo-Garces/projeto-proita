@@ -52,6 +52,8 @@ model Profile {
   instagram              String?
   whatsapp               String?
   servicePhone           String?  // Telefone profissional / do anúncio
+  telefoneComercial      String?
+  telefoneComercialVerificado Boolean @default(false)
 
   // Localização
   endereco               String?
@@ -63,6 +65,8 @@ model Profile {
   portfolioUrls          String[]
   avatarUrl              String?
   avatarFileId           String?
+  fotoAnuncioUrl         String?
+  fotoAnuncioFileId      String?
   
   // Campos Legado e Métricas
   redesSociais           Json?

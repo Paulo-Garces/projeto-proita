@@ -1,5 +1,6 @@
 const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
+const { convertToInternationalPhone } = require('../utils/phoneHelper');
 
 /** String preenchida: não nula, não indefinida e não vazia após trim. */
 function isNonEmptyString(value) {
@@ -170,11 +171,18 @@ module.exports = (prisma) => {
       servicePhone, serviceBairro, exibirEnderecoCompleto,
       telefone, bairro,
       nome, sobrenome,
+      telefoneComercial, fotoAnuncioUrl, fotoAnuncioFileId
     } = req.body;
 
     const userId = req.user.id;
 
     try {
+      // Trava de segurança: limite máximo de 4 anúncios por conta
+      const adsCount = await prisma.profile.count({ where: { userId } });
+      if (adsCount >= 4) {
+        return res.status(400).json({ success: false, message: 'Limite máximo de 4 anúncios atingido.' });
+      }
+
       let socialLinksToSave = null;
       if (socialLinks !== undefined || redesSociais !== undefined) {
         const rawSocial = socialLinks !== undefined ? socialLinks : redesSociais;
@@ -210,6 +218,9 @@ module.exports = (prisma) => {
           servicePhone: resolvedServicePhone,
           serviceBairro: resolvedServiceBairro,
           exibirEnderecoCompleto: exibirEnderecoCompleto !== undefined ? exibirEnderecoCompleto : true,
+          telefoneComercial: convertToInternationalPhone(pickOptionalProfileString(telefoneComercial)),
+          fotoAnuncioUrl: pickOptionalProfileString(fotoAnuncioUrl),
+          fotoAnuncioFileId: pickOptionalProfileString(fotoAnuncioFileId),
         },
       });
 
@@ -244,6 +255,7 @@ module.exports = (prisma) => {
         servicePhone, serviceBairro, telefone, bairro, endereco, portfolioUrls,
         avatarUrl, avatarFileId, socialLinks, redesSociais, exibirEnderecoCompleto,
         nome, sobrenome,
+        telefoneComercial, fotoAnuncioUrl, fotoAnuncioFileId,
       } = req.body;
 
       let nextSocialLinks = undefined;
@@ -283,6 +295,12 @@ module.exports = (prisma) => {
           ...(nome !== undefined && { nomeExibicao: pickOptionalProfileString(nome) }),
           ...(sobrenome !== undefined && { sobrenomeExibicao: pickOptionalProfileString(sobrenome) }),
           ...(exibirEnderecoCompleto !== undefined && { exibirEnderecoCompleto }),
+          ...(telefoneComercial !== undefined && {
+            telefoneComercial: convertToInternationalPhone(pickOptionalProfileString(telefoneComercial)),
+            ...(existing.telefoneComercial !== convertToInternationalPhone(pickOptionalProfileString(telefoneComercial)) && { telefoneComercialVerificado: false })
+          }),
+          ...(fotoAnuncioUrl !== undefined && { fotoAnuncioUrl: pickOptionalProfileString(fotoAnuncioUrl) }),
+          ...(fotoAnuncioFileId !== undefined && { fotoAnuncioFileId: pickOptionalProfileString(fotoAnuncioFileId) }),
         },
       });
 

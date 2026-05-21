@@ -14,6 +14,7 @@ const port = process.env.PORT || 5000;
 // Rotas Importadas
 const authMiddleware = require('./middleware/authMiddleware');
 const sendEmail = require('./utils/sendEmail');
+const { convertToInternationalPhone, getPhoneVariations } = require('./utils/phoneHelper');
 
 // Configuração do CORS
 const allowedOrigins = [
@@ -94,14 +95,11 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Telefone e senha são obrigatórios.' });
     }
 
-    const telefoneLimpo = telefone.replace(/\D/g, '');
+    const variations = getPhoneVariations(telefone);
 
     const existingUser = await prisma.user.findFirst({
       where: {
-        OR: [
-          { telefone: telefone },
-          { telefone: telefoneLimpo }
-        ]
+        telefone: { in: variations }
       }
     });
 
@@ -118,12 +116,13 @@ app.post('/api/register', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(senha, 10);
+    const formattedPhone = convertToInternationalPhone(telefone);
 
     const newUser = await prisma.user.create({
       data: {
         nome,
         sobrenome,
-        telefone,
+        telefone: formattedPhone,
         isWhatsapp: isWhatsapp === true || isWhatsapp === 'true',
         senha: hashedPassword
       }
@@ -139,24 +138,20 @@ app.post('/api/register', async (req, res) => {
 // Rota de Login
 app.post('/api/login', async (req, res) => {
   try {
-    const { telefone, telefoneLimpo, senha } = req.body;
+    const { telefone, senha } = req.body;
 
     if (!telefone || !senha) {
       return res.status(400).json({ success: false, message: 'Telefone e senha são obrigatórios.' });
     }
 
-    // Limpa a formatação: remove parênteses, espaços e traços, deixando só números
-    const cleanPhone = telefoneLimpo || telefone.replace(/\D/g, '');
+    const variations = getPhoneVariations(telefone);
 
-    console.log(`[Login] Buscando usuário: telefone="${telefone}", limpo="${cleanPhone}"`);
+    console.log(`[Login] Buscando usuário: telefone="${telefone}", variações="${variations.join(', ')}"`);
 
-    // Usa findFirst para procurar o usuário aceitando tanto o formato com símbolos quanto o limpo
+    // Usa findFirst para procurar o usuário aceitando qualquer uma das variações de telefone
     const user = await prisma.user.findFirst({
       where: {
-        OR: [
-          { telefone: telefone },
-          { telefone: cleanPhone }
-        ]
+        telefone: { in: variations }
       }
     });
 
@@ -249,16 +244,14 @@ app.post('/api/forgot-password', async (req, res) => {
       return res.status(400).json({ success: false, message: 'O e-mail ou telefone é obrigatório.' });
     }
 
-    // Higieniza o identificador para busca por telefone
-    const identificadorLimpo = identificador.replace(/\D/g, '');
-    console.log(`[forgot-password] Buscando usuário por: "${identificador}" / limpo: "${identificadorLimpo}"`);
+    const variations = getPhoneVariations(identificador);
+    console.log(`[forgot-password] Buscando usuário por: "${identificador}" / variações: "${variations.join(', ')}"`);
 
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           { email: identificador },
-          { telefone: identificador },
-          ...(identificadorLimpo ? [{ telefone: identificadorLimpo }] : [])
+          { telefone: { in: variations } }
         ]
       }
     });
@@ -314,12 +307,13 @@ app.post('/api/reset-password', async (req, res) => {
       return res.status(400).json({ success: false, message: 'A nova senha deve conter exatamente 6 números.' });
     }
 
+    const variations = getPhoneVariations(targetId);
+
     const user = await prisma.user.findFirst({
       where: {
         OR: [
           { email: targetId },
-          { telefone: targetId },
-          { telefone: targetId.replace(/\D/g, '') }
+          { telefone: { in: variations } }
         ]
       }
     });
@@ -377,9 +371,9 @@ app.post('/api/auth/google', async (req, res) => {
 
     // 3. Resolução de Conflito Manual (Vincular telefone)
     if (!user && vincularTelefone) {
-      const telefoneLimpo = vincularTelefone.replace(/\D/g, '');
+      const variations = getPhoneVariations(vincularTelefone);
       user = await prisma.user.findFirst({
-        where: { OR: [{ telefone: vincularTelefone }, { telefone: telefoneLimpo }] }
+        where: { telefone: { in: variations } }
       });
 
       if (user) {
@@ -560,6 +554,64 @@ app.post('/api/user/email-secundario/verify-confirm', async (req, res) => {
   } catch (error) {
     console.error('Erro na confirmação de verificação:', error);
     res.status(500).json({ success: false, message: 'Erro interno ao confirmar verificação.' });
+  }
+});
+
+// Rota para atualizar os dados cadastrais (perfil) do usuário
+app.put('/api/user/profile', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { nome, sobrenome, telefone, bairro } = req.body;
+
+    if (!nome || nome.trim() === '') {
+      return res.status(400).json({ success: false, message: 'O nome é obrigatório.' });
+    }
+
+    if (telefone) {
+      const variations = getPhoneVariations(telefone);
+      const existingUserWithPhone = await prisma.user.findFirst({
+        where: {
+          telefone: { in: variations },
+          id: { not: userId }
+        }
+      });
+      if (existingUserWithPhone) {
+        return res.status(400).json({ success: false, message: 'Este telefone / WhatsApp já está cadastrado por outro usuário.' });
+      }
+    }
+
+    const formattedPhone = telefone ? convertToInternationalPhone(telefone) : null;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        nome: nome.trim(),
+        sobrenome: sobrenome ? sobrenome.trim() : null,
+        telefone: formattedPhone,
+        bairro: bairro ? bairro.trim() : null
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Perfil atualizado com sucesso!',
+      user: {
+        id: updatedUser.id,
+        nome: updatedUser.nome,
+        sobrenome: updatedUser.sobrenome,
+        telefone: updatedUser.telefone,
+        bairro: updatedUser.bairro,
+        email: updatedUser.email,
+        emailSecundario: updatedUser.emailSecundario,
+        emailSecundarioVerificado: updatedUser.emailSecundarioVerificado,
+        profileImageUrl: updatedUser.profileImageUrl,
+        googleId: updatedUser.googleId,
+        role: updatedUser.role
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar perfil do usuário:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao atualizar perfil.' });
   }
 });
 

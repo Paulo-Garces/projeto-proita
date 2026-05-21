@@ -55,6 +55,40 @@ module.exports = (prisma) => {
     }
   });
 
+  // POST /api/upload/foto-anuncio
+  // Usado para carregar a foto comercial/logo do anúncio.
+  // Faz o upload ao ImageKit e retorna a url e o fileId gerados.
+  router.post('/foto-anuncio', authMiddleware, upload.single('fotoAnuncio'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ success: false, message: 'Nenhum arquivo enviado.' });
+      }
+
+      const userId = req.user.id;
+      const fileName = `foto_anuncio_${userId}_${Date.now()}`;
+      const base64 = req.file.buffer.toString('base64');
+
+      const result = await imagekit.upload({
+        file: base64,
+        fileName: fileName,
+        folder: '/proita/ad-logos',
+        useUniqueFileName: false,
+        tags: [`user_${userId}`, 'ad-logo'],
+      });
+
+      console.log(`[UPLOAD] Foto de anúncio enviada: ${result.url}`);
+
+      res.status(200).json({
+        success: true,
+        url: result.url,
+        fileId: result.fileId,
+      });
+    } catch (error) {
+      console.error('[UPLOAD] Erro ao fazer upload da foto do anúncio:', error.message);
+      res.status(500).json({ success: false, message: 'Erro ao processar e enviar a foto do anúncio.' });
+    }
+  });
+
   // PATCH /api/upload/profile-image
   // Usado no Dashboard ("Meus Dados").
   // Faz o upload ao ImageKit E salva a URL no banco (tabela User).

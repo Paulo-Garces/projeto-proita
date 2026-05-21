@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs'); // Importado para criptografar a nova senha
+const { convertToInternationalPhone, getPhoneVariations } = require('../utils/phoneHelper');
 
 module.exports = (prisma) => {
   const router = express.Router();
@@ -210,20 +211,22 @@ module.exports = (prisma) => {
         return res.status(400).json({ success: false, message: 'Dados inválidos.' });
       }
 
-      // Remove caracteres não numéricos
-      const telefoneLimpo = telefone.replace(/\D/g, '');
+      // Remove caracteres não numéricos e valida o tamanho nacional do número
+      let clean = telefone.replace(/\D/g, '');
+      if (clean.startsWith('55') && (clean.length === 12 || clean.length === 13)) {
+        clean = clean.slice(2);
+      }
 
-      if (telefoneLimpo.length < 10 || telefoneLimpo.length > 11) {
+      if (clean.length < 10 || clean.length > 11) {
         return res.status(400).json({ success: false, message: 'Telefone inválido. Use o formato (XX) XXXXX-XXXX.' });
       }
+
+      const variations = getPhoneVariations(telefone);
 
       // Verifica se já está em uso por outra conta
       const existingUser = await prisma.user.findFirst({
         where: {
-          OR: [
-            { telefone: telefone },
-            { telefone: telefoneLimpo }
-          ],
+          telefone: { in: variations },
           NOT: { id: userId }
         }
       });
@@ -232,9 +235,11 @@ module.exports = (prisma) => {
         return res.status(409).json({ success: false, message: 'Este telefone já está sendo utilizado por outra conta.' });
       }
 
+      const formattedPhone = convertToInternationalPhone(telefone);
+
       const updated = await prisma.user.update({
         where: { id: userId },
-        data: { telefone: telefoneLimpo },
+        data: { telefone: formattedPhone },
         select: { id: true, telefone: true }
       });
 
