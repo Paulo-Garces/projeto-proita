@@ -8,85 +8,86 @@ datasource db {
 }
 
 model User {
-  id                 String    @id @default(uuid())
-  nome               String
-  sobrenome          String?   // Opcional para evitar falhas se o Google não enviar
-  telefone           String?   @unique // Opcional, pois o login Google não o possui inicialmente
-  email              String?   @unique // Essencial para capturar e vincular a conta do Google
-  emailSecundario    String?   // E-mail alternativo para recuperação de conta
-  emailSecundarioVerificado Boolean @default(false)
-  emailSecundarioCode       String?
+  id                         String    @id @default(uuid())
+  nome                       String
+  sobrenome                  String? // Opcional para evitar falhas se o Google não enviar
+  telefone                   String?   @unique // Opcional, pois o login Google não o possui inicialmente
+  email                      String?   @unique // Essencial para capturar e vincular a conta do Google
+  emailSecundario            String? // E-mail alternativo para recuperação de conta
+  emailSecundarioVerificado  Boolean   @default(false)
+  emailSecundarioCode        String?
   emailSecundarioCodeExpires DateTime?
-  senha              String?   // Opcional, usuários do Google não usam senha
-  googleId           String?   @unique // Identificador seguro de quem veio pelo Google
-  bairro             String?
-  cep                String?
-  isWhatsapp         Boolean   @default(false)
-  role               String    @default("USER")
-  profileImageUrl    String?
-  profileImageFileId String?
-  createdAt          DateTime  @default(now())
-  profiles           Profile[] // 1:N — um usuário pode ter vários anúncios
-  resetCode          String?
-  resetCodeExpires   DateTime?
+  senha                      String? // Opcional, usuários do Google não usam senha
+  googleId                   String?   @unique // Identificador seguro de quem veio pelo Google
+  bairro                     String?
+  cep                        String?
+  isWhatsapp                 Boolean   @default(false)
+  role                       String    @default("USER")
+  profileImageUrl            String?
+  profileImageFileId         String?
+  createdAt                  DateTime  @default(now())
+  profiles                   Profile[] // 1:N — um usuário pode ter vários anúncios
+  resetCode                  String?
+  resetCodeExpires           DateTime?
+  reviews                    Review[]
 }
 
 model Profile {
-  id                     String   @id @default(uuid())
-  userId                 String   
-  user                   User     @relation(fields: [userId], references: [id])
-  
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
   // Nomenclatura oficial do MEI e IA
-  atividadePrincipal     String   // Ex: Encanador, Vaqueiro, Digital Maker
-  categoriaGeral         String?  // Ex: "Construção e Reformas" (Nova Trava)
+  atividadePrincipal    String // Ex: Encanador, Vaqueiro, Digital Maker
+  categoriaGeral        String? // Ex: "Construção e Reformas" (Nova Trava)
   atividadesSecundarias String[]
-  
-  descricaoTrabalho      String
-  descricaoCurta         String?  // Max 90 chars.
+
+  descricaoTrabalho String
+  descricaoCurta    String? // Max 90 chars.
 
   // Nome público do anúncio (independente do cadastro em User)
-  nomeExibicao           String?
-  sobrenomeExibicao      String?
+  nomeExibicao      String?
+  sobrenomeExibicao String?
 
   // Contato e Redes Sociais (por anúncio — não espelham User.telefone)
-  instagram              String?
-  whatsapp               String?
-  servicePhone           String?  // Telefone profissional / do anúncio
-  telefoneComercial      String?
+  instagram                   String?
+  whatsapp                    String?
+  servicePhone                String? // Telefone profissional / do anúncio
+  telefoneComercial           String?
   telefoneComercialVerificado Boolean @default(false)
 
   // Localização
   endereco               String?
-  enderecoComercial      String?  // Endereço comercial opcional do anúncio
-  serviceBairro          String?  // Bairro de atuação / exibição do anúncio
-  bairroEndereco         String?  // NOVO: Usado para o Bairro exato retornado pelo CEP
-  exibirEnderecoCompleto Boolean  @default(true) // false = mostra apenas o bairro
-  
+  enderecoComercial      String? // Endereço comercial opcional do anúncio
+  serviceBairro          String? // Bairro de atuação / exibição do anúncio
+  bairroEndereco         String? // NOVO: Usado para o Bairro exato retornado pelo CEP
+  exibirEnderecoCompleto Boolean @default(true) // false = mostra apenas o bairro
+
   // Portfólio e Imagens
-  portfolioUrls          String[]
-  avatarUrl              String?
-  avatarFileId           String?
-  fotoAnuncioUrl         String?
-  fotoAnuncioFileId      String?
-  capaUrl                String?
-  capaFileId             String?
-  
+  portfolioUrls     String[]
+  avatarUrl         String?
+  avatarFileId      String?
+  fotoAnuncioUrl    String?
+  fotoAnuncioFileId String?
+  capaUrl           String?
+  capaFileId        String?
+
   // Campos Legado e Métricas
-  redesSociais           Json?
-  horariosFuncionamento  Json?
-  socialLinks            Json?
-  cliquesWhatsapp        Int      @default(0)
-  visitasPerfil          Int      @default(0)
-  createdAt              DateTime @default(now())
-  rating                 Float?   @default(0)
-  reviewCount            Int      @default(0)
-  reviews                Review[]
+  redesSociais          Json?
+  horariosFuncionamento Json?
+  socialLinks           Json?
+  cliquesWhatsapp       Int      @default(0)
+  visitasPerfil         Int      @default(0)
+  createdAt             DateTime @default(now())
+  rating                Float?   @default(0)
+  reviewCount           Int      @default(0)
+  reviews               Review[]
 }
 
 // Tabelas fixas para alimentar os Menus de Busca/Filtro do Frontend
 model Category {
-  id           String        @id @default(uuid())
-  name         String        @unique
+  id            String        @id @default(uuid())
+  name          String        @unique
   subcategories Subcategory[]
 }
 
@@ -106,11 +107,13 @@ model SearchHistory {
 }
 
 model Review {
-  id          String   @id @default(uuid())
-  profileId   String
-  profile     Profile  @relation(fields: [profileId], references: [id])
-  authorName  String   @default("Anônimo")
-  rating      Int
-  comment     String?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id])
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
 }

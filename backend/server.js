@@ -623,6 +623,10 @@ app.use('/api/admin', authMiddleware, adminRoutes);
 const adsRoutes = require('./routes/adsRoutes')(prisma);
 app.use('/api/ads', adsRoutes);
 
+// Rotas de Avaliações (Reviews)
+const reviewRoutes = require('./routes/reviewRoutes')(prisma);
+app.use('/api/reviews', reviewRoutes);
+
 // Rota de Upload de Imagens (ImageKit)
 const uploadRoutes = require('./routes/uploadRoutes')(prisma);
 app.use('/api/upload', uploadRoutes);
