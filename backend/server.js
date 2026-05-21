@@ -227,6 +227,8 @@ app.post('/api/login', async (req, res) => {
         sobrenome: user.sobrenome,
         telefone: user.telefone,
         email: user.email || null,
+        emailSecundario: user.emailSecundario || null,
+        emailSecundarioVerificado: user.emailSecundarioVerificado || false,
         googleId: user.googleId || null,
         bairro: user.bairro,
         role: user.role,
@@ -413,6 +415,8 @@ app.post('/api/auth/google', async (req, res) => {
         sobrenome: user.sobrenome,
         telefone: user.telefone,
         email: user.email,
+        emailSecundario: user.emailSecundario || null,
+        emailSecundarioVerificado: user.emailSecundarioVerificado || false,
         bairro: user.bairro,
         role: user.role,
         profileImageUrl: user.profileImageUrl || null,
@@ -424,7 +428,7 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
-// Rota para salvar o e-mail secundário do usuário
+// Rota para salvar ou remover o e-mail secundário do usuário
 app.put('/api/user/email-secundario', async (req, res) => {
   try {
     const { userId, emailSecundario } = req.body;
@@ -435,20 +439,127 @@ app.put('/api/user/email-secundario', async (req, res) => {
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { emailSecundario }
+      data: {
+        emailSecundario: emailSecundario || null,
+        emailSecundarioVerificado: false,
+        emailSecundarioCode: null,
+        emailSecundarioCodeExpires: null
+      }
     });
 
     res.status(200).json({
       success: true,
-      message: 'E-mail alternativo atualizado com sucesso!',
+      message: emailSecundario ? 'E-mail alternativo atualizado com sucesso!' : 'E-mail alternativo removido com sucesso!',
       user: {
         id: updatedUser.id,
-        emailSecundario: updatedUser.emailSecundario
+        emailSecundario: updatedUser.emailSecundario,
+        emailSecundarioVerificado: updatedUser.emailSecundarioVerificado
       }
     });
   } catch (error) {
     console.error('Erro ao atualizar e-mail secundário:', error);
-    res.status(500).json({ success: false, message: 'Erro interno ao salvar o e-mail alternativo.' });
+    res.status(500).json({ success: false, message: 'Erro interno ao processar o e-mail alternativo.' });
+  }
+});
+
+// Rota para solicitar verificação do e-mail secundário
+app.post('/api/user/email-secundario/verify-request', async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'O ID do usuário é obrigatório.' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+    }
+
+    if (!user.emailSecundario) {
+      return res.status(400).json({ success: false, message: 'Não há e-mail alternativo cadastrado para verificar.' });
+    }
+
+    // Gerar código de 6 dígitos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log(`[TESTE LOCAL] Código OTP gerado: ${code}`);
+    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailSecundarioCode: code,
+        emailSecundarioCodeExpires: expires
+      }
+    });
+
+    // Enviar por e-mail alternativo
+    const emailResult = await sendEmail(
+      user.emailSecundario,
+      'Verificação de E-mail de Recuperação - ProITA',
+      `Olá, ${user.nome}!
+      
+Seu código de verificação para o e-mail de recuperação é: ${code}
+
+Este código expira em 15 minutos. Se você não solicitou esta verificação, por favor desconsidere este e-mail.`
+    );
+
+    if (emailResult.success) {
+      res.status(200).json({ success: true, message: 'Código de verificação enviado!' });
+    } else {
+      res.status(500).json({ success: false, message: 'Erro ao enviar o e-mail de verificação.' });
+    }
+  } catch (error) {
+    console.error('Erro na solicitação de verificação:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao processar solicitação.' });
+  }
+});
+
+// Rota para confirmar o código de verificação do e-mail secundário
+app.post('/api/user/email-secundario/verify-confirm', async (req, res) => {
+  try {
+    const { userId, code } = req.body;
+
+    if (!userId || !code) {
+      return res.status(400).json({ success: false, message: 'Usuário e código são obrigatórios.' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+    }
+
+    if (user.emailSecundarioCode !== code || !user.emailSecundarioCodeExpires || user.emailSecundarioCodeExpires < new Date()) {
+      return res.status(400).json({ success: false, message: 'Código de verificação inválido ou expirado.' });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailSecundarioVerificado: true,
+        emailSecundarioCode: null,
+        emailSecundarioCodeExpires: null
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'E-mail alternativo verificado com sucesso!',
+      user: {
+        id: updatedUser.id,
+        emailSecundario: updatedUser.emailSecundario,
+        emailSecundarioVerificado: updatedUser.emailSecundarioVerificado
+      }
+    });
+  } catch (error) {
+    console.error('Erro na confirmação de verificação:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao confirmar verificação.' });
   }
 });
 

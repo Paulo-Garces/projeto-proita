@@ -390,6 +390,11 @@ export default function Dashboard() {
   const [loadingLinkPhone, setLoadingLinkPhone] = useState(false);
   const [showUnlinkModal, setShowUnlinkModal] = useState(false);
 
+  const [showVerifyEmailModal, setShowVerifyEmailModal] = useState(false);
+  const [codigoVerificacaoEmail, setCodigoVerificacaoEmail] = useState('');
+  const [loadingVerificacaoEmail, setLoadingVerificacaoEmail] = useState(false);
+  const [loadingRequestVerificacao, setLoadingRequestVerificacao] = useState(false);
+
   const handleGoogleCredentialForLink = async (response) => {
     try {
       const payload = JSON.parse(atob(response.credential.split('.')[1]));
@@ -634,12 +639,94 @@ export default function Dashboard() {
     }
   };
 
-  const handleDeleteEmailSecundario = () => {
-    console.log('Excluir email secundario');
+  const handleDeleteEmailSecundario = async () => {
+    if (!confirm('Deseja realmente excluir seu e-mail de recuperação?')) return;
+    setSecurityError('');
+    setSecuritySuccess('');
+    try {
+      const res = await fetch(`${API_URL}/api/user/email-secundario`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ userId: user.id, emailSecundario: null })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSecuritySuccess(data.message);
+        updateUser({ emailSecundario: null, emailSecundarioVerificado: false });
+      } else {
+        setSecurityError(data.message || 'Erro ao excluir o e-mail de recuperação.');
+      }
+    } catch (err) {
+      console.error(err);
+      setSecurityError('Erro de conexão ao excluir o e-mail de recuperação.');
+    }
   };
 
-  const handleVerifyEmailSecundario = () => {
-    console.log('Verificar email secundario');
+  const handleVerifyEmailSecundario = async () => {
+    setSecurityError('');
+    setSecuritySuccess('');
+    setLoadingRequestVerificacao(true);
+    try {
+      const res = await fetch(`${API_URL}/api/user/email-secundario/verify-request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ userId: user.id })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSecuritySuccess(data.message);
+        setShowVerifyEmailModal(true);
+        setCodigoVerificacaoEmail('');
+      } else {
+        setSecurityError(data.message || 'Erro ao solicitar código de verificação.');
+      }
+    } catch (err) {
+      console.error(err);
+      setSecurityError('Erro de conexão ao solicitar código de verificação.');
+    } finally {
+      setLoadingRequestVerificacao(false);
+    }
+  };
+
+  const handleConfirmVerifyEmailSecundario = async (e) => {
+    e.preventDefault();
+    if (!codigoVerificacaoEmail || codigoVerificacaoEmail.length !== 6) {
+      setSecurityError('O código de verificação deve conter 6 dígitos.');
+      return;
+    }
+    setSecurityError('');
+    setSecuritySuccess('');
+    setLoadingVerificacaoEmail(true);
+    try {
+      const res = await fetch(`${API_URL}/api/user/email-secundario/verify-confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ userId: user.id, code: codigoVerificacaoEmail })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSecuritySuccess(data.message);
+        updateUser({ emailSecundarioVerificado: true });
+        setShowVerifyEmailModal(false);
+        setCodigoVerificacaoEmail('');
+      } else {
+        setSecurityError(data.message || 'Código inválido ou expirado.');
+      }
+    } catch (err) {
+      console.error(err);
+      setSecurityError('Erro de conexão ao confirmar código de verificação.');
+    } finally {
+      setLoadingVerificacaoEmail(false);
+    }
   };
 
   const handleLogout = () => {
@@ -891,7 +978,9 @@ export default function Dashboard() {
                               <span className="text-sm font-semibold text-slate-800">Conta Google</span>
                             </div>
                             {user?.googleId ? (
-                              <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle size={16} /> Vinculado</span>
+                              <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
+                                <CheckCircle size={14} /> Verificado
+                              </span>
                             ) : (
                               <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
                             )}
@@ -917,13 +1006,18 @@ export default function Dashboard() {
                               <span className="text-sm font-semibold text-slate-800">Telefone / WhatsApp</span>
                             </div>
                             {user?.telefone ? (
-                              <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle size={16} /> Vinculado</span>
+                              <span className="text-slate-500 text-xs font-medium">Vinculado</span>
                             ) : (
                               <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
                             )}
                           </div>
                           {user?.telefone ? (
-                            <p className="text-xs text-slate-500">{user.telefone}</p>
+                            <div className="space-y-1.5">
+                              <p className="text-xs text-slate-500">{user.telefone}</p>
+                              <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1">
+                                <AlertCircle size={14} /> Não verificado
+                              </span>
+                            </div>
                           ) : (
                             <form onSubmit={handleLinkPhone} className="flex gap-3">
                               <input
@@ -950,7 +1044,13 @@ export default function Dashboard() {
                             </div>
                             {!isEditingEmail && (
                               user?.emailSecundario ? (
-                                <span className="text-xs font-bold text-slate-600 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Pendente</span>
+                                user?.emailSecundarioVerificado ? (
+                                  <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
+                                    <CheckCircle size={14} /> Verificado
+                                  </span>
+                                ) : (
+                                  <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">Pendente</span>
+                                )
                               ) : (
                                 <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
                               )
@@ -978,8 +1078,19 @@ export default function Dashboard() {
                             <div>
                               <p className="text-sm text-slate-800 font-medium mb-3">{user.emailSecundario}</p>
                               <div className="flex items-center gap-3 text-sm">
-                                <button type="button" onClick={handleVerifyEmailSecundario} className="text-blue-600 hover:text-blue-800 font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Verificar</button>
-                                <span className="text-slate-300">|</span>
+                                {!user?.emailSecundarioVerificado && (
+                                  <>
+                                    <button 
+                                      type="button" 
+                                      onClick={handleVerifyEmailSecundario} 
+                                      disabled={loadingRequestVerificacao}
+                                      className="text-blue-600 hover:text-blue-800 font-medium transition-colors bg-transparent border-none p-0 cursor-pointer disabled:opacity-50"
+                                    >
+                                      {loadingRequestVerificacao ? 'Enviando...' : 'Verificar'}
+                                    </button>
+                                    <span className="text-slate-300">|</span>
+                                  </>
+                                )}
                                 <button type="button" onClick={() => setIsEditingEmail(true)} className="text-slate-600 hover:text-slate-800 font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Alterar</button>
                                 <span className="text-slate-300">|</span>
                                 <button type="button" onClick={handleDeleteEmailSecundario} className="text-red-600 hover:text-red-800 font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Excluir</button>
@@ -1026,6 +1137,49 @@ export default function Dashboard() {
                 Sim, Desvincular
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showVerifyEmailModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Verificar E-mail de Recuperação</h3>
+            <p className="text-sm text-slate-600 mb-6">
+              Enviamos um código de verificação de 6 dígitos para o e-mail <strong>{user?.emailSecundario}</strong>. Por favor, insira-o abaixo para concluir a vinculação.
+            </p>
+            <form onSubmit={handleConfirmVerifyEmailSecundario} className="space-y-6">
+              <div>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength="6"
+                  placeholder="000000"
+                  value={codigoVerificacaoEmail}
+                  onChange={(e) => setCodigoVerificacaoEmail(e.target.value.replace(/\D/g, ''))}
+                  className="w-full text-center text-2xl font-bold tracking-widest px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-slate-800"
+                  required
+                />
+                <p className="text-xs text-slate-400 mt-2 text-center">O código pode levar até 2 minutos para chegar. Verifique a caixa de spam.</p>
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowVerifyEmailModal(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loadingVerificacaoEmail || codigoVerificacaoEmail.length !== 6}
+                  className="px-5 py-2 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-medium transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {loadingVerificacaoEmail ? 'Confirmando...' : 'Confirmar Código'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

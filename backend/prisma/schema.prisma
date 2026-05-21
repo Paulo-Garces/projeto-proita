@@ -14,6 +14,9 @@ model User {
   telefone           String?   @unique // Opcional, pois o login Google não o possui inicialmente
   email              String?   @unique // Essencial para capturar e vincular a conta do Google
   emailSecundario    String?   // E-mail alternativo para recuperação de conta
+  emailSecundarioVerificado Boolean @default(false)
+  emailSecundarioCode       String?
+  emailSecundarioCodeExpires DateTime?
   senha              String?   // Opcional, usuários do Google não usam senha
   googleId           String?   @unique // Identificador seguro de quem veio pelo Google
   bairro             String?
