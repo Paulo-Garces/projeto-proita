@@ -57,6 +57,7 @@ model Profile {
 
   // Localização
   endereco               String?
+  enderecoComercial      String?  // Endereço comercial opcional do anúncio
   serviceBairro          String?  // Bairro de atuação / exibição do anúncio
   bairroEndereco         String?  // NOVO: Usado para o Bairro exato retornado pelo CEP
   exibirEnderecoCompleto Boolean  @default(true) // false = mostra apenas o bairro
@@ -67,9 +68,12 @@ model Profile {
   avatarFileId           String?
   fotoAnuncioUrl         String?
   fotoAnuncioFileId      String?
+  capaUrl                String?
+  capaFileId             String?
   
   // Campos Legado e Métricas
   redesSociais           Json?
+  horariosFuncionamento  Json?
   socialLinks            Json?
   cliquesWhatsapp        Int      @default(0)
   visitasPerfil          Int      @default(0)

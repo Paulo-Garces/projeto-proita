@@ -171,7 +171,8 @@ module.exports = (prisma) => {
       servicePhone, serviceBairro, exibirEnderecoCompleto,
       telefone, bairro,
       nome, sobrenome,
-      telefoneComercial, fotoAnuncioUrl, fotoAnuncioFileId
+      telefoneComercial, fotoAnuncioUrl, fotoAnuncioFileId,
+      capaUrl, capaFileId, enderecoComercial, horariosFuncionamento
     } = req.body;
 
     const userId = req.user.id;
@@ -212,6 +213,7 @@ module.exports = (prisma) => {
           avatarUrl: avatarUrl || null,
           avatarFileId: avatarFileId || null,
           socialLinks: socialLinksToSave,
+          redesSociais: socialLinksToSave,
           descricaoCurta: descricaoCurta || shortDescription || null,
           nomeExibicao: pickOptionalProfileString(nome),
           sobrenomeExibicao: pickOptionalProfileString(sobrenome),
@@ -221,6 +223,10 @@ module.exports = (prisma) => {
           telefoneComercial: convertToInternationalPhone(pickOptionalProfileString(telefoneComercial)),
           fotoAnuncioUrl: pickOptionalProfileString(fotoAnuncioUrl),
           fotoAnuncioFileId: pickOptionalProfileString(fotoAnuncioFileId),
+          capaUrl: pickOptionalProfileString(capaUrl),
+          capaFileId: pickOptionalProfileString(capaFileId),
+          enderecoComercial: pickOptionalProfileString(enderecoComercial),
+          horariosFuncionamento: horariosFuncionamento !== undefined ? horariosFuncionamento : null,
         },
       });
 
@@ -231,10 +237,8 @@ module.exports = (prisma) => {
     }
   });
 
-  // ─────────────────────────────────────────────────────────────
-  // PATCH /api/ads/:id — Editar anúncio específico (Rota Privada)
-  // ─────────────────────────────────────────────────────────────
-  router.patch('/:id', authMiddleware, async (req, res) => {
+  // Handler compartilhado para atualização de anúncio (PATCH/PUT)
+  const updateAdHandler = async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
@@ -256,6 +260,7 @@ module.exports = (prisma) => {
         avatarUrl, avatarFileId, socialLinks, redesSociais, exibirEnderecoCompleto,
         nome, sobrenome,
         telefoneComercial, fotoAnuncioUrl, fotoAnuncioFileId,
+        capaUrl, capaFileId, enderecoComercial, horariosFuncionamento
       } = req.body;
 
       let nextSocialLinks = undefined;
@@ -288,7 +293,7 @@ module.exports = (prisma) => {
           ...(portfolioUrls !== undefined && { portfolioUrls }),
           ...(avatarUrl !== undefined && { avatarUrl }),
           ...(avatarFileId !== undefined && { avatarFileId }),
-          ...(nextSocialLinks !== undefined && { socialLinks: nextSocialLinks }),
+          ...(nextSocialLinks !== undefined && { socialLinks: nextSocialLinks, redesSociais: nextSocialLinks }),
           ...((descricaoCurta !== undefined || shortDescription !== undefined) && { descricaoCurta: descricaoCurta || shortDescription }),
           ...(nextServicePhone !== undefined && { servicePhone: nextServicePhone }),
           ...(nextServiceBairro !== undefined && { serviceBairro: nextServiceBairro }),
@@ -301,15 +306,29 @@ module.exports = (prisma) => {
           }),
           ...(fotoAnuncioUrl !== undefined && { fotoAnuncioUrl: pickOptionalProfileString(fotoAnuncioUrl) }),
           ...(fotoAnuncioFileId !== undefined && { fotoAnuncioFileId: pickOptionalProfileString(fotoAnuncioFileId) }),
+          ...(capaUrl !== undefined && { capaUrl: pickOptionalProfileString(capaUrl) }),
+          ...(capaFileId !== undefined && { capaFileId: pickOptionalProfileString(capaFileId) }),
+          ...(enderecoComercial !== undefined && { enderecoComercial: pickOptionalProfileString(enderecoComercial) }),
+          ...(horariosFuncionamento !== undefined && { horariosFuncionamento: horariosFuncionamento ?? null }),
         },
       });
 
       res.status(200).json({ success: true, profile: updated });
     } catch (error) {
-      console.error('[PATCH /api/ads/:id] Erro:', error.message);
+      console.error('[UPDATE /api/ads/:id] Erro:', error.message);
       res.status(500).json({ success: false, message: 'Erro interno ao atualizar anúncio.' });
     }
-  });
+  };
+
+  // ─────────────────────────────────────────────────────────────
+  // PATCH /api/ads/:id — Editar anúncio específico (Rota Privada)
+  // ─────────────────────────────────────────────────────────────
+  router.patch('/:id', authMiddleware, updateAdHandler);
+
+  // ─────────────────────────────────────────────────────────────
+  // PUT /api/ads/:id — Editar anúncio específico (Rota Privada / Alias)
+  // ─────────────────────────────────────────────────────────────
+  router.put('/:id', authMiddleware, updateAdHandler);
 
   // ─────────────────────────────────────────────────────────────
   // DELETE /api/ads/:id — Excluir anúncio (Rota Privada)

@@ -223,6 +223,18 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
     telefoneComercial: ad.telefoneComercial ? formatPhone(ad.telefoneComercial.replace(/^\+55/, '')) : '',
     fotoAnuncioUrl: ad.fotoAnuncioUrl || '',
     fotoAnuncioFileId: ad.fotoAnuncioFileId || '',
+    capaUrl: ad.capaUrl || '',
+    capaFileId: ad.capaFileId || '',
+    enderecoComercial: ad.enderecoComercial || '',
+    horariosFuncionamento: typeof ad.horariosFuncionamento === 'string'
+      ? ad.horariosFuncionamento
+      : ad.horariosFuncionamento
+        ? (Array.isArray(ad.horariosFuncionamento)
+          ? ad.horariosFuncionamento.join('\n')
+          : typeof ad.horariosFuncionamento === 'object'
+            ? Object.entries(ad.horariosFuncionamento).map(([k, v]) => `${k}: ${v}`).join('\n')
+            : '')
+        : '',
   });
   const [socialLinks, setSocialLinks] = useState(() =>
     mapStoredSocialLinksToForm(ad.socialLinks ?? ad.redesSociais)
@@ -234,6 +246,10 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
   const logoInputRef = useRef(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [logoError, setLogoError] = useState('');
+
+  const capaInputRef = useRef(null);
+  const [isUploadingCapa, setIsUploadingCapa] = useState(false);
+  const [capaError, setCapaError] = useState('');
 
   const set = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
 
@@ -285,6 +301,54 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
     }
   };
 
+  const handleCapaUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setCapaError('Por favor, selecione um arquivo de imagem.');
+      return;
+    }
+
+    setCapaError('');
+    setIsUploadingCapa(true);
+
+    try {
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1200,
+        useWebWorker: true,
+        fileType: 'image/jpeg',
+      };
+      const compressed = await imageCompression(file, options);
+      const fd = new FormData();
+      fd.append('fotoAnuncio', compressed, 'capaAnuncio.jpg');
+
+      const res = await fetch(`${API_URL}/api/upload/foto-anuncio`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: fd,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setForm(prev => ({
+          ...prev,
+          capaUrl: data.url,
+          capaFileId: data.fileId,
+        }));
+      } else {
+        setCapaError(data.message || 'Erro ao fazer upload da capa.');
+      }
+    } catch (err) {
+      console.error('[CAPA UPLOAD] Erro:', err);
+      setCapaError('Erro de conexão ou processamento da capa.');
+    } finally {
+      setIsUploadingCapa(false);
+    }
+  };
+
   const addSocialLink = () => {
     if (socialLinks.length >= 3) return;
     setSocialLinks(prev => [...prev, { platform: 'instagram', url: '' }]);
@@ -297,17 +361,20 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
     setIsSaving(true);
     setError('');
     try {
+      const mappedSocial = socialLinks
+        .map((s) => ({ platform: String(s.platform || '').toLowerCase().trim(), url: String(s.url || '').trim() }))
+        .filter((s) => s.url)
+        .slice(0, 3);
+
       const res = await fetch(`${API_URL}/api/ads/${ad.id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           ...form,
           telefoneComercial: convertToInternationalPhone(form.telefoneComercial),
           atividadesSecundarias: form.atividadesSecundarias.split(',').map(s => s.trim()).filter(Boolean),
-          socialLinks: socialLinks
-            .map((s) => ({ platform: String(s.platform || '').toLowerCase().trim(), url: String(s.url || '').trim() }))
-            .filter((s) => s.url)
-            .slice(0, 3),
+          socialLinks: mappedSocial,
+          redesSociais: mappedSocial,
         }),
       });
       const data = await res.json();
@@ -317,7 +384,8 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
       } else {
         setError(data.message || 'Erro ao salvar.');
       }
-    } catch {
+    } catch (err) {
+      console.error('[SAVE AD] Erro:', err);
       setError('Erro de conexão.');
     } finally {
       setIsSaving(false);
@@ -334,67 +402,134 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
       </button>
       <h3 className="text-xl font-bold text-slate-800">Editando: {ad.atividadePrincipal}</h3>
 
-      {/* ── 1. LOGO / FOTO COMERCIAL DO ANÚNCIO (Topo Absoluto) ── */}
-      <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
-        <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Logo / Foto Comercial do Anúncio</h4>
-        <div className="flex flex-col sm:flex-row gap-4 items-center">
-          <div className="relative shrink-0">
-            {form.fotoAnuncioUrl ? (
-              <div className="relative group">
-                <img src={form.fotoAnuncioUrl} alt="Logo comercial" className="w-20 h-20 rounded-xl object-cover border border-slate-200 shadow-sm bg-white" />
+      {/* ── 1. LOGO E FOTO DE CAPA DO ANÚNCIO (Topo Absoluto) ── */}
+      <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-6">
+        <div className="space-y-4">
+          <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Logo / Foto Comercial do Anúncio</h4>
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="relative shrink-0">
+              {form.fotoAnuncioUrl ? (
+                <div className="relative group">
+                  <img src={form.fotoAnuncioUrl} alt="Logo comercial" className="w-20 h-20 rounded-xl object-cover border border-slate-200 shadow-sm bg-white" />
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, fotoAnuncioUrl: '', fotoAnuncioFileId: '' }))}
+                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                    title="Remover foto"
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-20 h-20 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center font-bold text-xs uppercase border border-dashed border-slate-300 shadow-sm">
+                  Sem Logo
+                </div>
+              )}
+            </div>
+            <div className="flex-1 w-full space-y-2">
+              <label className={labelClass}>URL da Imagem do Anúncio</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={form.fotoAnuncioUrl}
+                  onChange={set('fotoAnuncioUrl')}
+                  placeholder="https://exemplo.com/sua-foto.jpg"
+                  className={inputClass + ' flex-1'}
+                />
                 <button
                   type="button"
-                  onClick={() => setForm(prev => ({ ...prev, fotoAnuncioUrl: '', fotoAnuncioFileId: '' }))}
-                  className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
-                  title="Remover foto"
+                  onClick={() => logoInputRef.current?.click()}
+                  disabled={isUploadingLogo}
+                  className="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition-colors shrink-0 flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
                 >
-                  <Trash2 size={10} />
+                  {isUploadingLogo ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" /> Carregando...
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud size={14} /> Upload
+                    </>
+                  )}
                 </button>
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
               </div>
-            ) : (
-              <div className="w-20 h-20 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center font-bold text-xs uppercase border border-dashed border-slate-300 shadow-sm">
-                Sem Logo
-              </div>
-            )}
-          </div>
-          <div className="flex-1 w-full space-y-2">
-            <label className={labelClass}>URL da Imagem do Anúncio</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="text"
-                value={form.fotoAnuncioUrl}
-                onChange={set('fotoAnuncioUrl')}
-                placeholder="https://exemplo.com/sua-foto.jpg"
-                className={inputClass + ' flex-1'}
-              />
-              <button
-                type="button"
-                onClick={() => logoInputRef.current?.click()}
-                disabled={isUploadingLogo}
-                className="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition-colors shrink-0 flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
-              >
-                {isUploadingLogo ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin" /> Carregando...
-                  </>
-                ) : (
-                  <>
-                    <UploadCloud size={14} /> Upload
-                  </>
-                )}
-              </button>
-              <input
-                ref={logoInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleLogoUpload}
-              />
+              {logoError && <p className="text-xs text-red-500">{logoError}</p>}
+              <p className="text-xs text-slate-500">
+                Personalize o anúncio com uma foto profissional ou logo diferente do seu perfil pessoal.
+              </p>
             </div>
-            {logoError && <p className="text-xs text-red-500">{logoError}</p>}
-            <p className="text-xs text-slate-500">
-              Personalize o anúncio com uma foto profissional ou logo diferente do seu perfil pessoal.
-            </p>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-200/60 pt-4">
+          <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide mb-4">Foto de Capa do Anúncio (Banner 3:1)</h4>
+          <div className="flex flex-col gap-4">
+            <div className="relative w-full aspect-[3/1] bg-slate-100 rounded-2xl overflow-hidden border border-dashed border-slate-300 shadow-sm">
+              {form.capaUrl ? (
+                <div className="relative w-full h-full group">
+                  <img src={form.capaUrl} alt="Capa comercial" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, capaUrl: '', capaFileId: '' }))}
+                    className="absolute top-3 right-3 bg-red-500 text-white rounded-full p-2 shadow-lg hover:bg-red-600 transition-colors"
+                    title="Remover capa"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 font-bold text-xs uppercase p-4">
+                  <Camera size={24} className="mb-1 opacity-60" />
+                  <span>Sem Foto de Capa</span>
+                </div>
+              )}
+            </div>
+            <div className="w-full space-y-2">
+              <label className={labelClass}>URL da Capa do Anúncio</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={form.capaUrl}
+                  onChange={set('capaUrl')}
+                  placeholder="https://exemplo.com/sua-capa.jpg"
+                  className={inputClass + ' flex-1'}
+                />
+                <button
+                  type="button"
+                  onClick={() => capaInputRef.current?.click()}
+                  disabled={isUploadingCapa}
+                  className="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition-colors shrink-0 flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
+                >
+                  {isUploadingCapa ? (
+                    <>
+                      <Loader2 size={14} className="animate-spin" /> Carregando...
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud size={14} /> Upload Capa
+                    </>
+                  )}
+                </button>
+                <input
+                  ref={capaInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleCapaUpload}
+                />
+              </div>
+              {capaError && <p className="text-xs text-red-500">{capaError}</p>}
+              <p className="text-xs text-slate-500">
+                Escolha uma imagem horizontal elegante para o topo do seu perfil público (proporção sugerida 3:1).
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -431,6 +566,27 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
             <label className={labelClass}>Endereço completo (opcional)</label>
             <input value={form.endereco} onChange={set('endereco')} placeholder="Deixe em branco se atende a domicílio" className={inputClass} />
           </div>
+        </div>
+        <div>
+          <label className={labelClass}>Endereço Comercial Dedicado <span className="text-slate-400">(Aparece em destaque no perfil público)</span></label>
+          <input value={form.enderecoComercial} onChange={set('enderecoComercial')} placeholder="Ex: Rua Floriano Peixoto, 123 - Centro" className={inputClass} />
+        </div>
+      </section>
+
+      <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
+        <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Horários de Atendimento</h4>
+        <div>
+          <label className={labelClass}>Horário de Funcionamento</label>
+          <textarea
+            rows={2}
+            value={form.horariosFuncionamento}
+            onChange={set('horariosFuncionamento')}
+            placeholder="Ex: Seg a Sex: 08h às 18h&#10;Sáb: 08h às 12h"
+            className={inputClass + ' resize-none'}
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            Descreva seus dias e horários de atendimento de forma simples (um por linha).
+          </p>
         </div>
       </section>
 
