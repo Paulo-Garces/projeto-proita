@@ -228,6 +228,7 @@ app.post('/api/login', async (req, res) => {
         bairro: user.bairro,
         role: user.role,
         profileImageUrl: user.profileImageUrl || null,
+        hasPassword: !!user.senha
       }
     });
   } catch (error) {
@@ -414,6 +415,7 @@ app.post('/api/auth/google', async (req, res) => {
         bairro: user.bairro,
         role: user.role,
         profileImageUrl: user.profileImageUrl || null,
+        hasPassword: !!user.senha
       }
     });
   } catch (error) {
@@ -561,7 +563,7 @@ app.post('/api/user/email-secundario/verify-confirm', async (req, res) => {
 app.put('/api/user/profile', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { nome, sobrenome, telefone, bairro } = req.body;
+    const { nome, sobrenome, telefone, bairro, senha } = req.body;
 
     if (!nome || nome.trim() === '') {
       return res.status(400).json({ success: false, message: 'O nome é obrigatório.' });
@@ -582,14 +584,27 @@ app.put('/api/user/profile', authMiddleware, async (req, res) => {
 
     const formattedPhone = telefone ? convertToInternationalPhone(telefone) : null;
 
+    let updateData = {
+      nome: nome.trim(),
+      sobrenome: sobrenome ? sobrenome.trim() : null,
+      telefone: formattedPhone,
+      bairro: bairro ? bairro.trim() : null
+    };
+
+    if (senha !== undefined) {
+      if (senha) {
+        const regexNumeros = /^\d{6}$/;
+        if (!regexNumeros.test(senha)) {
+          return res.status(400).json({ success: false, message: 'A nova senha deve conter exatamente 6 números.' });
+        }
+        const hashedPassword = await bcrypt.hash(senha, 10);
+        updateData.senha = hashedPassword;
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: {
-        nome: nome.trim(),
-        sobrenome: sobrenome ? sobrenome.trim() : null,
-        telefone: formattedPhone,
-        bairro: bairro ? bairro.trim() : null
-      }
+      data: updateData
     });
 
     res.status(200).json({
@@ -606,7 +621,8 @@ app.put('/api/user/profile', authMiddleware, async (req, res) => {
         emailSecundarioVerificado: updatedUser.emailSecundarioVerificado,
         profileImageUrl: updatedUser.profileImageUrl,
         googleId: updatedUser.googleId,
-        role: updatedUser.role
+        role: updatedUser.role,
+        hasPassword: !!updatedUser.senha
       }
     });
   } catch (error) {

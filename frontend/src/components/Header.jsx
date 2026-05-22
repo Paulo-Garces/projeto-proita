@@ -10,6 +10,26 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Estados para suportar fechar o menu mobile arrastando (swipe close)
+  const [touchStartX, setTouchStartX] = useState(0);
+  const [touchEndX, setTouchEndX] = useState(0);
+
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.targetTouches[0].clientX);
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    // Se arrastar da direita para a esquerda (swipe left) mais de 50px, fecha o menu
+    if (touchStartX - touchEndX > 50) {
+      setIsOpen(false);
+    }
+  };
+
   const { user, isAuthenticated, logout } = useContext(AuthContext);
 
   // Fechar dropdown do perfil ao clicar fora
@@ -166,6 +186,9 @@ export default function Header() {
       {/* Mobile Navigation Sidebar - AGORA SOLTO E COM Z-INDEX MÁXIMO */}
       <div
         className={`md:hidden fixed inset-y-0 left-0 w-4/5 max-w-sm z-[60] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         <div className="p-4 border-b border-slate-100 flex justify-end items-center bg-white min-h-[72px] relative">
           <img src="/logo-proita.svg" alt="proITA Logo" className="h-12 absolute left-1/2 -translate-x-1/2" />

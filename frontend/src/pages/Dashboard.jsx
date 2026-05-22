@@ -1,5 +1,5 @@
 import { useState, useContext, useRef, useEffect } from 'react';
-import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield } from 'lucide-react';
+import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
@@ -973,6 +973,8 @@ export default function Dashboard() {
 
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
+  const [novaSenhaCriar, setNovaSenhaCriar] = useState('');
+  const [confirmarSenhaCriar, setConfirmarSenhaCriar] = useState('');
   const [loadingSenha, setLoadingSenha] = useState(false);
   const [securityError, setSecurityError] = useState('');
   const [securitySuccess, setSecuritySuccess] = useState('');
@@ -1157,9 +1159,62 @@ export default function Dashboard() {
       } else {
         setSecurityError(data.message || 'Erro ao alterar a senha.');
       }
+    } finally {
+      setLoadingSenha(false);
+    }
+  };
+
+  const handleCriarSenha = async (e) => {
+    e.preventDefault();
+    setSecurityError('');
+    setSecuritySuccess('');
+
+    if (!novaSenhaCriar || !confirmarSenhaCriar) {
+      setSecurityError('Por favor, preencha todos os campos de senha.');
+      return;
+    }
+
+    if (novaSenhaCriar !== confirmarSenhaCriar) {
+      setSecurityError('As senhas não coincidem.');
+      return;
+    }
+
+    const regexNumeros = /^\d{6}$/;
+    if (!regexNumeros.test(novaSenhaCriar)) {
+      setSecurityError('A senha deve conter exatamente 6 números.');
+      return;
+    }
+
+    setLoadingSenha(true);
+    try {
+      const res = await fetch(`${API_URL}/api/user/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nome: user.nome,
+          sobrenome: user.sobrenome,
+          telefone: user.telefone,
+          bairro: user.bairro,
+          senha: novaSenhaCriar
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setSecuritySuccess('Senha de acesso criada com sucesso!');
+        updateUser(data.user);
+        setNovaSenhaCriar('');
+        setConfirmarSenhaCriar('');
+      } else {
+        setSecurityError(data.message || 'Erro ao criar senha.');
+      }
     } catch (err) {
       console.error(err);
-      setSecurityError('Erro de conexão ao alterar a senha.');
+      setSecurityError('Erro de conexão ao criar a senha.');
     } finally {
       setLoadingSenha(false);
     }
@@ -1655,47 +1710,108 @@ export default function Dashboard() {
                     </div>
                   )}
 
-                  <form onSubmit={handleMudarSenha} className="space-y-6 max-w-md">
+                  {!user?.hasPassword ? (
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 max-w-md animate-in fade-in duration-300">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
+                          <KeyRound size={22} />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-bold text-slate-800">Criar Senha de Acesso</h3>
+                          <p className="text-xs text-slate-500 mt-0.5">Sua conta do Google não possui uma senha de acesso cadastrada. Crie uma senha numérica de 6 dígitos.</p>
+                        </div>
+                      </div>
+                      
+                      <form onSubmit={handleCriarSenha} className="space-y-4 mt-6">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Nova Senha</label>
+                          <input
+                            type="password"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength="6"
+                            placeholder="Defina um PIN de 6 números"
+                            value={novaSenhaCriar}
+                            onChange={(e) => setNovaSenhaCriar(e.target.value)}
+                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
+                          />
+                        </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Senha Atual</label>
-                      <input
-                        type="password"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength="6"
-                        placeholder="Digite sua senha atual de 6 números"
-                        value={senhaAtual}
-                        onChange={(e) => setSenhaAtual(e.target.value)}
-                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary"
-                      />
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">Confirmar Senha</label>
+                          <input
+                            type="password"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength="6"
+                            placeholder="Confirme seu PIN de 6 números"
+                            value={confirmarSenhaCriar}
+                            onChange={(e) => setConfirmarSenhaCriar(e.target.value)}
+                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
+                          />
+                        </div>
+
+                        <div className="pt-2">
+                          <button
+                            type="submit"
+                            disabled={loadingSenha}
+                            className="w-full bg-primary hover:bg-primary-hover text-white py-2.5 rounded-lg font-semibold transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
+                          >
+                            {loadingSenha ? (
+                              <>
+                                <Loader2 className="animate-spin" size={18} />
+                                Criando...
+                              </>
+                            ) : (
+                              'Criar Senha'
+                            )}
+                          </button>
+                        </div>
+                      </form>
                     </div>
+                  ) : (
+                    <form onSubmit={handleMudarSenha} className="space-y-6 max-w-md">
 
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Nova Senha</label>
-                      <input
-                        type="password"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength="6"
-                        placeholder="Digite o novo PIN de 6 números"
-                        value={novaSenha}
-                        onChange={(e) => setNovaSenha(e.target.value)}
-                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Senha Atual</label>
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength="6"
+                          placeholder="Digite sua senha atual de 6 números"
+                          value={senhaAtual}
+                          onChange={(e) => setSenhaAtual(e.target.value)}
+                          className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
 
-                    <div className="pt-4">
-                      <button
-                        type="submit"
-                        disabled={loadingSenha}
-                        className="bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70"
-                      >
-                        {loadingSenha ? 'Alterando...' : 'Alterar Senha'}
-                      </button>
-                    </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Nova Senha</label>
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength="6"
+                          placeholder="Digite o novo PIN de 6 números"
+                          value={novaSenha}
+                          onChange={(e) => setNovaSenha(e.target.value)}
+                          className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
 
-                  </form>
+                      <div className="pt-4">
+                        <button
+                          type="submit"
+                          disabled={loadingSenha}
+                          className="bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-lg font-medium transition-colors disabled:opacity-70"
+                        >
+                          {loadingSenha ? 'Alterando...' : 'Alterar Senha'}
+                        </button>
+                      </div>
+
+                    </form>
+                  )}
 
                   <div className="mt-12 pt-8 border-t border-slate-200">
                     <h3 className="text-xl font-bold text-slate-900 mb-6">Segurança da Conta</h3>
