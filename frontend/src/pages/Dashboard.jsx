@@ -210,6 +210,277 @@ function PortfolioSection({ ad, token }) {
   );
 }
 
+// ── Sub-componente: Catálogo de Serviços ──────────────────────────
+function ServiceCatalogSection({ ad, token }) {
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  
+  // Estados do formulário
+  const [name, setName] = useState('');
+  const [priceType, setPriceType] = useState('FIXO'); // Armazenado como FIXO, A_PARTIR, SOB_CONSULTA no Prisma
+  const [price, setPrice] = useState('');
+  const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Buscar serviços cadastrados
+  const fetchServices = async () => {
+    if (!ad?.id) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/services/${ad.id}`);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setServices(data.data);
+      } else {
+        setError(data.message || 'Erro ao carregar catálogo.');
+      }
+    } catch (err) {
+      setError('Erro de conexão ao carregar serviços.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchServices();
+  }, [ad.id]);
+
+  // Adicionar serviço
+  const handleAddService = async (e) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    setIsSubmitting(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const payload = {
+        name: name.trim(),
+        priceType,
+        description: description.trim() || null,
+        profileId: ad.id
+      };
+
+      if (priceType !== 'SOB_CONSULTA') {
+        const floatPrice = parseFloat(price);
+        if (isNaN(floatPrice) || floatPrice < 0) {
+          setError('Por favor, informe um preço válido maior ou igual a zero.');
+          setIsSubmitting(false);
+          return;
+        }
+        payload.price = floatPrice;
+      }
+
+      const res = await fetch(`${API_URL}/api/services`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSuccess('Serviço adicionado com sucesso!');
+        setName('');
+        setPrice('');
+        setDescription('');
+        setPriceType('FIXO');
+        // Recarregar a lista
+        fetchServices();
+        setTimeout(() => setSuccess(''), 2000);
+      } else {
+        setError(data.message || 'Erro ao adicionar serviço.');
+      }
+    } catch (err) {
+      setError('Erro de conexão ao salvar serviço.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Excluir serviço
+  const handleDeleteService = async (serviceId) => {
+    if (!confirm('Tem certeza que deseja remover este serviço do catálogo?')) return;
+
+    setError('');
+    setSuccess('');
+
+    try {
+      const res = await fetch(`${API_URL}/api/services/${serviceId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSuccess('Serviço removido com sucesso!');
+        fetchServices();
+        setTimeout(() => setSuccess(''), 2000);
+      } else {
+        setError(data.message || 'Erro ao remover serviço.');
+      }
+    } catch (err) {
+      setError('Erro de conexão ao excluir serviço.');
+    }
+  };
+
+  const inputClass = 'w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-slate-800 text-sm bg-slate-50';
+  const labelClass = 'block text-sm font-medium text-slate-700 mb-1';
+
+  return (
+    <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-6">
+      <div>
+        <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Meu Catálogo de Serviços</h4>
+        <p className="text-xs text-slate-500 mt-1">
+          Cadastre os principais serviços que você oferece para exibir uma vitrine completa no seu perfil público.
+        </p>
+      </div>
+
+      {/* Formulário de Adição */}
+      <div className="bg-white rounded-xl p-4 border border-slate-200/60 space-y-4">
+        <h5 className="font-medium text-slate-800 text-sm flex items-center gap-1.5">
+          <Plus size={15} className="text-primary" /> Adicionar Novo Serviço
+        </h5>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2">
+            <label className={labelClass}>Nome do Serviço <span className="text-red-500">*</span></label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ex: Instalação de Torneira, Limpeza de Pele..."
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Tipo de Preço <span className="text-red-500">*</span></label>
+            <select
+              value={priceType}
+              onChange={(e) => setPriceType(e.target.value)}
+              className={inputClass}
+            >
+              <option value="FIXO">Preço Fixo</option>
+              <option value="A_PARTIR">A partir de</option>
+              <option value="SOB_CONSULTA">Sob Consulta</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {priceType !== 'SOB_CONSULTA' && (
+            <div>
+              <label className={labelClass}>Preço (R$) <span className="text-red-500">*</span></label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="Ex: 80.00"
+                className={inputClass}
+              />
+            </div>
+          )}
+
+          <div className={priceType === 'SOB_CONSULTA' ? 'md:col-span-3' : 'md:col-span-2'}>
+            <label className={labelClass}>Descrição Curta (opcional)</label>
+            <textarea
+              rows={2}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Ex: Incluso material básico, garantia de 3 meses..."
+              className={inputClass + ' resize-none'}
+            />
+          </div>
+        </div>
+
+        {error && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={13} /> {error}</p>}
+        {success && <p className="text-xs text-emerald-600 flex items-center gap-1"><CheckCircle size={13} /> {success}</p>}
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={handleAddService}
+            disabled={isSubmitting}
+            className="flex items-center gap-1.5 text-xs bg-slate-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-60 cursor-pointer"
+          >
+            {isSubmitting ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
+            Adicionar ao Catálogo
+          </button>
+        </div>
+      </div>
+
+      {/* Lista de Gerenciamento */}
+      <div className="space-y-3">
+        <h5 className="font-semibold text-slate-700 text-xs uppercase tracking-wide">Serviços Cadastrados ({services.length})</h5>
+
+        {loading ? (
+          <div className="flex items-center gap-2 text-slate-500 text-xs py-4 justify-center">
+            <Loader2 size={16} className="animate-spin" /> Carregando serviços...
+          </div>
+        ) : services.length === 0 ? (
+          <div className="text-center py-6 text-slate-400 text-sm bg-white rounded-xl border border-slate-200/60">
+            Nenhum serviço cadastrado ainda. Use o formulário acima para iniciar seu catálogo!
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-slate-200/60 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs md:text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                    <th className="px-4 py-3">Serviço</th>
+                    <th className="px-4 py-3">Tipo</th>
+                    <th className="px-4 py-3">Preço</th>
+                    <th className="px-4 py-3">Descrição</th>
+                    <th className="px-4 py-3 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700">
+                  {services.map((service) => (
+                    <tr key={service.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-slate-900">{service.name}</td>
+                      <td className="px-4 py-3">
+                        {service.priceType === 'FIXO' && <span className="bg-sky-50 text-sky-700 px-2 py-0.5 rounded-full text-xs font-semibold">Fixo</span>}
+                        {service.priceType === 'A_PARTIR' && <span className="bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full text-xs font-semibold">A partir</span>}
+                        {service.priceType === 'SOB_CONSULTA' && <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full text-xs font-semibold">Sob Consulta</span>}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-slate-800">
+                        {service.priceType === 'SOB_CONSULTA' ? '---' : `R$ ${parseFloat(service.price).toFixed(2)}`}
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 max-w-[200px] truncate" title={service.description}>
+                        {service.description || <span className="italic text-slate-300">Sem descrição</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteService(service.id)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors inline-flex items-center"
+                          title="Remover serviço"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // ── Sub-componente: Formulário de edição de anúncio ─────────────
 function AdEditForm({ ad, token, user, onSaved, onCancel }) {
   const [form, setForm] = useState({
@@ -663,6 +934,8 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
       </section>
 
       <PortfolioSection ad={ad} token={token} />
+
+      <ServiceCatalogSection ad={ad} token={token} />
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
 

@@ -96,6 +96,10 @@ export default function Profile() {
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  // Estados para Serviços
+  const [services, setServices] = useState([]);
+  const [isFetchingServices, setIsFetchingServices] = useState(true);
+
   const fetchReviews = async () => {
     try {
       const res = await fetch(`${API_URL}/api/reviews/${id}`);
@@ -107,6 +111,20 @@ export default function Profile() {
       console.error("Erro ao buscar avaliações:", err);
     } finally {
       setIsFetchingReviews(false);
+    }
+  };
+
+  const fetchServices = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/services/${id}`);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setServices(data.data);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar serviços:", err);
+    } finally {
+      setIsFetchingServices(false);
     }
   };
 
@@ -177,6 +195,7 @@ export default function Profile() {
     };
     fetchProfile();
     fetchReviews();
+    fetchServices();
   }, [id]);
 
   if (isLoading) {
@@ -204,6 +223,17 @@ export default function Profile() {
       const cleanPhone = professional.phone.replace(/\D/g, '');
       const finalPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
       window.open(`https://wa.me/${finalPhone}?text=Olá! Encontrei seu perfil no proITA e gostaria de um orçamento.`, '_blank');
+    }
+  };
+
+  const handleServiceWhatsApp = (serviceName) => {
+    if (professional.phone) {
+      const cleanPhone = professional.phone.replace(/\D/g, '');
+      const finalPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+      const message = `Olá! Vi o seu perfil no proITA e gostaria de solicitar um orçamento para o serviço de ${serviceName}.`;
+      window.open(`https://wa.me/${finalPhone}?text=${encodeURIComponent(message)}`, '_blank');
+    } else {
+      alert("Este profissional não cadastrou um contato de WhatsApp válido.");
     }
   };
 
@@ -629,12 +659,77 @@ export default function Profile() {
 
             {/* Aba 'Serviços' */}
             {activeTab === 'servicos' && (
-              <div className="bg-slate-50/50 rounded-3xl p-8 border border-slate-100 text-center">
-                <Briefcase className="text-slate-400 mx-auto mb-4" size={48} />
-                <h3 className="text-lg font-bold text-slate-900 mb-2">Serviços Oferecidos</h3>
-                <p className="text-slate-500 text-sm max-w-md mx-auto">
-                  Lista detalhada de especialidades, faixas de preço e modalidades de atendimento em desenvolvimento.
-                </p>
+              <div>
+                {isFetchingServices ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    <span className="ml-3 text-sm text-slate-500 font-medium">Carregando catálogo de serviços...</span>
+                  </div>
+                ) : services.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+                    {services.map((service) => {
+                      // Formatar preço de acordo com priceType
+                      let priceDisplay = '';
+                      if (service.priceType === 'FIXO') {
+                        priceDisplay = `R$ ${parseFloat(service.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                      } else if (service.priceType === 'A_PARTIR') {
+                        priceDisplay = `A partir de R$ ${parseFloat(service.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                      } else {
+                        priceDisplay = 'Orçamento gratuito';
+                      }
+
+                      return (
+                        <div key={service.id} className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col justify-between h-full group animate-fadeIn">
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-start gap-4">
+                              <h3 className="font-extrabold text-slate-900 text-lg tracking-tight group-hover:text-indigo-600 transition-colors">
+                                {service.name}
+                              </h3>
+                              {service.priceType === 'SOB_CONSULTA' ? (
+                                <span className="bg-purple-50 text-purple-700 px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 border border-purple-100">
+                                  Sob Consulta
+                                </span>
+                              ) : (
+                                <span className="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg text-xs font-bold shrink-0 border border-indigo-100">
+                                  {service.priceType === 'FIXO' ? 'Fixo' : 'A partir'}
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="text-slate-600 text-sm whitespace-pre-line leading-relaxed min-h-[40px]">
+                              {service.description || <span className="italic text-slate-300">Sem descrição detalhada</span>}
+                            </p>
+                          </div>
+
+                          <div className="mt-6 pt-4 border-t border-slate-100/60 flex items-center justify-between gap-4">
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Valor</span>
+                              <span className={`font-extrabold text-base md:text-lg tracking-tight ${service.priceType === 'SOB_CONSULTA' ? 'text-purple-600' : 'text-slate-900'}`}>
+                                {priceDisplay}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleServiceWhatsApp(service.name)}
+                              className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white px-5 py-2.5 rounded-xl font-bold shadow-md shadow-[#25D366]/10 transition-all hover:scale-[1.03] active:scale-97 text-xs cursor-pointer"
+                            >
+                              <MessageCircle size={14} className="stroke-[2.5]" /> Solicitar Orçamento
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-slate-50/50 rounded-3xl p-10 border border-slate-100 text-center">
+                    <Briefcase className="text-slate-300 mx-auto mb-4" size={48} />
+                    <h3 className="text-lg font-bold text-slate-900 mb-2">Catálogo Vazio</h3>
+                    <p className="text-slate-500 text-sm max-w-md mx-auto italic">
+                      Este profissional ainda não adicionou itens ao seu catálogo de serviços.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 

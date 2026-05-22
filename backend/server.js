@@ -631,6 +631,10 @@ app.use('/api/reviews', reviewRoutes);
 const uploadRoutes = require('./routes/uploadRoutes')(prisma);
 app.use('/api/upload', uploadRoutes);
 
+// Rotas de Serviços (Catalog)
+const serviceRoutes = require('./routes/serviceRoutes')(prisma);
+app.use('/api/services', serviceRoutes);
+
 // Configuração do Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 

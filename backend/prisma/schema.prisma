@@ -82,6 +82,7 @@ model Profile {
   rating                Float?   @default(0)
   reviewCount           Int      @default(0)
   reviews               Review[]
+  services              Service[]
 }
 
 // Tabelas fixas para alimentar os Menus de Busca/Filtro do Frontend
@@ -116,4 +117,16 @@ model Review {
   profile   Profile  @relation(fields: [profileId], references: [id])
   authorId  String
   author    User     @relation(fields: [authorId], references: [id])
+}
+
+model Service {
+  id          String   @id @default(uuid())
+  name        String
+  priceType   String   // FIXO, A_PARTIR, SOB_CONSULTA
+  price       Float?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  profileId   String
+  profile     Profile  @relation(fields: [profileId], references: [id])
 }
