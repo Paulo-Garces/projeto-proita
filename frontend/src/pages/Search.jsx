@@ -7,7 +7,7 @@ import { API_URL } from '../config';
 import { getProfileDisplayName, getProfileAvatarNameParam } from '../utils/profileDisplayName';
 
 export default function Search() {
-  const { user } = useContext(AuthContext);
+  const { user, token } = useContext(AuthContext);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryParam = searchParams.get('q') || '';
@@ -71,7 +71,11 @@ export default function Search() {
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/ads`);
+        const headers = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        const res = await fetch(`${API_URL}/api/ads`, { headers });
         const data = await res.json();
         if (res.ok && data.success) {
           const mappedData = data.data.map(profile => {
@@ -110,6 +114,7 @@ export default function Search() {
               instagram,
               visitasPerfil: profile.visitasPerfil || 0,
               cliquesWhatsapp: profile.cliquesWhatsapp || 0,
+              isFavorited: profile.isFavorited || false,
               avatar: (profile.fotoAnuncioUrl && profile.fotoAnuncioUrl.trim() !== '')
                 ? profile.fotoAnuncioUrl
                 : (profile.user?.profileImageUrl
@@ -127,7 +132,7 @@ export default function Search() {
       }
     };
     fetchAds();
-  }, []);
+  }, [token]);
 
   // ── Filter results when params change ────────────────────────
   useEffect(() => {

@@ -1,4 +1,5 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/authMiddleware');
 const { convertToInternationalPhone } = require('../utils/phoneHelper');
 
@@ -43,6 +44,22 @@ function pickOptionalProfileString(value) {
   const t = value.trim();
   return t.length > 0 ? t : null;
 }
+
+/** Decodifica o token JWT de forma opcional (soft auth). Retorna userId ou null. */
+const getOptionalUserId = (req) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const secret = process.env.JWT_SECRET || 'chave_secreta_proita_123';
+    const decoded = jwt.verify(token, secret);
+    return decoded.id;
+  } catch (error) {
+    return null;
+  }
+};
 
 /**
  * Normaliza redes vindas do body (socialLinks ou redesSociais / legado network+link)
@@ -106,11 +123,27 @@ module.exports = (prisma) => {
   // ─────────────────────────────────────────────────────────────
   router.get('/', async (req, res) => {
     try {
+      const userId = getOptionalUserId(req);
       const ads = await prisma.profile.findMany({
-        include: { user: { select: publicUserSelect } },
+        include: { 
+          user: { select: publicUserSelect },
+          ...(userId && {
+            favoritedBy: {
+              where: { id: userId },
+              select: { id: true }
+            }
+          })
+        },
         orderBy: { createdAt: 'desc' },
       });
-      res.status(200).json({ success: true, data: ads });
+
+      const mappedAds = ads.map(ad => {
+        const isFavorited = userId ? (ad.favoritedBy && ad.favoritedBy.length > 0) : false;
+        const { favoritedBy, ...rest } = ad;
+        return { ...rest, isFavorited };
+      });
+
+      res.status(200).json({ success: true, data: mappedAds });
     } catch (error) {
       console.error('[GET /api/ads] Erro:', error.message);
       res.status(500).json({ success: false, message: 'Erro interno ao buscar anúncios.' });
@@ -142,16 +175,28 @@ module.exports = (prisma) => {
     const { id } = req.params;
     console.log(`[GET /api/ads/:id] Buscando: ${id}`);
     try {
+      const userId = getOptionalUserId(req);
       const ad = await prisma.profile.findUnique({
         where: { id: String(id) },
-        include: { user: { select: publicUserSelect } },
+        include: { 
+          user: { select: publicUserSelect },
+          ...(userId && {
+            favoritedBy: {
+              where: { id: userId },
+              select: { id: true }
+            }
+          })
+        },
       });
 
       if (!ad) {
         return res.status(404).json({ success: false, message: 'Anúncio não encontrado.' });
       }
 
-      res.status(200).json({ success: true, data: ad });
+      const isFavorited = userId ? (ad.favoritedBy && ad.favoritedBy.length > 0) : false;
+      const { favoritedBy, ...rest } = ad;
+
+      res.status(200).json({ success: true, data: { ...rest, isFavorited } });
     } catch (error) {
       console.error('[GET /api/ads/:id] Erro:', error.message);
       res.status(500).json({ success: false, message: 'Erro interno ao buscar anúncio.' });
@@ -353,6 +398,66 @@ module.exports = (prisma) => {
     } catch (error) {
       console.error('[DELETE /api/ads/:id] Erro:', error.message);
       res.status(500).json({ success: false, message: 'Erro interno ao excluir anúncio.' });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // POST /api/favorites/toggle — Adicionar/remover anúncios dos favoritos (Rota Privada)
+  // ─────────────────────────────────────────────────────────────
+  router.post('/favorites/toggle', authMiddleware, async (req, res) => {
+    const { profileId } = req.body;
+    const userId = req.user.id;
+
+    if (!profileId) {
+      return res.status(400).json({ success: false, message: 'O ID do perfil é obrigatório.' });
+    }
+
+    try {
+      // Verifica se o perfil existe
+      const profile = await prisma.profile.findUnique({
+        where: { id: profileId }
+      });
+
+      if (!profile) {
+        return res.status(404).json({ success: false, message: 'Anúncio não encontrado.' });
+      }
+
+      // Verifica se já está favoritado
+      const alreadyFavorited = await prisma.profile.findFirst({
+        where: {
+          id: profileId,
+          favoritedBy: {
+            some: { id: userId }
+          }
+        }
+      });
+
+      if (alreadyFavorited) {
+        // Remove dos favoritos
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            favoriteProfiles: {
+              disconnect: { id: profileId }
+            }
+          }
+        });
+        return res.status(200).json({ success: true, isFavorited: false, message: 'Removido dos favoritos.' });
+      } else {
+        // Adiciona aos favoritos
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            favoriteProfiles: {
+              connect: { id: profileId }
+            }
+          }
+        });
+        return res.status(200).json({ success: true, isFavorited: true, message: 'Adicionado aos favoritos!' });
+      }
+    } catch (error) {
+      console.error('[POST /api/favorites/toggle] Erro:', error.message);
+      res.status(500).json({ success: false, message: 'Erro interno ao atualizar favoritos.' });
     }
   });
 
