@@ -14,41 +14,59 @@ export default function Planos() {
 
         <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
           {/* Plano 1 Ano */}
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:border-primary/50 transition-all">
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">Plano Anual</h3>
-            <p className="text-slate-500 mb-6">Ideal para começar e testar a plataforma.</p>
-            <div className="mb-6">
-              <span className="text-5xl font-extrabold text-slate-900">R$ 30</span>
-              <span className="text-slate-500 font-medium">/ano</span>
+          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:border-primary/50 transition-all flex flex-col justify-between">
+            <div>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">Plano Anual</h3>
+              <p className="text-slate-500 mb-4 text-sm">Ideal para começar e testar a plataforma.</p>
+              <div className="mb-2">
+                <span className="text-5xl font-extrabold text-slate-900">R$ 35,99</span>
+                <span className="text-slate-500 font-medium">/ano</span>
+              </div>
+              <div className="mb-6">
+                <span className="text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-lg">
+                  (Equivale a apenas R$ 2,99 por mês)
+                </span>
+              </div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={18} /> <span className="text-slate-700 text-sm">30 dias de teste grátis</span></li>
+                <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={18} /> <span className="text-slate-700 text-sm">Crie até 2 anúncios simultâneos</span></li>
+                <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={18} /> <span className="text-slate-700 text-sm">Categoria e Subcategoria via IA</span></li>
+                <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={18} /> <span className="text-slate-700 text-sm">Botão direto para WhatsApp e Ligar</span></li>
+                <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={18} /> <span className="text-slate-700 text-sm">Funil de Conversão e Estatísticas</span></li>
+                <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={18} /> <span className="text-slate-700 text-sm">Elegível ao Selo de Reputação (Ouro/Prata/Bronze)</span></li>
+              </ul>
             </div>
-            <ul className="space-y-4 mb-8">
-              <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={20} /> <span className="text-slate-700">Anúncio de Perfil Público</span></li>
-              <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={20} /> <span className="text-slate-700">Categoria e Subcategoria via IA</span></li>
-              <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={20} /> <span className="text-slate-700">Botão direto para WhatsApp</span></li>
-              <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={20} /> <span className="text-slate-700">Métricas de Acesso e Cliques</span></li>
-            </ul>
             <Link to="/auth?mode=register" className="block w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold text-center rounded-xl transition-colors">
               Começar Agora
             </Link>
           </div>
 
           {/* Plano 2 Anos */}
-          <div className="bg-primary rounded-3xl p-8 border border-primary shadow-xl shadow-primary/20 transform md:-translate-y-4 relative">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-1 rounded-full text-sm font-bold shadow-sm">
-              Mais Vantajoso
+          <div className="bg-primary rounded-3xl p-8 border border-primary shadow-xl shadow-primary/20 transform md:-translate-y-4 relative flex flex-col justify-between">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-1 rounded-full text-xs font-bold shadow-sm whitespace-nowrap">
+              Aprox. 16% de Economia Real
             </div>
-            <h3 className="text-2xl font-bold text-white mb-2">Plano Bienal</h3>
-            <p className="text-primary-100 mb-6">Economia garantida para profissionais focados a longo prazo.</p>
-            <div className="mb-6">
-              <span className="text-5xl font-extrabold text-white">R$ 50</span>
-              <span className="text-primary-200 font-medium">/2 anos</span>
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-2">Plano Bienal</h3>
+              <p className="text-primary-100 mb-4 text-sm">Economia garantida para profissionais focados a longo prazo.</p>
+              <div className="mb-2">
+                <span className="text-5xl font-extrabold text-white">R$ 59,90</span>
+                <span className="text-primary-200 font-medium">/2 anos</span>
+              </div>
+              <div className="mb-6">
+                <span className="text-[11px] font-bold text-primary bg-white px-2.5 py-1 rounded-lg">
+                  (Equivale a apenas R$ 2,49 por mês)
+                </span>
+              </div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={18} /> <span className="text-white text-sm">30 dias de teste grátis</span></li>
+                <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={18} /> <span className="text-white text-sm">Crie até 2 anúncios simultâneos</span></li>
+                <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={18} /> <span className="text-white text-sm">Todas as vantagens do plano anual</span></li>
+                <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={18} /> <span className="text-white text-sm">Categoria e Subcategoria via IA</span></li>
+                <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={18} /> <span className="text-white text-sm">Funil de Conversão e Estatísticas</span></li>
+                <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={18} /> <span className="text-white text-sm">Elegível ao Selo de Reputação (Ouro/Prata/Bronze)</span></li>
+              </ul>
             </div>
-            <ul className="space-y-4 mb-8">
-              <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={20} /> <span className="text-white">Todas as vantagens do plano anual</span></li>
-              <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={20} /> <span className="text-white">Mais de 15% de desconto</span></li>
-              <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={20} /> <span className="text-white">Selo de 'Verificado' (em breve)</span></li>
-              <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={20} /> <span className="text-white">Prioridade no suporte</span></li>
-            </ul>
             <Link to="/auth?mode=register" className="block w-full py-3 px-4 bg-white hover:bg-slate-50 text-primary font-bold text-center rounded-xl transition-colors">
               Escolher Plano Bienal
             </Link>
