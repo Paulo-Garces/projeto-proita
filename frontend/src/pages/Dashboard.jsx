@@ -1,5 +1,5 @@
 import { useState, useContext, useRef, useEffect } from 'react';
-import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound } from 'lucide-react';
+import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
@@ -1472,11 +1472,12 @@ export default function Dashboard() {
     { key: 'profile', label: 'Meus Dados', Icon: User },
     { key: 'favorites', label: 'Favoritos', Icon: Heart },
     { key: 'professional', label: 'Meus Anúncios', Icon: LayoutDashboard },
+    { key: 'subscription', label: 'Assinatura e Anuidade', Icon: CreditCard },
     { key: 'security', label: 'Segurança', Icon: Settings },
   ];
 
   return (
-    <div className="bg-slate-50 min-h-[calc(100vh-64px)] py-8">
+    <div className="bg-slate-50 min-h-[calc(100vh-64px)] pt-24 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row gap-8">
 
@@ -1624,24 +1625,6 @@ export default function Dashboard() {
                     <>
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-slate-900">Meus Anúncios</h2>
-                        {myAds.length >= 4 ? (
-                          <div className="flex flex-col items-end">
-                            <button
-                              disabled
-                              className="flex items-center gap-2 bg-slate-200 text-slate-400 px-4 py-2 rounded-xl text-sm font-medium cursor-not-allowed border border-slate-300"
-                              title="Você atingiu o limite máximo de 4 anúncios por conta."
-                            >
-                              <Plus size={16} /> Novo Anúncio
-                            </button>
-                            <span className="text-xs text-slate-500 mt-1 font-medium bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
-                              Limite máximo de 4 anúncios atingido
-                            </span>
-                          </div>
-                        ) : (
-                          <Link to="/advertise" className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-hover transition-colors">
-                            <Plus size={16} /> Novo Anúncio
-                          </Link>
-                        )}
                       </div>
                       {adsLoading ? (
                         <div className="flex justify-center py-16"><Loader2 size={32} className="animate-spin text-primary" /></div>
@@ -1654,40 +1637,221 @@ export default function Dashboard() {
                           </Link>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                          {myAds.map(ad => {
-                            const fotoAnuncio = (ad.fotoAnuncioUrl && ad.fotoAnuncioUrl.trim() !== '')
-                              ? ad.fotoAnuncioUrl
-                              : (user?.profileImageUrl || ad.avatarUrl || null);
+                        <div className="space-y-6 animate-in fade-in duration-300">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            {myAds.map(ad => {
+                              const fotoAnuncio = (ad.fotoAnuncioUrl && ad.fotoAnuncioUrl.trim() !== '')
+                                ? ad.fotoAnuncioUrl
+                                : (user?.profileImageUrl || ad.avatarUrl || null);
 
-                            const telefoneExibicao = (ad.telefoneComercial && ad.telefoneComercial.trim() !== '')
-                              ? ad.telefoneComercial
-                              : (user?.telefone || ad.servicePhone || ad.whatsapp || '');
+                              const telefoneExibicao = (ad.telefoneComercial && ad.telefoneComercial.trim() !== '')
+                                ? ad.telefoneComercial
+                                : (user?.telefone || ad.servicePhone || ad.whatsapp || '');
 
-                            const cardPro = {
-                              id: ad.id,
-                              name: getProfileDisplayName(ad, user),
-                              category: ad.atividadePrincipal,
-                              shortDescription: ad.descricaoCurta || ad.shortDescription || ad.descricaoTrabalho?.substring(0, 90),
-                              servicePhone: telefoneExibicao,
-                              serviceBairro: ad.serviceBairro,
-                              location: ad.serviceBairro || user?.bairro || 'Itapipoca',
-                              avatar: fotoAnuncio,
-                              socialLinks: mapStoredSocialLinksToForm(ad.socialLinks ?? ad.redesSociais),
-                            };
-                            return (
-                              <AdCard
-                                key={ad.id}
-                                professional={cardPro}
-                                showEdit={true}
-                                onEdit={() => setEditingAd(ad)}
-                                onDelete={() => handleDeleteAd(ad.id)}
-                              />
-                            );
-                          })}
+                              const cardPro = {
+                                id: ad.id,
+                                name: getProfileDisplayName(ad, user),
+                                category: ad.atividadePrincipal,
+                                shortDescription: ad.descricaoCurta || ad.shortDescription || ad.descricaoTrabalho?.substring(0, 90),
+                                servicePhone: telefoneExibicao,
+                                serviceBairro: ad.serviceBairro,
+                                location: ad.serviceBairro || user?.bairro || 'Itapipoca',
+                                avatar: fotoAnuncio,
+                                socialLinks: mapStoredSocialLinksToForm(ad.socialLinks ?? ad.redesSociais),
+                                visitasPerfil: ad.visitasPerfil ?? 0,
+                                cliquesWhatsapp: ad.cliquesWhatsapp ?? 0,
+                                cliquesLigar: ad.cliquesLigar ?? 0,
+                              };
+                              return (
+                                <AdCard
+                                  key={ad.id}
+                                  professional={cardPro}
+                                  showEdit={true}
+                                  onEdit={() => setEditingAd(ad)}
+                                  onDelete={() => handleDeleteAd(ad.id)}
+                                />
+                              );
+                            })}
+                          </div>
+                          {myAds.length === 1 && (
+                            <div className="flex justify-center pt-4">
+                              <Link to="/advertise" className="inline-flex items-center gap-2 text-primary border border-primary/20 bg-primary/5 hover:bg-primary/10 px-5 py-2.5 rounded-xl font-semibold transition-all text-sm shadow-sm hover:scale-[1.02] active:scale-95 duration-200">
+                                <Plus size={16} /> Adicionar outro anúncio (Máx 2)
+                              </Link>
+                            </div>
+                          )}
                         </div>
                       )}
                     </>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'subscription' && (
+                <div className="animate-in fade-in duration-300">
+                  <h2 className="text-2xl font-bold text-slate-900 mb-6">Assinatura e Anuidade</h2>
+
+                  {myAds.length === 0 ? (
+                    <div className="bg-white border border-slate-100 rounded-3xl p-10 text-center shadow-sm max-w-xl">
+                      <CreditCard size={48} className="text-slate-300 mx-auto mb-4 animate-pulse" />
+                      <h3 className="text-lg font-bold text-slate-900 mb-2">Nenhum perfil profissional cadastrado</h3>
+                      <p className="text-slate-500 text-sm max-w-md mx-auto mb-6 leading-relaxed">
+                        Você atualmente possui uma conta de Cliente. Para ter acesso à gestão de assinatura e selos de reputação, anuncie seus serviços profissionais no proITA!
+                      </p>
+                      <Link
+                        to="/advertise"
+                        className="inline-flex items-center justify-center bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-full font-bold shadow-md shadow-primary/10 transition-transform active:scale-95 text-sm"
+                      >
+                        Criar Meu Anúncio de Profissional
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="space-y-6 max-w-3xl">
+                      {(() => {
+                        const status = user?.planStatus || 'DEGUSTACAO';
+                        let statusBadgeColor = '';
+                        let statusText = '';
+                        if (status === 'ATIVO') {
+                          statusBadgeColor = 'bg-emerald-50 border-emerald-200 text-emerald-700';
+                          statusText = 'Ativo';
+                        } else if (status === 'DEGUSTACAO') {
+                          statusBadgeColor = 'bg-amber-50 border-amber-200 text-amber-700';
+                          statusText = 'Degustação (30 dias grátis)';
+                        } else {
+                          statusBadgeColor = 'bg-red-50 border-red-200 text-red-700';
+                          statusText = 'Expirado';
+                        }
+
+                        const handleSimulatePayment = async () => {
+                          try {
+                            const res = await fetch(`${API_URL}/api/ads/simulate-payment`, {
+                              method: 'POST',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                              }
+                            });
+                            const data = await res.json();
+                            if (res.ok && data.success) {
+                              updateUser(data.user);
+                              alert(data.message || 'Pagamento simulado com sucesso!');
+                            } else {
+                              alert(data.message || 'Erro ao simular pagamento.');
+                            }
+                          } catch (err) {
+                            console.error(err);
+                            alert('Erro de conexão ao simular pagamento.');
+                          }
+                        };
+
+                        const handleReceipt = () => {
+                          alert('Recibo estará disponível após o primeiro ciclo.');
+                        };
+
+                        const handlePay = () => {
+                          alert('A integração real com gateway de pagamento estará disponível em breve!');
+                        };
+
+                        const formatDateBR = (dateStr) => {
+                          if (!dateStr) return 'Não cadastrada';
+                          const d = new Date(dateStr);
+                          if (isNaN(d.getTime())) return 'Inválida';
+                          return d.toLocaleDateString('pt-BR');
+                        };
+
+                        return (
+                          <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                              <div>
+                                <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">
+                                  Plano Profissional proITA (SaaS)
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">Assinatura vinculada à conta: {user?.email || user?.telefone}</p>
+                              </div>
+                              <span className={`px-4 py-1.5 rounded-full border text-xs font-bold ${statusBadgeColor} tracking-wider uppercase inline-block`}>
+                                {statusText}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-2">
+                              <div className="space-y-1">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Início da Assinatura / Criação da Conta</span>
+                                <span className="font-semibold text-slate-800 text-sm md:text-base">
+                                  {formatDateBR(user?.createdAt)}
+                                </span>
+                              </div>
+                              
+                              <div className="space-y-1">
+                                {status === 'DEGUSTACAO' ? (
+                                  <>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Fim do Teste Grátis</span>
+                                    <span className="font-semibold text-slate-800 text-sm md:text-base text-amber-600">
+                                      {formatDateBR(user?.trialEndsAt)}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Próxima Renovação</span>
+                                    <span className="font-semibold text-slate-800 text-sm md:text-base">
+                                      {formatDateBR(user?.subscriptionEndsAt)}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Detalhes de anúncios e selos */}
+                            <div className="bg-slate-50 border border-slate-200/50 rounded-2xl p-4 space-y-2">
+                              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Benefícios da Assinatura</h4>
+                              <ul className="text-xs text-slate-600 space-y-1.5">
+                                <li className="flex items-center gap-2">
+                                  <span className="text-emerald-500 font-bold">✓</span> Limite de até 2 anúncios profissionais por conta (Atualmente cadastrados: {myAds.length}/2).
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <span className="text-emerald-500 font-bold">✓</span> {status === 'ATIVO' ? (
+                                    <span className="text-emerald-600 font-bold">Selos de Reputação ATIVOS e exibidos nos seus anúncios!</span>
+                                  ) : (
+                                    <span>Ative sua conta para exibir seus Selos de Reputação (Bronze, Prata e Ouro).</span>
+                                  )}
+                                </li>
+                              </ul>
+                            </div>
+
+                            {/* Botões de Ação */}
+                            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                              <button
+                                onClick={handlePay}
+                                className="flex-1 flex justify-center items-center bg-primary hover:bg-primary-hover text-white py-3 px-6 rounded-2xl font-bold text-sm transition-all shadow-md shadow-primary/10 active:scale-95 cursor-pointer"
+                              >
+                                Pagar / Antecipar Anuidade
+                              </button>
+                              <button
+                                onClick={handleReceipt}
+                                className="flex-1 flex justify-center items-center bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 px-6 rounded-2xl font-bold text-sm transition-all active:scale-95 cursor-pointer"
+                              >
+                                Gerar Recibo
+                              </button>
+                            </div>
+
+                            {/* Bloco Exclusivo de Desenvolvimento */}
+                            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 mt-6">
+                              <div className="flex items-center gap-2 mb-2 text-slate-700">
+                                <span className="text-xs font-bold uppercase tracking-wider">Modo Desenvolvimento</span>
+                              </div>
+                              <p className="text-xs text-slate-500 mb-3 leading-relaxed">
+                                Use o botão abaixo para simular instantaneamente a confirmação de pagamento de anuidade anual (365 dias) no banco de dados para a sua conta, ativando sua assinatura de plataforma.
+                              </p>
+                              <button
+                                onClick={handleSimulatePayment}
+                                className="w-full flex justify-center items-center bg-amber-500 hover:bg-amber-600 text-white py-2.5 px-4 rounded-xl font-bold text-xs transition-colors cursor-pointer shadow-sm shadow-amber-500/10"
+                              >
+                                🧪 Simular Pagamento (Teste)
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   )}
                 </div>
               )}

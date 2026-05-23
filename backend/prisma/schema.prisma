@@ -25,6 +25,12 @@ model User {
   role                       String    @default("USER")
   profileImageUrl            String?
   profileImageFileId         String?
+
+  // Controle de Assinatura e Monetização
+  planStatus                 String    @default("DEGUSTACAO") // 'DEGUSTACAO', 'ATIVO', 'EXPIRADO'
+  trialEndsAt                DateTime?
+  subscriptionEndsAt         DateTime?
+
   createdAt                  DateTime  @default(now())
   profiles                   Profile[] // 1:N — um usuário pode ter vários anúncios
   resetCode                  String?
@@ -79,6 +85,7 @@ model Profile {
   socialLinks           Json?
   cliquesWhatsapp       Int      @default(0)
   visitasPerfil         Int      @default(0)
+
   createdAt             DateTime @default(now())
   rating                Float?   @default(0)
   reviewCount           Int      @default(0)

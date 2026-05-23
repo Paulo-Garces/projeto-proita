@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useContext } from 'react';
-import { Star, Phone, Share2, CheckCircle, Edit2, Trash2, IdCard, Bookmark, Plus, MapPin, Award, ShieldCheck } from 'lucide-react';
+import { Star, Phone, Share2, CheckCircle, Edit2, Trash2, IdCard, Bookmark, Plus, MapPin, Award, ShieldCheck, Eye, MessageCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 import { getProfileDisplayName } from '../utils/profileDisplayName';
@@ -296,6 +296,25 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         </div>
 
       </div>
+
+      {showEdit && (
+        <div className="border-t border-slate-100 bg-slate-50/50 px-5 py-3.5 flex items-center justify-around gap-4 text-xs font-semibold text-slate-500">
+          <div className="flex items-center gap-1.5 hover:text-slate-800 transition-colors animate-in fade-in duration-300" title="Visualizações do seu perfil profissional">
+            <Eye size={16} className="text-slate-400" />
+            <span>{professional.visitasPerfil ?? 0} Visualizações</span>
+          </div>
+          <div className="h-4 w-px bg-slate-200" />
+          <div className="flex items-center gap-1.5 hover:text-slate-800 transition-colors animate-in fade-in duration-300" title="Cliques para iniciar conversa no WhatsApp">
+            <MessageCircle size={16} className="text-slate-400" />
+            <span>{professional.cliquesWhatsapp ?? 0} Cliques Zap</span>
+          </div>
+          <div className="h-4 w-px bg-slate-200" />
+          <div className="flex items-center gap-1.5 hover:text-slate-800 transition-colors animate-in fade-in duration-300" title="Cliques para ligar diretamente">
+            <Phone size={16} className="text-slate-400" />
+            <span>{professional.cliquesLigar ?? 0} Ligações</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

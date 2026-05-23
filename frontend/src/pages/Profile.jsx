@@ -188,6 +188,9 @@ export default function Profile() {
             horariosFuncionamento: profile.horariosFuncionamento || null,
             portfolioUrls: profile.portfolioUrls || [],
             createdAt: profile.createdAt || null,
+            planStatus: profile.user?.planStatus || profile.planStatus || 'DEGUSTACAO',
+            trialEndsAt: profile.user?.trialEndsAt || profile.trialEndsAt || null,
+            subscriptionEndsAt: profile.user?.subscriptionEndsAt || profile.subscriptionEndsAt || null,
             verified: true
           });
         }

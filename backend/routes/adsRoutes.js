@@ -113,6 +113,9 @@ const publicUserSelect = {
   bairro: true,
   telefone: true,
   profileImageUrl: true,
+  planStatus: true,
+  trialEndsAt: true,
+  subscriptionEndsAt: true,
 };
 
 module.exports = (prisma) => {
@@ -223,10 +226,10 @@ module.exports = (prisma) => {
     const userId = req.user.id;
 
     try {
-      // Trava de segurança: limite máximo de 4 anúncios por conta
+      // Trava de segurança: limite máximo de 2 anúncios por conta
       const adsCount = await prisma.profile.count({ where: { userId } });
-      if (adsCount >= 4) {
-        return res.status(400).json({ success: false, message: 'Limite máximo de 4 anúncios atingido.' });
+      if (adsCount >= 2) {
+        return res.status(400).json({ success: false, message: 'Limite máximo de 2 anúncios atingido.' });
       }
 
       let socialLinksToSave = null;
@@ -273,6 +276,15 @@ module.exports = (prisma) => {
           enderecoComercial: pickOptionalProfileString(enderecoComercial),
           horariosFuncionamento: horariosFuncionamento !== undefined ? horariosFuncionamento : null,
         },
+      });
+
+      // Atualiza o planStatus do usuário para 'DEGUSTACAO' e trialEndsAt para 30 dias
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          planStatus: 'DEGUSTACAO',
+          trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        }
       });
 
       res.status(201).json({ success: true, profile });
@@ -458,6 +470,34 @@ module.exports = (prisma) => {
     } catch (error) {
       console.error('[POST /api/favorites/toggle] Erro:', error.message);
       res.status(500).json({ success: false, message: 'Erro interno ao atualizar favoritos.' });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // POST /api/ads/simulate-payment — Simular Pagamento de Assinatura (Rota Privada de Teste)
+  // ─────────────────────────────────────────────────────────────
+  router.post('/simulate-payment', authMiddleware, async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+      const subscriptionEndsAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // Daqui a 365 dias
+
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          planStatus: 'ATIVO',
+          subscriptionEndsAt,
+        }
+      });
+
+      res.status(200).json({ 
+        success: true, 
+        user: updatedUser, 
+        message: 'Simulação de pagamento efetuada com sucesso para a conta do usuário!' 
+      });
+    } catch (error) {
+      console.error('[POST /api/ads/simulate-payment] Erro:', error.message);
+      res.status(500).json({ success: false, message: 'Erro ao simular pagamento.' });
     }
   });
 
