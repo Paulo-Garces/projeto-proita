@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import BottomNav from './components/BottomNav';
 
 // Pages
 import Home from './pages/Home';
@@ -45,6 +46,7 @@ function App() {
               <Route path="/dicas" element={<Dicas />} />
             </Routes>
           </main>
+          <BottomNav />
           <Footer />
         </div>
       </Router>

@@ -969,7 +969,8 @@ export default function Dashboard() {
   const [adsLoading, setAdsLoading] = useState(false);
   const [editingAd, setEditingAd] = useState(null);
 
-  const favorites = [];
+  const [favoriteAds, setFavoriteAds] = useState([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(false);
 
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
@@ -1050,6 +1051,18 @@ export default function Dashboard() {
       .catch(console.error)
       .finally(() => setAdsLoading(false));
   }, [token]);
+
+  useEffect(() => {
+    if (!token || activeTab !== 'favorites') return;
+    setFavoritesLoading(true);
+    fetch(`${API_URL}/api/ads/favorites`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    })
+      .then(r => r.json())
+      .then(d => { if (d.success) setFavoriteAds(d.data); })
+      .catch(console.error)
+      .finally(() => setFavoritesLoading(false));
+  }, [token, activeTab]);
 
   useEffect(() => {
     if (activeTab !== 'security' || user?.googleId) return;
@@ -1610,10 +1623,54 @@ export default function Dashboard() {
               {activeTab === 'favorites' && (
                 <div className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-slate-900 mb-6">Profissionais Favoritos</h2>
-                  <div className="text-center py-16 text-slate-400">
-                    <Heart size={40} className="mx-auto mb-3 opacity-30" />
-                    <p>Você ainda não salvou nenhum profissional.</p>
-                  </div>
+                  {favoritesLoading ? (
+                    <div className="flex justify-center py-20">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    </div>
+                  ) : favoriteAds.length === 0 ? (
+                    <div className="text-center py-16 text-slate-400 bg-white border border-slate-100 rounded-3xl p-10 shadow-sm max-w-xl">
+                      <Heart size={40} className="mx-auto mb-3 opacity-30 text-slate-300 animate-pulse" />
+                      <p className="font-semibold text-slate-800 mb-1">Você ainda não salvou nenhum profissional.</p>
+                      <p className="text-slate-500 text-xs mb-6">Navegue pelas buscas e clique na bandeirinha para favoritar perfis!</p>
+                      <Link to="/search" className="inline-flex items-center gap-2 bg-primary text-white px-5 py-2.5 rounded-xl font-medium hover:bg-primary-hover transition-colors text-sm">
+                        Explorar Profissionais
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {favoriteAds.map(ad => {
+                        const fotoAnuncio = (ad.fotoAnuncioUrl && ad.fotoAnuncioUrl.trim() !== '')
+                          ? ad.fotoAnuncioUrl
+                          : (ad.user?.profileImageUrl || ad.avatarUrl || null);
+
+                        const telefoneExibicao = (ad.telefoneComercial && ad.telefoneComercial.trim() !== '')
+                          ? ad.telefoneComercial
+                          : (ad.user?.telefone || ad.servicePhone || ad.whatsapp || '');
+
+                        const cardPro = {
+                          id: ad.id,
+                          name: getProfileDisplayName(ad, ad.user),
+                          category: ad.atividadePrincipal,
+                          shortDescription: ad.descricaoCurta || ad.shortDescription || ad.descricaoTrabalho?.substring(0, 90),
+                          servicePhone: telefoneExibicao,
+                          serviceBairro: ad.serviceBairro,
+                          location: ad.serviceBairro || ad.user?.bairro || 'Itapipoca',
+                          avatar: fotoAnuncio,
+                          socialLinks: mapStoredSocialLinksToForm(ad.socialLinks ?? ad.redesSociais),
+                          rating: ad.rating || 0,
+                          reviewCount: ad.reviewCount || 0,
+                          isFavorited: true
+                        };
+                        return (
+                          <AdCard
+                            key={ad.id}
+                            professional={cardPro}
+                            showEdit={false}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1658,9 +1715,12 @@ export default function Dashboard() {
                                 location: ad.serviceBairro || user?.bairro || 'Itapipoca',
                                 avatar: fotoAnuncio,
                                 socialLinks: mapStoredSocialLinksToForm(ad.socialLinks ?? ad.redesSociais),
-                                visitasPerfil: ad.visitasPerfil ?? 0,
-                                cliquesWhatsapp: ad.cliquesWhatsapp ?? 0,
-                                cliquesLigar: ad.cliquesLigar ?? 0,
+                                impressions: ad.impressions ?? 0,
+                                profileViews: ad.profileViews ?? ad.visitasPerfil ?? 0,
+                                whatsappClicks: ad.whatsappClicks ?? ad.cliquesWhatsapp ?? 0,
+                                phoneClicks: ad.phoneClicks ?? 0,
+                                shares: ad.shares ?? 0,
+                                favoritesCount: ad.favoritedBy?.length ?? 0,
                               };
                               return (
                                 <AdCard

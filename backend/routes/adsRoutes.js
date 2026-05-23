@@ -146,6 +146,15 @@ module.exports = (prisma) => {
         return { ...rest, isFavorited };
       });
 
+      // Dispara atualização de impressões em background de forma assíncrona (não-bloqueante)
+      if (ads.length > 0) {
+        const adIds = ads.map(ad => ad.id);
+        prisma.profile.updateMany({
+          where: { id: { in: adIds } },
+          data: { impressions: { increment: 1 } }
+        }).catch(err => console.error('[GET /api/ads] Erro ao incrementar impressões:', err.message));
+      }
+
       res.status(200).json({ success: true, data: mappedAds });
     } catch (error) {
       console.error('[GET /api/ads] Erro:', error.message);
@@ -162,12 +171,48 @@ module.exports = (prisma) => {
       const userId = req.user.id;
       const ads = await prisma.profile.findMany({
         where: { userId },
+        include: {
+          favoritedBy: { select: { id: true } }
+        },
         orderBy: { createdAt: 'desc' },
       });
       res.status(200).json({ success: true, data: ads });
     } catch (error) {
       console.error('[GET /api/ads/me] Erro:', error.message);
       res.status(500).json({ success: false, message: 'Erro ao buscar seus anúncios.' });
+    }
+  });
+  // ─────────────────────────────────────────────────────────────
+  // GET /api/ads/favorites — Listar anúncios favoritados pelo usuário (Rota Privada)
+  // IMPORTANTE: deve vir ANTES de /:id para não ser capturada como ID
+  // ─────────────────────────────────────────────────────────────
+  router.get('/favorites', authMiddleware, async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          favoriteProfiles: {
+            include: {
+              user: { select: publicUserSelect }
+            }
+          }
+        }
+      });
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+      }
+
+      const mappedFavorites = user.favoriteProfiles.map(ad => ({
+        ...ad,
+        isFavorited: true
+      }));
+
+      res.status(200).json({ success: true, data: mappedFavorites });
+    } catch (error) {
+      console.error('[GET /api/ads/favorites] Erro:', error.message);
+      res.status(500).json({ success: false, message: 'Erro ao buscar anúncios favoritos.' });
     }
   });
 
@@ -470,6 +515,58 @@ module.exports = (prisma) => {
     } catch (error) {
       console.error('[POST /api/favorites/toggle] Erro:', error.message);
       res.status(500).json({ success: false, message: 'Erro interno ao atualizar favoritos.' });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────
+  // POST /api/ads/:id/track — Rota Única de Tracking de Métricas
+  // ─────────────────────────────────────────────────────────────
+  router.post('/:id/track', async (req, res) => {
+    const { id } = req.params;
+    const { action } = req.body;
+
+    if (!action) {
+      return res.status(400).json({ success: false, message: 'Ação de rastreamento é obrigatória.' });
+    }
+
+    try {
+      let updateData = {};
+      switch (action) {
+        case 'view':
+          updateData = { profileViews: { increment: 1 }, visitasPerfil: { increment: 1 } };
+          break;
+        case 'whatsapp':
+          updateData = { whatsappClicks: { increment: 1 }, cliquesWhatsapp: { increment: 1 } };
+          break;
+        case 'phone':
+          updateData = { phoneClicks: { increment: 1 } };
+          break;
+        case 'share':
+          updateData = { shares: { increment: 1 } };
+          break;
+        default:
+          return res.status(400).json({ success: false, message: `Ação inválida: ${action}` });
+      }
+
+      const updated = await prisma.profile.update({
+        where: { id: String(id) },
+        data: updateData,
+        select: {
+          id: true,
+          impressions: true,
+          profileViews: true,
+          whatsappClicks: true,
+          phoneClicks: true,
+          shares: true,
+          visitasPerfil: true,
+          cliquesWhatsapp: true,
+        }
+      });
+
+      res.status(200).json({ success: true, data: updated });
+    } catch (error) {
+      console.error(`[POST /api/ads/${id}/track] Erro:`, error.message);
+      res.status(500).json({ success: false, message: 'Erro ao registrar métrica de tracking.' });
     }
   });
 

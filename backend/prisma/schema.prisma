@@ -85,6 +85,11 @@ model Profile {
   socialLinks           Json?
   cliquesWhatsapp       Int      @default(0)
   visitasPerfil         Int      @default(0)
+  impressions           Int      @default(0)
+  profileViews          Int      @default(0)
+  whatsappClicks        Int      @default(0)
+  phoneClicks           Int      @default(0)
+  shares                Int      @default(0)
 
   createdAt             DateTime @default(now())
   rating                Float?   @default(0)

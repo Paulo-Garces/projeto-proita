@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useContext } from 'react';
-import { Star, Phone, Share2, CheckCircle, Edit2, Trash2, IdCard, Bookmark, Plus, MapPin, Award, ShieldCheck, Eye, MessageCircle } from 'lucide-react';
+import { Star, Phone, Share2, CheckCircle, Edit2, Trash2, IdCard, Bookmark, Plus, MapPin, Award, ShieldCheck, Eye, MessageCircle, TrendingUp } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 import { getProfileDisplayName } from '../utils/profileDisplayName';
@@ -107,7 +107,11 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
     e.preventDefault();
     if (phone) {
       try {
-        await fetch(`${API_URL}/api/ads/${professional.id}/click`, { method: 'POST' });
+        await fetch(`${API_URL}/api/ads/${professional.id}/track`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'whatsapp' })
+        });
       } catch (err) {
         console.error(err);
       }
@@ -119,17 +123,34 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
 
   const handleProfileClick = () => {
     if (!professional.id) return;
-    fetch(`${API_URL}/api/ads/${professional.id}/view`, { method: 'POST' }).catch(err => console.error(err));
+    fetch(`${API_URL}/api/ads/${professional.id}/track`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'view' })
+    }).catch(err => console.error(err));
   };
 
   const callPhone = (e) => {
     e.preventDefault();
-    if (phone) window.location.href = `tel:${phone.replace(/\D/g, '')}`;
+    if (phone) {
+      fetch(`${API_URL}/api/ads/${professional.id}/track`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'phone' })
+      }).catch(err => console.error(err));
+      window.location.href = `tel:${phone.replace(/\D/g, '')}`;
+    }
   };
 
   const share = async (e) => {
     e.preventDefault();
     const url = `${window.location.origin}/profile/${professional.id}`;
+
+    fetch(`${API_URL}/api/ads/${professional.id}/track`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'share' })
+    }).catch(err => console.error(err));
 
     if (navigator.share) {
       try {
@@ -298,20 +319,56 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
       </div>
 
       {showEdit && (
-        <div className="border-t border-slate-100 bg-slate-50/50 px-5 py-3.5 flex items-center justify-around gap-4 text-xs font-semibold text-slate-500">
-          <div className="flex items-center gap-1.5 hover:text-slate-800 transition-colors animate-in fade-in duration-300" title="Visualizações do seu perfil profissional">
-            <Eye size={16} className="text-slate-400" />
-            <span>{professional.visitasPerfil ?? 0} Visualizações</span>
-          </div>
-          <div className="h-4 w-px bg-slate-200" />
-          <div className="flex items-center gap-1.5 hover:text-slate-800 transition-colors animate-in fade-in duration-300" title="Cliques para iniciar conversa no WhatsApp">
-            <MessageCircle size={16} className="text-slate-400" />
-            <span>{professional.cliquesWhatsapp ?? 0} Cliques Zap</span>
-          </div>
-          <div className="h-4 w-px bg-slate-200" />
-          <div className="flex items-center gap-1.5 hover:text-slate-800 transition-colors animate-in fade-in duration-300" title="Cliques para ligar diretamente">
-            <Phone size={16} className="text-slate-400" />
-            <span>{professional.cliquesLigar ?? 0} Ligações</span>
+        <div className="border-t border-slate-100 bg-slate-50/50 p-5 rounded-b-2xl animate-in fade-in duration-300">
+          <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 text-center md:text-left">Funil de Conversão & Estatísticas</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs font-semibold text-slate-600">
+            <div className="flex items-center gap-2 bg-white px-3 py-2.5 rounded-xl border border-slate-100 shadow-sm" title="Exibições nas buscas de clientes">
+              <TrendingUp size={16} className="text-slate-400 shrink-0" />
+              <div className="min-w-0">
+                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Exibições</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.impressions ?? 0}</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 bg-white px-3 py-2.5 rounded-xl border border-slate-100 shadow-sm" title="Visitas completas ao seu perfil profissional">
+              <Eye size={16} className="text-slate-400 shrink-0" />
+              <div className="min-w-0">
+                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Visitas</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.profileViews ?? 0}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-white px-3 py-2.5 rounded-xl border border-slate-100 shadow-sm" title="Clientes que favoritaram seu perfil">
+              <Bookmark size={16} className="text-slate-400 shrink-0" />
+              <div className="min-w-0">
+                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Favoritos</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.favoritesCount ?? 0}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-white px-3 py-2.5 rounded-xl border border-slate-100 shadow-sm" title="Cliques para iniciar conversa no WhatsApp">
+              <MessageCircle size={16} className="text-slate-400 shrink-0" />
+              <div className="min-w-0">
+                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-0.5">WhatsApp</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.whatsappClicks ?? 0}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-white px-3 py-2.5 rounded-xl border border-slate-100 shadow-sm" title="Cliques para efetuar ligação direta">
+              <Phone size={16} className="text-slate-400 shrink-0" />
+              <div className="min-w-0">
+                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Ligações</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.phoneClicks ?? 0}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-white px-3 py-2.5 rounded-xl border border-slate-100 shadow-sm" title="Número de vezes que seu link foi compartilhado">
+              <Share2 size={16} className="text-slate-400 shrink-0" />
+              <div className="min-w-0">
+                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Partilhas</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.shares ?? 0}</span>
+              </div>
+            </div>
           </div>
         </div>
       )}

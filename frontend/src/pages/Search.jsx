@@ -138,6 +138,11 @@ export default function Search() {
   useEffect(() => {
     let filtered = profissionais;
 
+    const showFavoritesOnly = searchParams.get('favoritos') === 'true';
+    if (showFavoritesOnly) {
+      filtered = filtered.filter(p => p.isFavorited);
+    }
+
     let derivedCat = searchParams.get('cat') || '';
     let derivedSubcat = categoryParam || '';
 

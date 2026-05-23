@@ -193,6 +193,13 @@ export default function Profile() {
             subscriptionEndsAt: profile.user?.subscriptionEndsAt || profile.subscriptionEndsAt || null,
             verified: true
           });
+
+          // Dispara tracking silencioso de visualização
+          fetch(`${API_URL}/api/ads/${profile.id}/track`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'view' })
+          }).catch(console.error);
         }
       } catch (err) {
         console.error("Erro ao buscar perfil:", err);
@@ -229,6 +236,12 @@ export default function Profile() {
 
   const handleWhatsApp = () => {
     if (professional.phone) {
+      fetch(`${API_URL}/api/ads/${id}/track`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'whatsapp' })
+      }).catch(console.error);
+
       const cleanPhone = professional.phone.replace(/\D/g, '');
       const finalPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
       window.open(`https://wa.me/${finalPhone}?text=Olá! Encontrei seu perfil no proITA e gostaria de um orçamento.`, '_blank');
@@ -237,6 +250,12 @@ export default function Profile() {
 
   const handleServiceWhatsApp = (serviceName) => {
     if (professional.phone) {
+      fetch(`${API_URL}/api/ads/${id}/track`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'whatsapp' })
+      }).catch(console.error);
+
       const cleanPhone = professional.phone.replace(/\D/g, '');
       const finalPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
       const message = `Olá! Vi o seu perfil no proITA e gostaria de solicitar um orçamento para o serviço de ${serviceName}.`;
@@ -246,7 +265,25 @@ export default function Profile() {
     }
   };
 
+  const handlePhoneClick = () => {
+    if (professional.phone) {
+      fetch(`${API_URL}/api/ads/${id}/track`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'phone' })
+      }).catch(console.error);
+
+      window.location.href = `tel:${professional.phone.replace(/\D/g,'')}`;
+    }
+  };
+
   const handleShare = () => {
+    fetch(`${API_URL}/api/ads/${id}/track`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'share' })
+    }).catch(console.error);
+
     navigator.clipboard.writeText(window.location.href);
     alert('Link do perfil copiado para a área de transferência!');
   };
@@ -516,7 +553,7 @@ export default function Profile() {
             <div className="flex flex-row flex-nowrap items-center justify-center md:justify-end gap-1.5 sm:gap-3 w-full md:w-auto mt-4 md:mt-0">
               {professional.phone && (
                 <button 
-                  onClick={() => window.location.href = `tel:${professional.phone.replace(/\D/g,'')}`}
+                  onClick={handlePhoneClick}
                   className="flex items-center justify-center gap-1 sm:gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-2 sm:px-6 sm:py-3.5 rounded-2xl font-bold border border-slate-200 transition-transform active:scale-95 shadow-sm text-xs sm:text-sm"
                 >
                   <Phone size={14} className="sm:w-[18px] sm:h-[18px]" /> Ligar
