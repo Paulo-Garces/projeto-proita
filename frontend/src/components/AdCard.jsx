@@ -168,14 +168,14 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         </div>
 
         {/* LINHA 1 DIREITA: Nome, avaliação, telefone e bairro com MapPin */}
-        <div className="flex flex-col gap-1 min-w-0 justify-center">
-          <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors">
+        <div className="flex flex-col gap-1 min-w-0 justify-center items-start text-left">
+          <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors w-full">
             <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate">
               {displayName}
             </h3>
           </Link>
           
-          <div className="flex items-center gap-1 flex-wrap">
+          <div className="flex items-center gap-1 flex-wrap w-full">
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map(i => (
                 <Star key={i} size={14} className={i <= rating ? "text-amber-400 fill-amber-400" : "text-slate-200 fill-slate-200"} />
@@ -185,7 +185,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             {reviewCount > 0 && <span className="text-[11px] text-slate-400 ml-1">({reviewCount})</span>}
           </div>
 
-          <div className="text-slate-600 text-xs md:text-sm font-medium flex flex-col gap-0.5 mt-1">
+          <div className="text-slate-600 text-xs md:text-sm font-medium flex flex-col gap-0.5 mt-1 items-start w-full">
             {phone && <span className="truncate">{formatPhone(phone)}</span>}
             <span className="truncate text-slate-500 flex items-center gap-1">
               <MapPin size={14} className="text-slate-400 shrink-0" /> {location}
@@ -201,7 +201,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         </div>
 
         {/* LINHA 2 DIREITA: Botão 'Ver Perfil' e botão de Favoritar */}
-        <div className="flex items-center gap-3 justify-start">
+        <div className="flex items-center gap-3 justify-center">
           <Link
             to={`/profile/${professional.id}`}
             onClick={handleProfileClick}
@@ -246,9 +246,9 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         </div>
 
         {/* LINHA 3 DIREITA: Botões de Ação centralizados (Ligar, WhatsApp, Compartilhar) ou Editar/Excluir */}
-        <div className="flex items-center justify-start w-full">
+        <div className="flex items-center justify-center w-full">
           {showEdit ? (
-            <div className="flex w-full gap-2 items-center max-w-xs">
+            <div className="flex w-full gap-2 items-center justify-center max-w-xs">
               <button onClick={() => onEdit?.(professional)} className="flex-1 flex justify-center items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-3 rounded-full font-medium transition-colors text-xs md:text-sm">
                 <Edit2 size={16} /> Editar
               </button>
@@ -257,7 +257,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               </button>
             </div>
           ) : (
-            <div className="flex items-center justify-start gap-3 md:gap-5 w-full">
+            <div className="flex items-center justify-center gap-3 md:gap-5 w-full">
               {phone && (
                 <div className="flex flex-col items-center gap-1">
                   <button onClick={callPhone} title="Ligar" className="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-full transition-colors shadow-sm active:scale-95">
