@@ -16,7 +16,9 @@ import {
   Image as ImageIcon,
   X,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Award,
+  ShieldCheck
 } from 'lucide-react';
 
 const InstagramIcon = ({ size = 24, className }) => (
@@ -74,6 +76,7 @@ const YoutubeIcon = ({ size = 24, className }) => (
 );
 import { API_URL } from '../config';
 import { getProfileDisplayName, getProfileAvatarNameParam } from '../utils/profileDisplayName';
+import { getReputationBadge } from '../utils/reputationBadge';
 
 export default function Profile() {
   const { id } = useParams();
@@ -184,6 +187,7 @@ export default function Profile() {
             enderecoComercial: profile.enderecoComercial || null,
             horariosFuncionamento: profile.horariosFuncionamento || null,
             portfolioUrls: profile.portfolioUrls || [],
+            createdAt: profile.createdAt || null,
             verified: true
           });
         }
@@ -217,6 +221,8 @@ export default function Profile() {
       </div>
     );
   }
+
+  const badge = getReputationBadge(professional);
 
   const handleWhatsApp = () => {
     if (professional.phone) {
@@ -466,12 +472,23 @@ export default function Profile() {
                     <CheckCircle size={24} className="text-emerald-500 fill-emerald-50" />
                   </div>
                 )}
+                {badge && (
+                  <div className={`absolute -top-2 -right-2 bg-white rounded-full p-2.5 shadow-lg border border-slate-100 hover:scale-110 transition-transform duration-200 ${badge.color}`} title={badge.title}>
+                    {badge.icon === 'ShieldCheck' ? <ShieldCheck size={22} className="stroke-[2.5]" /> : <Award size={22} className="stroke-[2.5]" />}
+                  </div>
+                )}
               </div>
 
               {/* Informações do Bloco */}
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
                   <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{professional.name}</h1>
+                  {badge && (
+                    <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border shadow-sm ${badge.color}`} title={badge.title}>
+                      {badge.icon === 'ShieldCheck' ? <ShieldCheck size={14} className="stroke-[2.5]" /> : <Award size={14} className="stroke-[2.5]" />}
+                      Selo {badge.name}
+                    </span>
+                  )}
                 </div>
                 
                 <p className="text-lg font-bold text-indigo-600 flex items-center justify-center md:justify-start gap-1.5">
@@ -868,6 +885,16 @@ export default function Profile() {
           </div>
 
         </div>
+      </div>
+
+      {/* Botão de Denúncia sutil */}
+      <div className="mt-8 mb-4 text-center">
+        <a 
+          href={`mailto:suporte@proita.com.br?subject=${encodeURIComponent(`Denúncia de Perfil: ${professional.name}`)}`}
+          className="text-red-500 hover:text-red-600 hover:underline text-sm font-semibold transition-colors inline-flex items-center gap-1.5"
+        >
+          <span>🚩 Encontrou algo errado? Denunciar este perfil.</span>
+        </a>
       </div>
       
       {/* Botão de Ação Flutuante para Dispositivos Móveis */}
