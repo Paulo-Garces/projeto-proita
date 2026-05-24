@@ -1,14 +1,29 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/logo-proita.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>proITA - Guia dos Três Climas</title>
+    
+    <!-- PWA iOS Specific Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="proITA" />
+    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- PWA Splash Screen (Visible while JS is loading/initializing) -->
+      <div id="pwa-splash" style="position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background-color: #ffffff; z-index: 9999; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <div style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem;">
+          <p style="font-size: 1.1rem; font-weight: 700; color: #10b981; margin-bottom: 1.5rem; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0; margin-left: 0; margin-right: 0;">Bem-vindo ao</p>
+          <img src="/logo-proita.svg" alt="proITA Logo" style="height: 96px; width: auto; max-width: 80vw; display: block;" />
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

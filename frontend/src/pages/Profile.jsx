@@ -473,21 +473,29 @@ export default function Profile() {
   };
 
   return (
-    <div className="bg-slate-50 min-h-screen pb-20 pt-[72px]">
-      {/* 1. Foto de Capa (Facebook Inspired) */}
-      <div className="relative w-full aspect-[3/1] bg-slate-200 overflow-hidden">
+    <div className="bg-slate-50 min-h-screen pb-20 pt-20 md:pt-24">
+      {/* 1. Foto de Capa (Facebook Inspired) - Altura estável e blindada contra achatamento */}
+      <div className="relative w-full h-48 sm:h-64 md:h-80 bg-slate-200 overflow-hidden">
         {professional.capaUrl ? (
           <img 
             src={professional.capaUrl} 
             alt="Capa do Profissional" 
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover z-0"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-r from-sky-700 via-indigo-700 to-indigo-900 flex items-center justify-center relative overflow-hidden">
-            <div className="absolute w-96 h-96 rounded-full bg-white/5 -top-20 -left-20 blur-3xl"></div>
-            <div className="absolute w-80 h-80 rounded-full bg-indigo-500/20 bottom-10 right-10 blur-2xl"></div>
-            <div className="text-white/10 font-black text-5xl md:text-8xl tracking-widest select-none uppercase font-sans">
-              proITA
+          <div className="w-full h-full bg-gradient-to-b from-sky-100 to-emerald-50 flex items-end justify-center relative overflow-hidden z-0">
+            {/* Camadas do SVG de Serras (Mountain Background) */}
+            <div className="absolute inset-0 w-full h-full pointer-events-none z-0">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full h-full" preserveAspectRatio="none">
+                <path fill="#34d399" fillOpacity="0.25" d="M0,224L48,202.7C96,181,192,139,288,149.3C384,160,480,224,576,218.7C672,213,768,139,864,133.3C960,128,1056,192,1152,213.3C1248,235,1344,213,1392,202.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                <path fill="#10b981" fillOpacity="0.4" d="M0,256L48,245.3C96,235,192,213,288,208C384,203,480,213,576,202.7C672,192,768,160,864,170.7C960,181,1056,235,1152,234.7C1248,235,1344,181,1392,154.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+                <path fill="#059669" fillOpacity="0.75" d="M0,320L48,298.7C96,277,192,235,288,229.3C384,224,480,256,576,250.7C672,245,768,203,864,186.7C960,171,1056,181,1152,208C1248,235,1344,277,1392,298.7L1440,320L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+              </svg>
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center z-10 bg-slate-900/5">
+              <span className="text-emerald-800/15 font-black text-6xl md:text-8xl tracking-widest select-none uppercase font-sans">
+                proITA
+              </span>
             </div>
           </div>
         )}
@@ -497,9 +505,9 @@ export default function Profile() {
         <div className="bg-white rounded-3xl shadow-xl p-6 md:p-10 border border-slate-100">
           
           {/* 2. Cabeçalho Principal */}
-          <div className="flex flex-col md:flex-row gap-6 items-center md:items-end justify-between border-b border-slate-100 pb-8">
+          <div className="flex flex-col gap-6 w-full border-b border-slate-100 pb-8">
             
-            <div className="flex flex-col md:flex-row gap-6 items-center md:items-end text-center md:text-left">
+            <div className="flex flex-col md:flex-row gap-6 items-center md:items-end text-center md:text-left w-full">
               {/* Foto de Perfil Sobreposta */}
               <div className="relative shrink-0 -mt-24 md:-mt-28">
                 <img 
@@ -549,28 +557,28 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Ações Rápidas */}
-            <div className="flex flex-row flex-nowrap items-center justify-center md:justify-end gap-1.5 sm:gap-3 w-full md:w-auto mt-4 md:mt-0">
+            {/* Ações Rápidas - Posicionado abaixo da info no próprio eixo horizontal com largura controlada */}
+            <div className="flex flex-row flex-nowrap items-center justify-center md:justify-start gap-2 sm:gap-3 w-full mt-4 md:max-w-2xl">
               {professional.phone && (
                 <button 
                   onClick={handlePhoneClick}
-                  className="flex items-center justify-center gap-1 sm:gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-2 sm:px-6 sm:py-3.5 rounded-2xl font-bold border border-slate-200 transition-transform active:scale-95 shadow-sm text-xs sm:text-sm"
+                  className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3.5 sm:py-4 rounded-2xl font-bold border border-slate-200 transition-transform active:scale-95 shadow-sm text-xs sm:text-sm"
                 >
-                  <Phone size={14} className="sm:w-[18px] sm:h-[18px]" /> Ligar
+                  <Phone size={16} /> Ligar
                 </button>
               )}
               <button 
                 onClick={handleWhatsApp}
-                className="flex items-center justify-center gap-1 sm:gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white px-3 py-2 sm:px-8 sm:py-3.5 rounded-2xl font-bold shadow-lg shadow-[#25D366]/20 transition-transform active:scale-95 text-xs sm:text-sm shrink-0"
+                className="flex-[1.5] flex items-center justify-center gap-1.5 sm:gap-2 bg-[#25D366] hover:bg-[#20bd5a] text-white py-3.5 sm:py-4 rounded-2xl font-bold shadow-lg shadow-[#25D366]/20 transition-transform active:scale-95 text-xs sm:text-sm shrink-0"
               >
-                <MessageCircle size={14} className="sm:w-[18px] sm:h-[18px]" /> WhatsApp
+                <MessageCircle size={16} /> WhatsApp
               </button>
               <button 
-                className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 sm:p-3.5 rounded-2xl font-bold transition-transform active:scale-95 shadow-sm border border-slate-200 shrink-0"
+                className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3.5 sm:py-4 rounded-2xl font-bold transition-transform active:scale-95 shadow-sm border border-slate-200 shrink-0 text-xs sm:text-sm"
                 title="Compartilhar Perfil"
                 onClick={handleShare}
               >
-                <Share2 size={14} className="sm:w-[18px] sm:h-[18px]" />
+                <Share2 size={16} /> Compartilhar
               </button>
             </div>
           </div>

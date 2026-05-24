@@ -110,16 +110,14 @@ export default function Home() {
     <div className="h-[100dvh] w-full overflow-hidden bg-white relative flex flex-col justify-center items-center">
       
       {/* Wave Background (Serras - Múltiplas camadas de verde) */}
-      {/* Preparado para receber /serra-bg.svg. Enquanto não existir, o SVG inline serve de fallback. */}
-      <div className="absolute bottom-0 left-0 w-full h-[30vh] min-h-[200px] z-10 pointer-events-none">
-        <img
-          src="/serra-bg.svg"
-          alt=""
-          className="w-full h-full object-cover object-bottom hidden"
-          onLoad={(e) => { e.target.classList.remove('hidden'); e.target.nextElementSibling?.classList.add('hidden'); }}
-          onError={(e) => { e.target.classList.add('hidden'); }}
-        />
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full h-full" preserveAspectRatio="xMidYMax slice" style={{ shapeRendering: 'geometricPrecision' }}>
+      <div className="absolute bottom-0 left-0 w-full h-[25vh] sm:h-[30vh] lg:h-[35vh] z-10 pointer-events-none flex flex-col justify-end">
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          viewBox="0 0 1440 320" 
+          className="w-full h-full min-h-[150px]" 
+          preserveAspectRatio="none" 
+          style={{ shapeRendering: 'geometricPrecision' }}
+        >
           {/* Camada de fundo (mais clara/alta) */}
           <path fill="#34d399" fillOpacity="0.4" d="M0,224L48,202.7C96,181,192,139,288,149.3C384,160,480,224,576,218.7C672,213,768,139,864,133.3C960,128,1056,192,1152,213.3C1248,235,1344,213,1392,202.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
           {/* Camada intermediária */}
@@ -127,6 +125,7 @@ export default function Home() {
           {/* Camada frontal (mais escura) */}
           <path fill="#059669" fillOpacity="1" d="M0,320L48,298.7C96,277,192,235,288,229.3C384,224,480,256,576,250.7C672,245,768,203,864,186.7C960,171,1056,181,1152,208C1248,235,1344,277,1392,298.7L1440,320L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
         </svg>
+        <div className="bg-[#059669] h-[5vh] w-full -mt-1 shrink-0"></div>
       </div>
       
       {/* Content */}

@@ -1534,23 +1534,6 @@ export default function Dashboard() {
               {activeTab === 'profile' && (
                 <div className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-slate-900 mb-8">Meus Dados</h2>
-                  <div className="flex items-center gap-6 mb-8 p-5 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="relative shrink-0">
-                      <AvatarDisplay user={user} sizeClass="w-24 h-24" textClass="text-3xl" />
-                      <button onClick={() => fileInputRef.current?.click()} disabled={isUploadingPhoto}
-                        className="absolute bottom-0 right-0 w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center shadow-md hover:bg-primary-hover transition-colors disabled:opacity-60">
-                        {isUploadingPhoto ? <Loader2 size={15} className="animate-spin" /> : <Camera size={15} />}
-                      </button>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-800 text-lg">{user?.nome} {user?.sobrenome}</h3>
-                      <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isUploadingPhoto}
-                        className="text-sm text-primary font-medium hover:underline mt-1 disabled:opacity-60 block">
-                        {isUploadingPhoto ? 'Enviando...' : user?.profileImageUrl ? 'Trocar foto' : 'Adicionar foto de perfil'}
-                      </button>
-                      {photoError && <p className="text-xs text-red-500 mt-1">{photoError}</p>}
-                    </div>
-                  </div>
                   <form onSubmit={handleUpdateProfile} className="space-y-6 max-w-2xl">
                     {profileSuccess && (
                       <div className="p-4 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-2">

@@ -37,7 +37,7 @@ const SocialIconBadge = ({ platform }) => {
   }
 };
 
-export default function AdCard({ professional, showEdit = false, onEdit, onDelete }) {
+export default function AdCard({ professional, showEdit = false, onEdit, onDelete, style }) {
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
@@ -166,7 +166,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 overflow-hidden group relative">
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 overflow-hidden group relative animate-card-fade" style={style}>
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-cyan-400 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300" />
 
       {/* Grid Layout: 2 colunas, 3 linhas */}

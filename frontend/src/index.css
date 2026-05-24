@@ -52,3 +52,25 @@ body {
     animation: none;
   }
 }
+
+/* ── Staggered Card Entrance Animation ───────────────────────── */
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-card-fade {
+  animation: cardFadeIn 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-card-fade {
+    animation: none;
+  }
+}

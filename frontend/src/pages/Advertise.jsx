@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 import imageCompression from 'browser-image-compression';
-import { Briefcase, MapPin, AlignLeft, CheckCircle, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2 } from 'lucide-react';
+import { Briefcase, MapPin, AlignLeft, CheckCircle, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, Square, Send } from 'lucide-react';
 
 const MAX_PORTFOLIO_FILES = 8;
 const MAX_PORTFOLIO_MB = 2;
@@ -41,6 +41,8 @@ export default function Advertise() {
   const [categoriaGeral, setCategoriaGeral] = useState('');
   const [descricaoTrabalho, setDescricaoTrabalho] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingState, setRecordingState] = useState('idle'); // 'idle', 'recording', 'stopped'
+  const [voiceTranscript, setVoiceTranscript] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [bioSugerida, setBioSugerida] = useState('');
@@ -182,89 +184,102 @@ export default function Advertise() {
     }
   };
 
-  // Gravação de voz com permissão explícita de microfone (toggle manual)
-  const handleVoiceRecording = async () => {
-    // Se já está gravando, parar manualmente
-    if (isRecording) {
+  // Gravação de voz com permissão explícita de microfone e 3 estados (idle -> recording -> stopped)
+  const handleVoiceButtonAction = async () => {
+    if (recordingState === 'idle') {
+      // Solicitar permissão de áudio explicitamente (necessário no mobile)
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+      } catch (err) {
+        console.error('Permissão de microfone negada:', err);
+        alert('Para usar a gravação de voz, permita o acesso ao microfone nas configurações do seu navegador.');
+        return;
+      }
+
+      // Verificar suporte à API de reconhecimento de voz
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert('Seu navegador não suporta reconhecimento de voz. Tente usar o Google Chrome.');
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'pt-BR';
+      recognition.continuous = true;
+      recognition.interimResults = true; // Habilita retorno em tempo real para feedback instantâneo
+
+      setVoiceTranscript('');
+      setRecordingState('recording');
+      setIsRecording(true);
+
+      recognition.onresult = (event) => {
+        let currentTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          currentTranscript += event.results[i][0].transcript;
+        }
+        if (currentTranscript.trim()) {
+          setVoiceTranscript(prev => {
+            // Se já tínhamos transcrito algo, mantemos e adicionamos o novo
+            const base = prev.trim();
+            const partial = currentTranscript.trim();
+            if (base && !base.endsWith(partial)) {
+              return base + ' ' + partial;
+            }
+            return partial;
+          });
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error('Erro no reconhecimento de voz:', event.error);
+        if (event.error === 'not-allowed' || event.error === 'audio-capture') {
+          setRecordingState('idle');
+          setIsRecording(false);
+          recognitionRef.current = null;
+          if (event.error === 'not-allowed') {
+            alert('Permissão de microfone negada. Verifique as configurações do navegador.');
+          }
+        }
+      };
+
+      recognition.onend = () => {
+        // Se o usuário ainda estiver no modo recording, reinicia o listener
+        if (recognitionRef.current && recordingState === 'recording') {
+          try {
+            recognitionRef.current.start();
+          } catch (e) {
+            setRecordingState('idle');
+            setIsRecording(false);
+            recognitionRef.current = null;
+          }
+        }
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } else if (recordingState === 'recording') {
+      setRecordingState('stopped');
       setIsRecording(false);
       if (recognitionRef.current) {
         recognitionRef.current.stop();
         recognitionRef.current = null;
       }
-      return;
-    }
-
-    // Solicitar permissão de áudio explicitamente (necessário no mobile)
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Parar as tracks imediatamente — só precisávamos da permissão
-      stream.getTracks().forEach(track => track.stop());
-    } catch (err) {
-      console.error('Permissão de microfone negada:', err);
-      alert('Para usar a gravação de voz, permita o acesso ao microfone nas configurações do seu navegador.');
-      return;
-    }
-
-    // Verificar suporte à API de reconhecimento de voz
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('Seu navegador não suporta reconhecimento de voz. Tente usar o Google Chrome.');
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'pt-BR';
-    recognition.continuous = true;
-    recognition.interimResults = false;
-
-    recognition.onresult = (event) => {
-      // Usa apenas resultados finais (isFinal) para evitar duplicação no mobile
-      let finalTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        }
-      }
-      if (finalTranscript) {
+    } else if (recordingState === 'stopped') {
+      // Estado de Envio: anexa o texto transcrito na descrição de trabalho
+      if (voiceTranscript.trim()) {
         setDescricaoTrabalho(prev => {
           const trimmed = prev.trim();
-          if (trimmed.length > 0) return trimmed + ' ' + finalTranscript.trim();
-          return finalTranscript.trim();
+          if (trimmed.length > 0) return trimmed + ' ' + voiceTranscript.trim();
+          return voiceTranscript.trim();
         });
       }
-    };
-
-    recognition.onerror = (event) => {
-      console.error('Erro no reconhecimento de voz:', event.error);
-      // Erros fatais — parar gravação
-      if (event.error === 'not-allowed' || event.error === 'audio-capture') {
-        setIsRecording(false);
-        recognitionRef.current = null;
-        if (event.error === 'not-allowed') {
-          alert('Permissão de microfone negada. Verifique as configurações do navegador.');
-        }
-      }
-      // 'no-speech' e 'network' não são fatais — o onend vai reiniciar
-    };
-
-    recognition.onend = () => {
-      // Se o usuário NÃO parou manualmente, reinicia automaticamente
-      // (o browser pode cortar por silêncio, mas queremos continuar ouvindo)
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch (e) {
-          // Falha ao reiniciar — parar graciosamente
-          setIsRecording(false);
-          recognitionRef.current = null;
-        }
-      }
-    };
-
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsRecording(true);
+      setVoiceTranscript('');
+      setRecordingState('idle');
+    }
   };
+
+  const handleVoiceRecording = handleVoiceButtonAction;
 
   const handleCepChange = (e) => {
     let value = e.target.value.replace(/\D/g, '');
@@ -634,23 +649,68 @@ export default function Advertise() {
                       </button>
                     )}
 
+                    {/* Botão de Controle de Voz Multi-estado */}
                     <button
                       type="button"
-                      onClick={handleVoiceRecording}
-                      className={`absolute right-3 bottom-3 p-3 rounded-full flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/40' : 'bg-slate-200 text-slate-600 hover:bg-slate-300'}`}
-                      title={isRecording ? 'Parar gravação' : 'Gravar áudio'}
+                      onClick={handleVoiceButtonAction}
+                      className={`absolute right-3 bottom-3 p-3 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                        recordingState === 'recording'
+                          ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20 animate-pulse'
+                          : recordingState === 'stopped'
+                          ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                          : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
+                      }`}
+                      title={
+                        recordingState === 'recording'
+                          ? 'Parar gravação'
+                          : recordingState === 'stopped'
+                          ? 'Inserir texto na descrição'
+                          : 'Gravar áudio'
+                      }
                     >
-                      <Mic size={20} />
+                      {recordingState === 'recording' ? (
+                        <Square size={20} className="fill-white" />
+                      ) : recordingState === 'stopped' ? (
+                        <Send size={20} className="fill-white" />
+                      ) : (
+                        <Mic size={20} />
+                      )}
                     </button>
 
-                    {/* Feedback visual de gravação ativa */}
-                    {isRecording && (
-                      <div className="absolute -bottom-8 right-0 flex items-center gap-1.5 animate-in fade-in duration-300">
-                        <span className="relative flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                        </span>
-                        <span className="text-xs text-red-600 font-medium">Ouvindo... Toque no microfone para finalizar</span>
+                    {/* Feedback visual 1: Estado de Gravação Ativa com Siri/Gemini Waves */}
+                    {recordingState === 'recording' && (
+                      <div className="absolute inset-x-0 bottom-16 bg-slate-900/95 backdrop-blur-md rounded-xl p-4 mx-4 flex items-center justify-between text-white border border-slate-700/50 animate-in fade-in zoom-in-95 duration-200 z-20 shadow-xl">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* Pulsing colored waveform */}
+                          <div className="flex items-end gap-1 h-6 w-10 shrink-0">
+                            <span className="w-1 bg-cyan-400 rounded-full animate-pulse h-3"></span>
+                            <span className="w-1 bg-teal-400 rounded-full animate-pulse h-5"></span>
+                            <span className="w-1 bg-emerald-400 rounded-full animate-pulse h-6"></span>
+                            <span className="w-1 bg-sky-400 rounded-full animate-pulse h-4"></span>
+                            <span className="w-1 bg-indigo-400 rounded-full animate-pulse h-2"></span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Gravando áudio...</p>
+                            <p className="text-sm font-semibold truncate text-white">{voiceTranscript || "Fale agora, estamos ouvindo..."}</p>
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-black text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 shrink-0 uppercase tracking-wider">AO VIVO</span>
+                      </div>
+                    )}
+
+                    {/* Feedback visual 2: Estado Concluído (Pronto para Enviar) */}
+                    {recordingState === 'stopped' && (
+                      <div className="absolute inset-x-0 bottom-16 bg-slate-950/95 backdrop-blur-md rounded-xl p-4 mx-4 flex items-center justify-between text-white border border-emerald-500/20 animate-in fade-in zoom-in-95 duration-200 z-20 shadow-xl">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg shrink-0">
+                            <CheckCircle size={18} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest leading-none mb-1">Transcrição Concluída</p>
+                            <p className="text-sm font-medium italic truncate text-slate-300">"{voiceTranscript || "Áudio processado"}"</p>
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 shrink-0 uppercase tracking-wider">Enviar áudio</span>
                       </div>
                     )}
                   </div>

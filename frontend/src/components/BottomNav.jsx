@@ -7,6 +7,10 @@ export default function BottomNav() {
   const location = useLocation();
   const { isAuthenticated } = useContext(AuthContext);
 
+  if (location.pathname === '/') {
+    return null;
+  }
+
   const isActive = (path) => {
     if (path === '/') return location.pathname === '/';
     return location.pathname.startsWith(path);

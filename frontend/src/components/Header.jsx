@@ -10,27 +10,38 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Estados para suportar fechar o menu mobile arrastando (swipe close)
+  // Estados para fechar o menu mobile arrastando e colando no polegar (swipe close com física realista)
   const [touchStartX, setTouchStartX] = useState(0);
-  const [touchEndX, setTouchEndX] = useState(0);
+  const [touchDisplacement, setTouchDisplacement] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleTouchStart = (e) => {
     setTouchStartX(e.targetTouches[0].clientX);
-    setTouchEndX(e.targetTouches[0].clientX);
+    setIsDragging(true);
+    setTouchDisplacement(0);
   };
 
   const handleTouchMove = (e) => {
-    setTouchEndX(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    // Se arrastar da direita para a esquerda (swipe left) mais de 50px, fecha o menu
-    if (touchStartX - touchEndX > 50) {
-      setIsOpen(false);
+    const currentX = e.targetTouches[0].clientX;
+    const diffX = touchStartX - currentX;
+    // Apenas arrasta para a esquerda (valores positivos de deslocamento)
+    if (diffX > 0) {
+      setTouchDisplacement(diffX);
     }
   };
 
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    // Se arrastou mais de 80px (cerca de 30% do drawer), fecha graciosamente
+    if (touchDisplacement > 80) {
+      setIsOpen(false);
+    }
+    setTouchDisplacement(0);
+  };
+
   const { user, isAuthenticated, logout } = useContext(AuthContext);
+
+  const hasActivePlan = isAuthenticated && (user?.planStatus === 'ATIVO' || user?.planStatus === 'DEGUSTACAO');
 
   // Fechar dropdown do perfil ao clicar fora
   useEffect(() => {
@@ -102,7 +113,7 @@ export default function Header() {
               {/* Auth e Conta */}
               {isAuthenticated ? (
                 <div className="flex items-center gap-6">
-                  <Link to="/advertise" className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-full font-medium transition-colors shadow-md shadow-sky-200 flex items-center gap-2">
+                  <Link to={hasActivePlan ? "/advertise" : "/planos"} className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-full font-medium transition-colors shadow-md shadow-sky-200 flex items-center gap-2">
                     <PlusCircle size={18} /> Anuncie
                   </Link>
 
@@ -183,9 +194,16 @@ export default function Header() {
         />
       )}
 
-      {/* Mobile Navigation Sidebar - AGORA SOLTO E COM Z-INDEX MÁXIMO */}
+      {/* Mobile Navigation Sidebar - AGORA SOLTO E COM Z-INDEX MÁXIMO (Sticks to thumb!) */}
       <div
-        className={`md:hidden fixed inset-y-0 left-0 w-4/5 max-w-sm z-[60] bg-white shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`md:hidden fixed inset-y-0 left-0 w-4/5 max-w-sm z-[60] bg-white shadow-2xl flex flex-col ${
+          isDragging ? '' : 'transition-transform duration-300 ease-in-out'
+        }`}
+        style={{
+          transform: isOpen
+            ? `translateX(-${touchDisplacement}px)`
+            : 'translateX(-100%)',
+        }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -218,7 +236,7 @@ export default function Header() {
 
           {isAuthenticated ? (
             <>
-              <Link to="/advertise" className="block px-3 py-4 text-base font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md flex items-center gap-3 mt-4 justify-center">
+              <Link to={hasActivePlan ? "/advertise" : "/planos"} className="block px-3 py-4 text-base font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md flex items-center gap-3 mt-4 justify-center">
                 <PlusCircle size={20} /> Anuncie
               </Link>
               <div className="mt-4 pt-4 border-t border-slate-100">
