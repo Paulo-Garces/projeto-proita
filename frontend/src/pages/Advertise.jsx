@@ -656,7 +656,7 @@ export default function Advertise() {
   if (adCount >= 2) {
     return (
       <div className="bg-slate-50 min-h-[calc(100vh-64px)] py-12 px-4 flex items-center justify-center animate-in fade-in duration-500">
-        <div className="max-w-2xl w-full bg-white border border-slate-100 rounded-3xl p-8 md:p-12 shadow-xl shadow-slate-100/50 text-center relative overflow-hidden">
+        <div className="max-w-xl w-full bg-white border border-slate-100 rounded-3xl p-8 md:p-12 shadow-xl shadow-slate-100/50 text-center relative overflow-hidden">
           {/* Subtle glowing backgrounds */}
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
           <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-400/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -667,34 +667,21 @@ export default function Advertise() {
           </div>
 
           {/* Typography */}
-          <h1 className="text-3xl font-extrabold text-slate-900 mb-4 tracking-tight leading-tight">
+          <h1 className="text-3xl font-extrabold text-slate-900 mb-6 tracking-tight leading-tight">
             Limite de Anúncios Atingido
           </h1>
           
-          <p className="text-slate-800 text-lg font-semibold max-w-md mx-auto mb-4 leading-relaxed">
-            Você já atingiu o limite de 2 anúncios simultâneos para esta conta.
-          </p>
-
-          <p className="text-slate-500 text-sm max-w-lg mx-auto mb-10 leading-relaxed">
-            Para criar um novo anúncio, você pode excluir um dos seus anúncios atuais ou criar uma nova conta (usando outro e-mail) para expandir sua vitrine. <span className="font-semibold text-slate-800">Você pode usar o mesmo número de WhatsApp em contas diferentes!</span>
+          <p className="text-slate-600 text-base max-w-md mx-auto mb-10 leading-relaxed">
+            Você já atingiu o limite de 2 anúncios simultâneos para esta conta. Para criar um novo, você pode excluir um anúncio antigo no seu painel ou criar uma nova conta usando um e-mail diferente.
           </p>
 
           {/* Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex justify-center">
             <button
               onClick={() => navigate('/dashboard')}
-              className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white px-8 py-4 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 text-base flex items-center justify-center gap-2"
+              className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white px-8 py-4 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 text-base flex items-center justify-center gap-2 cursor-pointer"
             >
-              Gerenciar Meus Anúncios
-            </button>
-            <button
-              onClick={() => {
-                logout();
-                navigate('/auth?mode=register');
-              }}
-              className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 px-8 py-4 rounded-xl font-bold transition-all border border-slate-200 hover:scale-105 active:scale-95 text-base flex items-center justify-center gap-2"
-            >
-              Sair e Criar Nova Conta
+              Voltar para Meus Anúncios
             </button>
           </div>
         </div>

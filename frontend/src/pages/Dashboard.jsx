@@ -1666,6 +1666,20 @@ export default function Dashboard() {
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-slate-900">Meus Anúncios</h2>
                       </div>
+                      {user?.planStatus === 'EXPIRADO' && (
+                        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200/80 text-red-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-in slide-in-from-top-4 duration-300">
+                          <div className="text-sm font-semibold flex items-start gap-2.5">
+                            <span className="shrink-0 text-base leading-none">⚠️</span>
+                            <span>Seu plano expirou. Seus anúncios estão ocultos nas buscas. Renove sua assinatura para voltar a aparecer para os clientes.</span>
+                          </div>
+                          <button
+                            onClick={() => setActiveTab('subscription')}
+                            className="sm:shrink-0 text-center text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all active:scale-95 shadow-sm shadow-red-600/10 cursor-pointer"
+                          >
+                            Renovar Assinatura
+                          </button>
+                        </div>
+                      )}
                       {adsLoading ? (
                         <div className="flex justify-center py-16"><Loader2 size={32} className="animate-spin text-primary" /></div>
                       ) : myAds.length === 0 ? (

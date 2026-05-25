@@ -2,16 +2,46 @@ import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { CheckCircle, Shield } from 'lucide-react';
+import { API_URL } from '../config';
 
 export default function Planos() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useContext(AuthContext);
+  const { isAuthenticated, user, token, updateUser } = useContext(AuthContext);
 
-  const handlePlanCta = (e) => {
+  const handlePlanCta = async (e) => {
     e.preventDefault();
     if (!isAuthenticated) {
       navigate('/auth?mode=register');
+      return;
+    }
+
+    const currentStatus = user?.planStatus;
+    if (currentStatus !== 'ATIVO' && currentStatus !== 'DEGUSTACAO') {
+      try {
+        const res = await fetch(`${API_URL}/api/subscriptions/trial`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          // Atualiza o estado global e o localStorage do usuário com o novo planStatus e trialEndsAt
+          updateUser({
+            planStatus: data.user.planStatus,
+            trialEndsAt: data.user.trialEndsAt
+          });
+          navigate('/dashboard/novo-anuncio');
+        } else {
+          alert(data.message || 'Erro ao iniciar o período de testes.');
+        }
+      } catch (err) {
+        console.error('Erro ao iniciar trial:', err);
+        alert('Erro ao conectar com o servidor para iniciar período de degustação.');
+      }
     } else {
+      // Se já está ativo ou em degustação, vai direto criar anúncio
       navigate('/dashboard/novo-anuncio');
     }
   };
@@ -54,7 +84,7 @@ export default function Planos() {
               <p className="text-slate-500 mb-5 text-sm">Ideal para começar e testar a plataforma.</p>
               
               <div className="mb-1 flex items-baseline gap-2">
-                <span className="text-5xl font-extrabold text-slate-900 group-hover:text-primary transition-colors duration-300">R$ 35,99</span>
+                <span className="text-5xl font-extrabold text-slate-900 group-hover:text-primary transition-colors duration-300">R$ 35,90</span>
                 <span className="text-slate-500 font-medium">/ano</span>
               </div>
               <div className="mb-5">

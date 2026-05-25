@@ -128,6 +128,13 @@ module.exports = (prisma) => {
     try {
       const userId = getOptionalUserId(req);
       const ads = await prisma.profile.findMany({
+        where: {
+          user: {
+            planStatus: {
+              in: ['ATIVO', 'DEGUSTACAO']
+            }
+          }
+        },
         include: { 
           user: { select: publicUserSelect },
           ...(userId && {

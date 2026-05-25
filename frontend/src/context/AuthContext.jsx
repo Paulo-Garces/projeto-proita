@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
+import { API_URL } from '../config';
 
 export const AuthContext = createContext();
 
@@ -7,17 +8,53 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const logout = () => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('@proita:token');
+    localStorage.removeItem('@proita:user');
+  };
+
   useEffect(() => {
     // Ao carregar a aplicação, tenta recuperar token e usuário do localStorage
     const storedToken = localStorage.getItem('@proita:token');
     const storedUser = localStorage.getItem('@proita:user');
 
-    if (storedToken && storedUser) {
+    if (storedToken) {
       setToken(storedToken);
-      setUser(JSON.parse(storedUser));
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+      
+      // Busca dados atualizados em tempo real diretamente do banco de dados
+      fetch(`${API_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${storedToken}`
+        }
+      })
+        .then(res => {
+          if (res.status === 401 || res.status === 403) {
+            // Se o token expirou ou é inválido, limpa sessão local
+            logout();
+            return null;
+          }
+          return res.json();
+        })
+        .then(data => {
+          if (data && data.success && data.user) {
+            setUser(data.user);
+            localStorage.setItem('@proita:user', JSON.stringify(data.user));
+          }
+        })
+        .catch(err => {
+          console.error("Erro ao sincronizar sessão com banco de dados:", err);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
     }
-    
-    setLoading(false);
   }, []);
 
   const login = (jwtToken, userData) => {
@@ -25,13 +62,6 @@ export function AuthProvider({ children }) {
     setUser(userData);
     localStorage.setItem('@proita:token', jwtToken);
     localStorage.setItem('@proita:user', JSON.stringify(userData));
-  };
-
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('@proita:token');
-    localStorage.removeItem('@proita:user');
   };
 
   // Atualiza campos específicos do usuário no estado global e no localStorage

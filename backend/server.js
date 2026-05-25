@@ -631,6 +631,81 @@ app.put('/api/user/profile', authMiddleware, async (req, res) => {
   }
 });
 
+// Rota para iniciar o período de testes (degustação) de 30 dias real no banco
+app.post('/api/subscriptions/trial', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+    }
+
+    // Se já está ativo ou degustação, evita reinício
+    if (user.planStatus === 'ATIVO' || user.planStatus === 'DEGUSTACAO') {
+      return res.status(400).json({ success: false, message: 'Você já possui um plano ativo ou em degustação.' });
+    }
+
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() + 30);
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        planStatus: 'DEGUSTACAO',
+        trialEndsAt: expirationDate
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Período de degustação de 30 dias iniciado!',
+      user: {
+        planStatus: updatedUser.planStatus,
+        trialEndsAt: updatedUser.trialEndsAt
+      }
+    });
+  } catch (error) {
+    console.error('[POST /api/subscriptions/trial] Erro:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao iniciar degustação.' });
+  }
+});
+
+// Rota para obter o perfil atualizado do usuário autenticado no banco
+app.get('/api/auth/me', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user.id,
+        nome: user.nome,
+        sobrenome: user.sobrenome,
+        telefone: user.telefone,
+        email: user.email || null,
+        emailSecundario: user.emailSecundario || null,
+        emailSecundarioVerificado: user.emailSecundarioVerificado || false,
+        googleId: user.googleId || null,
+        bairro: user.bairro,
+        role: user.role,
+        profileImageUrl: user.profileImageUrl || null,
+        hasPassword: !!user.senha,
+        planStatus: user.planStatus,
+        trialEndsAt: user.trialEndsAt,
+        subscriptionEndsAt: user.subscriptionEndsAt
+      }
+    });
+  } catch (error) {
+    console.error('[GET /api/auth/me] Erro:', error);
+    res.status(500).json({ success: false, message: 'Erro interno do servidor.' });
+  }
+});
+
 // Rotas Administrativas
 const adminRoutes = require('./routes/adminRoutes')(prisma);
 app.use('/api/admin', authMiddleware, adminRoutes);
