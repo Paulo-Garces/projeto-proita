@@ -20,10 +20,27 @@ const WA_SVG = <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 s
 
 const formatPhone = (phone) => {
   if (!phone) return null;
-  const d = phone.replace(/\D/g, '');
-  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-  return phone;
+  
+  // 1. Strip +55 or 55 prefix if present and the remaining length is a valid phone
+  let cleaned = phone.trim();
+  if (cleaned.startsWith('+55')) {
+    cleaned = cleaned.slice(3).trim();
+  } else if (cleaned.startsWith('55') && cleaned.length > 10) {
+    cleaned = cleaned.slice(2).trim();
+  }
+
+  // 2. Extract digits only
+  const d = cleaned.replace(/\D/g, '');
+
+  // 3. Format to Brazilian standard (11 digits for cell, 10 digits for landline)
+  if (d.length === 11) {
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  }
+  if (d.length === 10) {
+    return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+  }
+  
+  return phone; // fallback to original if format is unexpected
 };
 
 // Componente auxiliar blindado

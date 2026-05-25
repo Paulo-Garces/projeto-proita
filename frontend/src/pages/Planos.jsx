@@ -12,7 +12,7 @@ export default function Planos() {
     if (!isAuthenticated) {
       navigate('/auth?mode=register');
     } else {
-      navigate('/advertise');
+      navigate('/dashboard/novo-anuncio');
     }
   };
 

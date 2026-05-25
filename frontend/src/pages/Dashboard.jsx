@@ -1672,7 +1672,7 @@ export default function Dashboard() {
                         <div className="text-center py-16 text-slate-400">
                           <LayoutDashboard size={40} className="mx-auto mb-3 opacity-30" />
                           <p className="font-medium mb-4">Você ainda não tem nenhum anúncio.</p>
-                          <Link to="/advertise" className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-xl font-medium hover:bg-primary-hover transition-colors">
+                          <Link to="/dashboard/novo-anuncio" className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-xl font-medium hover:bg-primary-hover transition-colors">
                             <Plus size={16} /> Criar meu primeiro anúncio
                           </Link>
                         </div>
@@ -1718,7 +1718,7 @@ export default function Dashboard() {
                           </div>
                           {myAds.length === 1 && (
                             <div className="flex justify-center pt-4">
-                              <Link to="/advertise" className="inline-flex items-center gap-2 text-primary border border-primary/20 bg-primary/5 hover:bg-primary/10 px-5 py-2.5 rounded-xl font-semibold transition-all text-sm shadow-sm hover:scale-[1.02] active:scale-95 duration-200">
+                              <Link to="/dashboard/novo-anuncio" className="inline-flex items-center gap-2 text-primary border border-primary/20 bg-primary/5 hover:bg-primary/10 px-5 py-2.5 rounded-xl font-semibold transition-all text-sm shadow-sm hover:scale-[1.02] active:scale-95 duration-200">
                                 <Plus size={16} /> Adicionar outro anúncio (Máx 2)
                               </Link>
                             </div>
@@ -1742,7 +1742,7 @@ export default function Dashboard() {
                         Você atualmente possui uma conta de Cliente. Para ter acesso à gestão de assinatura e selos de reputação, anuncie seus serviços profissionais no proITA!
                       </p>
                       <Link
-                        to="/advertise"
+                        to="/dashboard/novo-anuncio"
                         className="inline-flex items-center justify-center bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-full font-bold shadow-md shadow-primary/10 transition-transform active:scale-95 text-sm"
                       >
                         Criar Meu Anúncio de Profissional

@@ -1,13 +1,24 @@
 import { Mail, Hash, Link as LinkIcon, Globe } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 
 export default function Footer() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useContext(AuthContext);
 
-  const hasActivePlan = isAuthenticated && (user?.planStatus === 'ATIVO' || user?.planStatus === 'DEGUSTACAO');
+  const isTrialExpired = user?.planStatus === 'DEGUSTACAO' && user?.trialEndsAt && new Date(user.trialEndsAt) < new Date();
+  const hasActivePlan = isAuthenticated && (user?.planStatus === 'ATIVO' || (user?.planStatus === 'DEGUSTACAO' && !isTrialExpired));
+
+  const handleAnuncieClick = (e) => {
+    e?.preventDefault();
+    if (!isAuthenticated) {
+      navigate('/planos');
+    } else {
+      navigate('/dashboard/novo-anuncio');
+    }
+  };
 
   if (location.pathname === '/') {
     return null;
@@ -46,7 +57,7 @@ export default function Footer() {
           <div>
             <h3 className="text-white font-semibold mb-4 tracking-wide uppercase text-sm">Para Profissionais</h3>
             <ul className="space-y-3">
-              <li><Link to={hasActivePlan ? "/advertise" : "/planos"} className="text-slate-400 hover:text-primary transition-colors text-sm">Anuncie seus Serviços</Link></li>
+              <li><button onClick={handleAnuncieClick} className="text-slate-400 hover:text-primary transition-colors text-sm text-left">Anuncie seus Serviços</button></li>
               <li><Link to="/auth?mode=register" className="text-slate-400 hover:text-primary transition-colors text-sm">Criar Conta</Link></li>
               <li><Link to="/planos" className="text-slate-400 hover:text-primary transition-colors text-sm">Planos e Preços</Link></li>
               <li><Link to="/dicas" className="text-slate-400 hover:text-primary transition-colors text-sm">Dicas de Perfil</Link></li>

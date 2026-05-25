@@ -1,4 +1,4 @@
-import { useState, useContext, useRef, useCallback } from 'react';
+import { useState, useContext, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
@@ -16,12 +16,54 @@ const NETWORK_TO_PLATFORM = {
   Site: 'website',
 };
 
-
+const formatTime = (seconds) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
 
 export default function Advertise() {
-  const { user, token } = useContext(AuthContext);
+  const { user, token, isAuthenticated, loading: authLoading, logout } = useContext(AuthContext);
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
+
+  const [loadingAdCount, setLoadingAdCount] = useState(true);
+  const [adCount, setAdCount] = useState(0);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    // 1. Check if user has active plan/trial
+    const isTrialExpired = user?.planStatus === 'DEGUSTACAO' && user?.trialEndsAt && new Date(user.trialEndsAt) < new Date();
+    const hasActivePlan = isAuthenticated && (user?.planStatus === 'ATIVO' || (user?.planStatus === 'DEGUSTACAO' && !isTrialExpired));
+
+    if (!hasActivePlan) {
+      navigate('/planos');
+      return;
+    }
+
+    // 2. Fetch the user's ads
+    if (token) {
+      setLoadingAdCount(true);
+      fetch(`${API_URL}/api/ads/me`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) {
+            setAdCount(d.data ? d.data.length : 0);
+          }
+        })
+        .catch(err => {
+          console.error('Erro ao buscar anúncios:', err);
+        })
+        .finally(() => {
+          setLoadingAdCount(false);
+        });
+    } else {
+      setLoadingAdCount(false);
+    }
+  }, [user, isAuthenticated, token, navigate, authLoading]);
 
   // Step 1 states
   const [nome, setNome] = useState(user?.nome || '');
@@ -41,7 +83,8 @@ export default function Advertise() {
   const [categoriaGeral, setCategoriaGeral] = useState('');
   const [descricaoTrabalho, setDescricaoTrabalho] = useState('');
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingState, setRecordingState] = useState('idle'); // 'idle', 'recording', 'stopped'
+  const [recordingState, setRecordingState] = useState('idle'); // 'idle', 'starting', 'recording'
+  const [recordingTime, setRecordingTime] = useState(0);
   const [voiceTranscript, setVoiceTranscript] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -49,7 +92,36 @@ export default function Advertise() {
   const [descricaoCurta, setDescricaoCurta] = useState('');
   const [aiFailed, setAiFailed] = useState(false);
   const [aiErrorMsg, setAiErrorMsg] = useState('');
+
   const recognitionRef = useRef(null);
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const sourceRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const timerIntervalRef = useRef(null);
+  const canvasRef = useRef(null);
+  const recordingStateRef = useRef('idle');
+
+  const changeRecordingState = (state) => {
+    setRecordingState(state);
+    recordingStateRef.current = state;
+  };
+
+  // Cleanup audio/recording contexts on unmount
+  useEffect(() => {
+    return () => {
+      cleanupAudio();
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.onend = null;
+          recognitionRef.current.stop();
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+  }, []);
 
   // Step 3 states
   const [showSocialNetworks, setShowSocialNetworks] = useState(false);
@@ -184,34 +256,144 @@ export default function Advertise() {
     }
   };
 
-  // Gravação de voz com permissão explícita de microfone e 3 estados (idle -> recording -> stopped)
-  const handleVoiceButtonAction = async () => {
-    if (recordingState === 'idle') {
-      // Solicitar permissão de áudio explicitamente (necessário no mobile)
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(track => track.stop());
-      } catch (err) {
-        console.error('Permissão de microfone negada:', err);
-        alert('Para usar a gravação de voz, permita o acesso ao microfone nas configurações do seu navegador.');
-        return;
+  const cleanupAudio = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      if (audioContextRef.current.state !== 'closed') {
+        audioContextRef.current.close().catch(err => console.error('Erro ao fechar AudioContext:', err));
       }
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    sourceRef.current = null;
+  };
 
-      // Verificar suporte à API de reconhecimento de voz
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        alert('Seu navegador não suporta reconhecimento de voz. Tente usar o Google Chrome.');
-        return;
+  const startVisualizerLoop = () => {
+    const canvas = canvasRef.current;
+    const analyser = analyserRef.current;
+    if (!canvas || !analyser) return;
+
+    const ctx = canvas.getContext('2d');
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    const resizeCanvas = () => {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+    };
+
+    resizeCanvas();
+
+    const draw = () => {
+      if (recordingStateRef.current !== 'recording') return;
+      animationFrameRef.current = requestAnimationFrame(draw);
+
+      analyser.getByteFrequencyData(dataArray);
+
+      const rect = canvas.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const BAR_COUNT = 32;
+      const BAR_WIDTH = 4;
+      const SPACING = 6;
+      const step = Math.floor(dataArray.length / BAR_COUNT);
+
+      const totalWidth = BAR_COUNT * (BAR_WIDTH + SPACING) - SPACING;
+      const startX = (width - totalWidth) / 2;
+
+      for (let i = 0; i < BAR_COUNT; i++) {
+        let sum = 0;
+        for (let j = 0; j < step; j++) {
+          sum += dataArray[i * step + j] || 0;
+        }
+        const amplitude = sum / step;
+
+        const rawHeight = (amplitude / 255) * height * 1.5;
+        const barHeight = Math.max(4, Math.min(rawHeight, height - 8));
+        const x = startX + i * (BAR_WIDTH + SPACING);
+        const y = (height - barHeight) / 2;
+
+        const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
+        gradient.addColorStop(0, '#38bdf8'); // sky-400
+        gradient.addColorStop(0.5, '#6366f1'); // indigo-500
+        gradient.addColorStop(1, '#ec4899'); // pink-500
+        ctx.fillStyle = gradient;
+
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(x, y, BAR_WIDTH, barHeight, 2);
+        } else {
+          ctx.rect(x, y, BAR_WIDTH, barHeight);
+        }
+        ctx.fill();
       }
+    };
+
+    draw();
+  };
+
+  const startRecording = async () => {
+    setVoiceTranscript('');
+    setRecordingTime(0);
+    changeRecordingState('starting');
+    setIsRecording(true);
+
+    let stream = null;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (err) {
+      console.error('Permissão de microfone negada:', err);
+      alert('Para usar a gravação de voz, permita o acesso ao microfone nas configurações do seu navegador.');
+      changeRecordingState('idle');
+      setIsRecording(false);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Seu navegador não suporta reconhecimento de voz. Tente usar o Google Chrome.');
+      stream.getTracks().forEach(track => track.stop());
+      changeRecordingState('idle');
+      setIsRecording(false);
+      return;
+    }
+
+    try {
+      mediaStreamRef.current = stream;
+
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      const audioContext = new AudioContextClass();
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+      sourceRef.current = source;
 
       const recognition = new SpeechRecognition();
       recognition.lang = 'pt-BR';
       recognition.continuous = true;
-      recognition.interimResults = true; // Habilita retorno em tempo real para feedback instantâneo
-
-      setVoiceTranscript('');
-      setRecordingState('recording');
-      setIsRecording(true);
+      recognition.interimResults = true;
 
       recognition.onresult = (event) => {
         let currentTranscript = '';
@@ -220,7 +402,6 @@ export default function Advertise() {
         }
         if (currentTranscript.trim()) {
           setVoiceTranscript(prev => {
-            // Se já tínhamos transcrito algo, mantemos e adicionamos o novo
             const base = prev.trim();
             const partial = currentTranscript.trim();
             if (base && !base.endsWith(partial)) {
@@ -234,9 +415,7 @@ export default function Advertise() {
       recognition.onerror = (event) => {
         console.error('Erro no reconhecimento de voz:', event.error);
         if (event.error === 'not-allowed' || event.error === 'audio-capture') {
-          setRecordingState('idle');
-          setIsRecording(false);
-          recognitionRef.current = null;
+          cancelRecording();
           if (event.error === 'not-allowed') {
             alert('Permissão de microfone negada. Verifique as configurações do navegador.');
           }
@@ -244,38 +423,80 @@ export default function Advertise() {
       };
 
       recognition.onend = () => {
-        // Se o usuário ainda estiver no modo recording, reinicia o listener
-        if (recognitionRef.current && recordingState === 'recording') {
+        if (recordingStateRef.current === 'recording' && recognitionRef.current) {
           try {
             recognitionRef.current.start();
           } catch (e) {
-            setRecordingState('idle');
-            setIsRecording(false);
-            recognitionRef.current = null;
+            console.error('Erro ao reiniciar SpeechRecognition:', e);
           }
         }
       };
 
       recognitionRef.current = recognition;
       recognition.start();
-    } else if (recordingState === 'recording') {
-      setRecordingState('stopped');
+
+      timerIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+
+      changeRecordingState('recording');
+
+      setTimeout(() => {
+        startVisualizerLoop();
+      }, 50);
+
+    } catch (e) {
+      console.error('Erro ao inicializar gravação:', e);
+      cleanupAudio();
+      changeRecordingState('idle');
       setIsRecording(false);
-      if (recognitionRef.current) {
+    }
+  };
+
+  const cancelRecording = () => {
+    cleanupAudio();
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onend = null;
         recognitionRef.current.stop();
-        recognitionRef.current = null;
+      } catch (e) {
+        console.error('Erro ao parar SpeechRecognition:', e);
       }
-    } else if (recordingState === 'stopped') {
-      // Estado de Envio: anexa o texto transcrito na descrição de trabalho
-      if (voiceTranscript.trim()) {
-        setDescricaoTrabalho(prev => {
-          const trimmed = prev.trim();
-          if (trimmed.length > 0) return trimmed + ' ' + voiceTranscript.trim();
-          return voiceTranscript.trim();
-        });
+      recognitionRef.current = null;
+    }
+    setVoiceTranscript('');
+    changeRecordingState('idle');
+    setIsRecording(false);
+  };
+
+  const stopAndSendRecording = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+      } catch (e) {
+        console.error('Erro ao parar SpeechRecognition:', e);
       }
-      setVoiceTranscript('');
-      setRecordingState('idle');
+      recognitionRef.current = null;
+    }
+    cleanupAudio();
+
+    if (voiceTranscript.trim()) {
+      setDescricaoTrabalho(prev => {
+        const trimmed = prev.trim();
+        if (trimmed.length > 0) return trimmed + ' ' + voiceTranscript.trim();
+        return voiceTranscript.trim();
+      });
+    }
+
+    setVoiceTranscript('');
+    changeRecordingState('idle');
+    setIsRecording(false);
+  };
+
+  const handleVoiceButtonAction = async () => {
+    if (recordingState === 'idle') {
+      startRecording();
     }
   };
 
@@ -420,6 +641,66 @@ export default function Advertise() {
     setStep(prev => prev + 1);
   };
   const prevStep = () => setStep(prev => prev - 1);
+
+  if (authLoading || loadingAdCount) {
+    return (
+      <div className="bg-slate-50 min-h-[calc(100vh-64px)] flex items-center justify-center py-12 px-4">
+        <div className="text-center">
+          <Loader2 className="animate-spin text-primary mx-auto mb-4" size={40} />
+          <p className="text-slate-600 font-medium animate-pulse">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (adCount >= 2) {
+    return (
+      <div className="bg-slate-50 min-h-[calc(100vh-64px)] py-12 px-4 flex items-center justify-center animate-in fade-in duration-500">
+        <div className="max-w-2xl w-full bg-white border border-slate-100 rounded-3xl p-8 md:p-12 shadow-xl shadow-slate-100/50 text-center relative overflow-hidden">
+          {/* Subtle glowing backgrounds */}
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-400/10 rounded-full blur-3xl pointer-events-none"></div>
+
+          {/* Decorative Alert Icon */}
+          <div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-8 border border-amber-200/50 shadow-inner">
+            <Sparkles size={36} className="animate-pulse text-amber-500" />
+          </div>
+
+          {/* Typography */}
+          <h1 className="text-3xl font-extrabold text-slate-900 mb-4 tracking-tight leading-tight">
+            Limite de Anúncios Atingido
+          </h1>
+          
+          <p className="text-slate-800 text-lg font-semibold max-w-md mx-auto mb-4 leading-relaxed">
+            Você já atingiu o limite de 2 anúncios simultâneos para esta conta.
+          </p>
+
+          <p className="text-slate-500 text-sm max-w-lg mx-auto mb-10 leading-relaxed">
+            Para criar um novo anúncio, você pode excluir um dos seus anúncios atuais ou criar uma nova conta (usando outro e-mail) para expandir sua vitrine. <span className="font-semibold text-slate-800">Você pode usar o mesmo número de WhatsApp em contas diferentes!</span>
+          </p>
+
+          {/* Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white px-8 py-4 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 text-base flex items-center justify-center gap-2"
+            >
+              Gerenciar Meus Anúncios
+            </button>
+            <button
+              onClick={() => {
+                logout();
+                navigate('/auth?mode=register');
+              }}
+              className="w-full sm:w-auto bg-slate-100 hover:bg-slate-200 text-slate-700 px-8 py-4 rounded-xl font-bold transition-all border border-slate-200 hover:scale-105 active:scale-95 text-base flex items-center justify-center gap-2"
+            >
+              Sair e Criar Nova Conta
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-slate-50 min-h-[calc(100vh-64px)] py-12 px-4">
@@ -620,100 +901,112 @@ export default function Advertise() {
                     </a>
                   </div>
 
-                  <div className="relative">
-                    <textarea
-                      rows={6}
-                      value={descricaoTrabalho}
-                      onChange={(e) => setDescricaoTrabalho(e.target.value)}
-                      onBlur={handleAnalyzeDescription}
-                      className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors resize-none pr-24 text-slate-800 placeholder:text-slate-400"
-                      placeholder="Sou encanador há 10 anos, atendo todos os dias da semana até as 18h. Faço reparos em vazamentos, instalação de pias..."
-                    ></textarea>
+                  {recordingState === 'starting' || recordingState === 'recording' ? (
+                    <div className="w-full min-h-[176px] bg-slate-900 text-white rounded-2xl border border-slate-800 flex flex-col justify-between p-5 relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                      {/* Efeitos de brilho Gemini / Siri */}
+                      <div className="absolute top-[-50px] left-[-50px] w-40 h-40 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                      <div className="absolute bottom-[-50px] right-[-50px] w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-                    {/* Botão Limpar Descrição */}
-                    {descricaoTrabalho?.trim() && (
+                      {/* Linha superior: Timer e Indicador */}
+                      <div className="flex items-center justify-between relative z-10">
+                        <div className="flex items-center gap-2">
+                          {recordingState === 'recording' ? (
+                            <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping"></span>
+                          ) : (
+                            <span className="w-2.5 h-2.5 bg-amber-400 rounded-full"></span>
+                          )}
+                          <span className="font-mono text-lg font-bold text-slate-100">
+                            {recordingState === 'starting' ? '00:00' : formatTime(recordingTime)}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+                          {recordingState === 'starting' ? 'Iniciando microfone...' : 'Gravando áudio...'}
+                        </span>
+                      </div>
+
+                      {/* Linha do meio: Visualizador ou Feedback */}
+                      <div className="flex-1 flex items-center justify-center relative z-10 my-2">
+                        {recordingState === 'starting' ? (
+                          <div className="flex items-center justify-center text-sm text-slate-400 italic">
+                            <Loader2 className="animate-spin text-primary mr-2" size={18} />
+                            Aguardando permissão do microfone...
+                          </div>
+                        ) : (
+                          <canvas
+                            ref={canvasRef}
+                            className="w-full h-14 bg-slate-950/20 rounded-lg"
+                          />
+                        )}
+                      </div>
+
+                      {/* Linha inferior: Ações e legenda */}
+                      <div className="flex items-center justify-between gap-4 relative z-10 pt-2 border-t border-slate-800/60">
+                        <button
+                          type="button"
+                          onClick={cancelRecording}
+                          className="p-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-full transition-all border border-red-500/20 active:scale-95 flex items-center justify-center shrink-0"
+                          title="Descartar gravação"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+
+                        <div className="flex-1 min-w-0 text-center px-2">
+                          <p className="text-xs text-slate-400 italic truncate max-w-[280px] md:max-w-[400px] mx-auto">
+                            {voiceTranscript.trim() ? `"${voiceTranscript}"` : 'Fale agora, estamos ouvindo...'}
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={stopAndSendRecording}
+                          className="p-3 bg-primary hover:bg-primary-hover text-white rounded-full transition-all active:scale-95 shadow-md shadow-primary/20 flex items-center justify-center shrink-0"
+                          title="Inserir texto"
+                        >
+                          <Send size={20} className="fill-white translate-x-[1px]" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <textarea
+                        rows={6}
+                        value={descricaoTrabalho}
+                        onChange={(e) => setDescricaoTrabalho(e.target.value)}
+                        onBlur={handleAnalyzeDescription}
+                        className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors resize-none pr-24 text-slate-800 placeholder:text-slate-400"
+                        placeholder="Sou encanador há 10 anos, atendo todos os dias da semana até as 18h. Faço reparos em vazamentos, instalação de pias..."
+                      ></textarea>
+
+                      {/* Botão Limpar Descrição */}
+                      {descricaoTrabalho?.trim() && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDescricaoTrabalho('');
+                            setAtividadePrincipal('');
+                            setBioSugerida('');
+                            setDescricaoCurta('');
+                            setAiFailed(false);
+                            setAiErrorMsg('');
+                          }}
+                          className="absolute right-14 bottom-3 p-3 rounded-full flex items-center justify-center transition-all bg-slate-200 text-slate-600 hover:bg-red-100 hover:text-red-500"
+                          title="Limpar tudo e recomeçar"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      )}
+
+                      {/* Botão de Controle de Voz */}
                       <button
                         type="button"
-                        onClick={() => {
-                          setDescricaoTrabalho('');
-                          setAtividadePrincipal('');
-                          setBioSugerida('');
-                          setDescricaoCurta('');
-                          setAiFailed(false);
-                          setAiErrorMsg('');
-                        }}
-                        className="absolute right-14 bottom-3 p-3 rounded-full flex items-center justify-center transition-all bg-slate-200 text-slate-600 hover:bg-red-100 hover:text-red-500"
-                        title="Limpar tudo e recomeçar"
+                        onClick={handleVoiceButtonAction}
+                        className="absolute right-3 bottom-3 p-3 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer bg-slate-200 text-slate-600 hover:bg-slate-300"
+                        title="Gravar áudio"
                       >
-                        <Trash2 size={18} />
-                      </button>
-                    )}
-
-                    {/* Botão de Controle de Voz Multi-estado */}
-                    <button
-                      type="button"
-                      onClick={handleVoiceButtonAction}
-                      className={`absolute right-3 bottom-3 p-3 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer ${
-                        recordingState === 'recording'
-                          ? 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/20 animate-pulse'
-                          : recordingState === 'stopped'
-                          ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
-                          : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-                      }`}
-                      title={
-                        recordingState === 'recording'
-                          ? 'Parar gravação'
-                          : recordingState === 'stopped'
-                          ? 'Inserir texto na descrição'
-                          : 'Gravar áudio'
-                      }
-                    >
-                      {recordingState === 'recording' ? (
-                        <Square size={20} className="fill-white" />
-                      ) : recordingState === 'stopped' ? (
-                        <Send size={20} className="fill-white" />
-                      ) : (
                         <Mic size={20} />
-                      )}
-                    </button>
-
-                    {/* Feedback visual 1: Estado de Gravação Ativa com Siri/Gemini Waves */}
-                    {recordingState === 'recording' && (
-                      <div className="absolute inset-x-0 bottom-16 bg-slate-900/95 backdrop-blur-md rounded-xl p-4 mx-4 flex items-center justify-between text-white border border-slate-700/50 animate-in fade-in zoom-in-95 duration-200 z-20 shadow-xl">
-                        <div className="flex items-center gap-3 min-w-0">
-                          {/* Pulsing colored waveform */}
-                          <div className="flex items-end gap-1 h-6 w-10 shrink-0">
-                            <span className="w-1 bg-cyan-400 rounded-full animate-pulse h-3"></span>
-                            <span className="w-1 bg-teal-400 rounded-full animate-pulse h-5"></span>
-                            <span className="w-1 bg-emerald-400 rounded-full animate-pulse h-6"></span>
-                            <span className="w-1 bg-sky-400 rounded-full animate-pulse h-4"></span>
-                            <span className="w-1 bg-indigo-400 rounded-full animate-pulse h-2"></span>
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Gravando áudio...</p>
-                            <p className="text-sm font-semibold truncate text-white">{voiceTranscript || "Fale agora, estamos ouvindo..."}</p>
-                          </div>
-                        </div>
-                        <span className="text-[9px] font-black text-red-400 bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20 shrink-0 uppercase tracking-wider">AO VIVO</span>
-                      </div>
-                    )}
-
-                    {/* Feedback visual 2: Estado Concluído (Pronto para Enviar) */}
-                    {recordingState === 'stopped' && (
-                      <div className="absolute inset-x-0 bottom-16 bg-slate-950/95 backdrop-blur-md rounded-xl p-4 mx-4 flex items-center justify-between text-white border border-emerald-500/20 animate-in fade-in zoom-in-95 duration-200 z-20 shadow-xl">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="p-2 bg-emerald-500/20 text-emerald-400 rounded-lg shrink-0">
-                            <CheckCircle size={18} />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest leading-none mb-1">Transcrição Concluída</p>
-                            <p className="text-sm font-medium italic truncate text-slate-300">"{voiceTranscript || "Áudio processado"}"</p>
-                          </div>
-                        </div>
-                        <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 shrink-0 uppercase tracking-wider">Enviar áudio</span>
-                      </div>
-                    )}
-                  </div>
+                      </button>
+                    </div>
+                  )}
 
                   <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 gap-3">
                     <p className="text-xs text-slate-500 flex items-center gap-2">

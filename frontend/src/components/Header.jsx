@@ -9,6 +9,15 @@ export default function Header() {
   const dropdownRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
+  
+  const handleAnuncieClick = (e) => {
+    e?.preventDefault();
+    if (!isAuthenticated) {
+      navigate('/planos');
+    } else {
+      navigate('/dashboard/novo-anuncio');
+    }
+  };
 
   // Estados para fechar o menu mobile arrastando e colando no polegar (swipe close com física realista)
   const [touchStartX, setTouchStartX] = useState(0);
@@ -41,7 +50,8 @@ export default function Header() {
 
   const { user, isAuthenticated, logout } = useContext(AuthContext);
 
-  const hasActivePlan = isAuthenticated && (user?.planStatus === 'ATIVO' || user?.planStatus === 'DEGUSTACAO');
+  const isTrialExpired = user?.planStatus === 'DEGUSTACAO' && user?.trialEndsAt && new Date(user.trialEndsAt) < new Date();
+  const hasActivePlan = isAuthenticated && (user?.planStatus === 'ATIVO' || (user?.planStatus === 'DEGUSTACAO' && !isTrialExpired));
 
   // Fechar dropdown do perfil ao clicar fora
   useEffect(() => {
@@ -113,9 +123,9 @@ export default function Header() {
               {/* Auth e Conta */}
               {isAuthenticated ? (
                 <div className="flex items-center gap-6">
-                  <Link to={hasActivePlan ? "/advertise" : "/planos"} className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-full font-medium transition-colors shadow-md shadow-sky-200 flex items-center gap-2">
+                  <button onClick={handleAnuncieClick} className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-full font-medium transition-colors shadow-md shadow-sky-200 flex items-center gap-2">
                     <PlusCircle size={18} /> Anuncie
-                  </Link>
+                  </button>
 
                   <div className="relative" ref={dropdownRef}>
                     <button
@@ -236,9 +246,9 @@ export default function Header() {
 
           {isAuthenticated ? (
             <>
-              <Link to={hasActivePlan ? "/advertise" : "/planos"} className="block px-3 py-4 text-base font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md flex items-center gap-3 mt-4 justify-center">
+              <button onClick={handleAnuncieClick} className="w-full text-center block px-3 py-4 text-base font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md flex items-center gap-3 mt-4 justify-center">
                 <PlusCircle size={20} /> Anuncie
-              </Link>
+              </button>
               <div className="mt-4 pt-4 border-t border-slate-100">
                 <div className="flex items-center gap-4 px-3 mb-5">
                   {user?.profileImageUrl ? (

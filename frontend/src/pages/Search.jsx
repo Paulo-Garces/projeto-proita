@@ -311,13 +311,10 @@ export default function Search() {
 
   const handleCtaClick = (e) => {
     e.preventDefault();
-    const hasActivePlan = user && (user.planStatus === 'ATIVO' || user.planStatus === 'DEGUSTACAO');
-    if (!hasActivePlan) {
+    if (!isAuthenticated) {
       navigate('/planos');
-    } else if (user.profiles && user.profiles.length > 0) {
-      navigate('/dashboard');
     } else {
-      navigate('/advertise');
+      navigate('/dashboard/novo-anuncio');
     }
   };
 
