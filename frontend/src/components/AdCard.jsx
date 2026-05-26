@@ -208,17 +208,19 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         </div>
 
         {/* LINHA 1 DIREITA: Nome, avaliação, telefone e bairro com MapPin */}
-        <div className="flex flex-col gap-1 min-w-0 justify-center items-start text-left">
-          <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors w-full">
-            <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug flex items-center gap-1.5 min-w-0">
-              <span className="truncate">{displayName}</span>
-              {badge && (
-                <span title={badge.title} className={`${badge.color} shrink-0`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                  {badge.icon === 'ShieldCheck' ? <ShieldCheck size={20} className="stroke-[2.5]" /> : <Award size={20} className="stroke-[2.5]" />}
-                </span>
-              )}
-            </h3>
-          </Link>
+        <div className="flex flex-col gap-1 min-w-0 justify-center items-start text-left w-full">
+          <div className="flex justify-between items-start w-full min-w-0 gap-1.5">
+            <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors truncate">
+              <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate">
+                {displayName}
+              </h3>
+            </Link>
+            {badge && (
+              <span title={badge.title} className={`${badge.color} shrink-0`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                {badge.icon === 'ShieldCheck' ? <ShieldCheck size={20} className="stroke-[2.5]" /> : <Award size={20} className="stroke-[2.5]" />}
+              </span>
+            )}
+          </div>
           
           <div className="flex items-center gap-1 flex-wrap w-full">
             <div className="flex items-center gap-0.5">

@@ -12,10 +12,10 @@ export default function Header() {
   
   const handleAnuncieClick = (e) => {
     e?.preventDefault();
-    if (!isAuthenticated) {
-      navigate('/planos');
-    } else {
+    if (user) {
       navigate('/dashboard/novo-anuncio');
+    } else {
+      navigate('/planos');
     }
   };
 
@@ -120,13 +120,14 @@ export default function Header() {
               {/* Divisor */}
               <div className="h-6 w-px bg-slate-200"></div>
 
+              {/* Botão Anuncie (Sempre Visível) */}
+              <button onClick={handleAnuncieClick} className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-full font-medium transition-colors shadow-md shadow-sky-200 flex items-center gap-2">
+                <PlusCircle size={18} /> Anuncie
+              </button>
+
               {/* Auth e Conta */}
               {isAuthenticated ? (
                 <div className="flex items-center gap-6">
-                  <button onClick={handleAnuncieClick} className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-full font-medium transition-colors shadow-md shadow-sky-200 flex items-center gap-2">
-                    <PlusCircle size={18} /> Anuncie
-                  </button>
-
                   <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -244,11 +245,13 @@ export default function Header() {
             </Link>
           )}
 
+          {/* Botão Anuncie (Sempre Visível no Mobile) */}
+          <button onClick={handleAnuncieClick} className="w-full text-center block px-3 py-4 text-base font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md flex items-center gap-3 mt-4 justify-center">
+            <PlusCircle size={20} /> Anuncie
+          </button>
+
           {isAuthenticated ? (
             <>
-              <button onClick={handleAnuncieClick} className="w-full text-center block px-3 py-4 text-base font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md flex items-center gap-3 mt-4 justify-center">
-                <PlusCircle size={20} /> Anuncie
-              </button>
               <div className="mt-4 pt-4 border-t border-slate-100">
                 <div className="flex items-center gap-4 px-3 mb-5">
                   {user?.profileImageUrl ? (

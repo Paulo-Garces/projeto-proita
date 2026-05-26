@@ -1,15 +1,16 @@
 import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { CheckCircle, Shield } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { API_URL } from '../config';
+import AdCard from '../components/AdCard';
 
 export default function Planos() {
   const navigate = useNavigate();
   const { isAuthenticated, user, token, updateUser } = useContext(AuthContext);
 
   const handlePlanCta = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     if (!isAuthenticated) {
       navigate('/auth?mode=register');
       return;
@@ -27,7 +28,6 @@ export default function Planos() {
         });
         const data = await res.json();
         if (res.ok && data.success) {
-          // Atualiza o estado global e o localStorage do usuário com o novo planStatus e trialEndsAt
           updateUser({
             planStatus: data.user.planStatus,
             trialEndsAt: data.user.trialEndsAt
@@ -41,138 +41,249 @@ export default function Planos() {
         alert('Erro ao conectar com o servidor para iniciar período de degustação.');
       }
     } else {
-      // Se já está ativo ou em degustação, vai direto criar anúncio
       navigate('/dashboard/novo-anuncio');
     }
   };
 
+  const mockProfessional = {
+    id: 'mock-garces',
+    name: 'Paulo Garces',
+    category: 'Eletricista Predial',
+    servicePhone: '(88) 99995-7769',
+    serviceBairro: 'Urbano Teixeira',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+    verified: true,
+    rating: 5.0,
+    reviewCount: 12,
+    planStatus: 'ATIVO',
+    createdAt: '2020-01-01T00:00:00Z',
+    horariosFuncionamento: 'Segunda a Sexta, 8h às 18h',
+    socialLinks: [
+      { platform: 'instagram', url: 'instagram.com/paulogarces' },
+      { platform: 'facebook', url: 'facebook.com/paulogarces' },
+      { platform: 'youtube', url: 'youtube.com/paulogarces' }
+    ]
+  };
+
   return (
-    <div className="bg-slate-50 min-h-screen pt-24 pb-20">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="bg-[#eae7e5] min-h-screen pt-28 pb-20 overflow-x-hidden font-sans">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Topo com Título e Subtítulo Forte */}
-        <div className="text-center mb-10 animate-in fade-in slide-in-from-top-4 duration-500">
-          <h1 className="text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">Planos e Preços</h1>
-          <p className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent mb-4">
+        {/* ========================================================================= */}
+        {/* 1. TOP 'GRÁTIS' BANNER (THE HOOK)                                         */}
+        {/* ========================================================================= */}
+        <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-10 shadow-md mb-12 max-w-4xl mx-auto transition-all hover:shadow-lg duration-300">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+            
+            {/* Esquerda: Titulo e Lista */}
+            <div className="md:col-span-8 text-left space-y-4">
+              <h2 className="text-4xl font-extrabold text-emerald-500 tracking-tight select-none">
+                Grátis
+              </h2>
+              
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2.5 text-slate-800 font-extrabold text-base">
+                  <CheckCircle className="text-emerald-500 shrink-0" size={20} />
+                  30 Dias 100% Grátis
+                </li>
+                <li className="flex items-center gap-2.5 text-slate-800 font-extrabold text-base">
+                  <CheckCircle className="text-emerald-500 shrink-0" size={20} />
+                  Sem limitações
+                </li>
+                <li className="flex items-center gap-2.5 text-slate-800 font-extrabold text-base">
+                  <CheckCircle className="text-emerald-500 shrink-0" size={20} />
+                  Sem cobrança automática
+                </li>
+              </ul>
+              
+              {/* Disclaimer Text refined to strictly: text-sm text-slate-500 font-normal tracking-wide mt-3 */}
+              <p className="text-sm text-slate-500 font-normal tracking-wide mt-3 leading-relaxed max-w-xl">
+                Terminou o período seu anúncio simplesmente ficam aguardando você decidir ou não continuar.
+              </p>
+            </div>
+            
+            {/* Direita: Botão de Chamada com Sol's Yellow e Header style */}
+            <div className="md:col-span-4 flex justify-start md:justify-end items-center">
+              <button
+                onClick={handlePlanCta}
+                className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold px-6 py-2 rounded-full shadow-md transition-all text-base text-center select-none cursor-pointer"
+              >
+                Começar
+              </button>
+            </div>
+            
+          </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* INTERMEDIATE TITLE AND SUBTITLE (PLANOS E PREÇOS)                         */}
+        {/* ========================================================================= */}
+        <div className="text-center my-12 animate-in fade-in duration-500 select-none">
+          <h2 className="text-4xl font-black text-slate-800 tracking-tight">Planos e Preços</h2>
+          <p className="text-emerald-500 font-extrabold text-base mt-1.5">
             Teste o proITA sem compromisso.
           </p>
-          <p className="text-base text-slate-600 max-w-xl mx-auto leading-relaxed">
-            Escolha o melhor plano para destacar seus serviços em Itapipoca. Sem taxas ocultas, total transparência.
-          </p>
         </div>
 
-        {/* Badges de Destaque / Garantia de Transparência */}
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 bg-emerald-50/70 backdrop-blur-md border border-emerald-100/80 rounded-2xl p-4 max-w-2xl mx-auto mb-12 text-emerald-800 text-xs sm:text-sm font-bold shadow-sm hover:shadow-md transition-all duration-300">
-          <div className="flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
-            <span>✅ 30 dias de teste 100% grátis</span>
-          </div>
-          <span className="hidden sm:inline text-emerald-300">|</span>
-          <div className="flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
-            <span>✅ Sem cobrança automática</span>
-          </div>
-          <span className="hidden sm:inline text-emerald-300">|</span>
-          <div className="flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
-            <span>✅ Avisaremos você antes do período expirar</span>
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-          {/* Plano 1 Ano */}
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:border-primary/50 transition-all duration-300 flex flex-col justify-between hover:scale-[1.02] group">
-            <div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Plano Anual</h3>
-              <p className="text-slate-500 mb-5 text-sm">Ideal para começar e testar a plataforma.</p>
+        {/* ========================================================================= */}
+        {/* 2. PRICING CARDS (SLIM & CENTERED IN SOLID COLORS)                        */}
+        {/* ========================================================================= */}
+        <div className="flex flex-col md:flex-row justify-center gap-6 items-stretch max-w-4xl mx-auto mb-16">
+          
+          {/* Card 1: Plano Anual (Solid Soft Green Theme) */}
+          <div className="bg-[#4dbfa2] rounded-3xl p-8 flex flex-col justify-between hover:scale-[1.02] hover:shadow-2xl transition-all duration-300 relative w-full max-w-[260px] mx-auto md:mx-0">
+            <div className="text-left space-y-4 mb-8">
+              <h3 className="text-xl font-black text-slate-900 leading-none">Plano Anual</h3>
               
-              <div className="mb-1 flex items-baseline gap-2">
-                <span className="text-5xl font-extrabold text-slate-900 group-hover:text-primary transition-colors duration-300">R$ 35,90</span>
-                <span className="text-slate-500 font-medium">/ano</span>
+              <div className="flex items-baseline gap-1 select-none text-slate-900">
+                <span className="text-lg font-bold">R$</span>
+                <span className="text-5xl font-extrabold tracking-tight">35,90</span>
+                <span className="text-slate-800 font-bold text-xs">/ano</span>
               </div>
-              <div className="mb-5">
-                <span className="text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-lg">
-                  (Equivale a apenas R$ 2,99 por mês)
-                </span>
-              </div>
-
-              {/* Textos de Transparência Próximos ao Preço */}
-              <div className="space-y-2 mb-6 text-xs text-emerald-700 font-bold bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 shadow-inner">
-                <div>✅ 30 dias de teste 100% grátis</div>
-                <div>✅ Sem cobrança automática</div>
-                <div>✅ Avisaremos você antes do período expirar</div>
-              </div>
-
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={18} /> <span className="text-slate-700 text-sm">30 dias de teste grátis</span></li>
-                <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={18} /> <span className="text-slate-700 text-sm">Crie até 2 anúncios simultâneos</span></li>
-                <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={18} /> <span className="text-slate-700 text-sm">Categoria e Subcategoria via IA</span></li>
-                <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={18} /> <span className="text-slate-700 text-sm">Botão direto para WhatsApp e Ligar</span></li>
-                <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={18} /> <span className="text-slate-700 text-sm">Funil de Conversão e Estatísticas</span></li>
-                <li className="flex items-center gap-3"><CheckCircle className="text-primary shrink-0" size={18} /> <span className="text-slate-700 text-sm">Elegível ao Selo de Reputação (Ouro/Prata/Bronze)</span></li>
-              </ul>
+              
+              <p className="text-xs font-bold text-slate-800/80">
+                (Equivalente a 2,99 por mês)
+              </p>
+              
+              <p className="text-slate-950 text-sm font-extrabold pt-2 leading-relaxed">
+                Anúncio ativo por 12 meses + Período Grátis
+              </p>
             </div>
+
             <button
               onClick={handlePlanCta}
-              className="block w-full py-3.5 px-4 bg-slate-100 hover:bg-primary hover:text-white text-slate-900 font-extrabold text-center rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-sm"
+              className="block w-full py-3.5 px-4 bg-[#eae8e6] hover:bg-[#dfdddb] text-slate-800 font-black text-center rounded-xl transition-all duration-200 active:scale-95 text-sm select-none cursor-pointer"
             >
-              Começar meus 30 dias grátis
+              Assinar
             </button>
           </div>
 
-          {/* Plano 2 Anos */}
-          <div className="bg-primary rounded-3xl p-8 border border-primary shadow-xl shadow-primary/20 transform md:-translate-y-4 relative flex flex-col justify-between hover:scale-[1.03] transition-all duration-300">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-4 py-1 rounded-full text-xs font-bold shadow-sm whitespace-nowrap animate-pulse">
-              Aprox. 16% de Economia Real
+          {/* Card 2: Plano Bienal (Solid Vibrant Blue Theme) */}
+          <div className="bg-[#009ee2] rounded-3xl p-8 flex flex-col justify-between hover:scale-[1.02] hover:shadow-2xl transition-all duration-300 relative w-full max-w-[260px] mx-auto md:mx-0">
+            {/* Top orange badge */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-orange-500 text-white px-4 py-1 rounded-full text-[10px] font-black shadow-md whitespace-nowrap animate-pulse select-none z-10">
+              Aprox. 16% de Economia
             </div>
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-2">Plano Bienal</h3>
-              <p className="text-primary-100 mb-5 text-sm">Economia garantida para profissionais focados a longo prazo.</p>
+
+            {/* Pure white text inside this card for clear contrast */}
+            <div className="text-left space-y-4 mb-8 text-white">
+              <h3 className="text-xl font-black leading-none pt-1">Plano Bienal</h3>
               
-              <div className="mb-1 flex items-baseline gap-2">
-                <span className="text-5xl font-extrabold text-white">R$ 59,90</span>
-                <span className="text-primary-200 font-medium">/2 anos</span>
+              <div className="flex items-baseline gap-1 select-none text-white">
+                <span className="text-lg font-bold">R$</span>
+                <span className="text-5xl font-extrabold tracking-tight">59,90</span>
+                <span className="text-blue-100 font-bold text-xs">/2 anos</span>
               </div>
-              <div className="mb-5">
-                <span className="text-[11px] font-bold text-primary bg-white px-2.5 py-1 rounded-lg">
-                  (Equivale a apenas R$ 2,49 por mês)
-                </span>
-              </div>
-
-              {/* Textos de Transparência Próximos ao Preço */}
-              <div className="space-y-2 mb-6 text-xs text-emerald-100 font-bold bg-white/10 border border-white/20 rounded-xl p-3 shadow-inner">
-                <div>✅ 30 dias de teste 100% grátis</div>
-                <div>✅ Sem cobrança automática</div>
-                <div>✅ Avisaremos você antes do período expirar</div>
-              </div>
-
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={18} /> <span className="text-white text-sm">30 dias de teste grátis</span></li>
-                <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={18} /> <span className="text-white text-sm">Crie até 2 anúncios simultâneos</span></li>
-                <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={18} /> <span className="text-white text-sm">Todas as vantagens do plano anual</span></li>
-                <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={18} /> <span className="text-white text-sm">Categoria e Subcategoria via IA</span></li>
-                <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={18} /> <span className="text-white text-sm">Funil de Conversão e Estatísticas</span></li>
-                <li className="flex items-center gap-3"><CheckCircle className="text-white shrink-0" size={18} /> <span className="text-white text-sm">Elegível ao Selo de Reputação (Ouro/Prata/Bronze)</span></li>
-              </ul>
+              
+              <p className="text-xs font-bold text-blue-100">
+                (Equivalente a 2,48 por mês)
+              </p>
+              
+              <p className="text-blue-50 text-sm font-extrabold pt-2 leading-relaxed">
+                Anúncio ativo por 24 meses + Período Grátis
+              </p>
             </div>
+
             <button
               onClick={handlePlanCta}
-              className="block w-full py-3.5 px-4 bg-white hover:bg-slate-50 text-primary font-extrabold text-center rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-md shadow-sky-900/10"
+              className="block w-full py-3.5 px-4 bg-[#eae8e6] hover:bg-[#dfdddb] text-slate-800 font-black text-center rounded-xl transition-all duration-200 active:scale-95 text-sm select-none cursor-pointer"
             >
-              Começar meus 30 dias grátis
+              Assinar
             </button>
+          </div>
+
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 3. BENEFITS GRID (2 COLUMNS)                                              */}
+        {/* ========================================================================= */}
+        <div className="max-w-3xl mx-auto my-16 text-left select-none animate-in fade-in duration-500">
+          <h3 className="text-xl font-black text-slate-800 text-center mb-8 tracking-tight">
+            Vantagens inclusas no anúncio:
+          </h3>
+          <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 max-w-3xl mx-auto text-slate-800 font-extrabold text-base">
+            <li className="flex items-center gap-3">
+              <CheckCircle className="text-[#009ee2] shrink-0" size={20} />
+              30 Dias de teste grátis
+            </li>
+            <li className="flex items-center gap-3">
+              <CheckCircle className="text-[#009ee2] shrink-0" size={20} />
+              Crie até 2 anúncios simultâneos
+            </li>
+            <li className="flex items-center gap-3">
+              <CheckCircle className="text-[#009ee2] shrink-0" size={20} />
+              Categorias e descrição por IA
+            </li>
+            <li className="flex items-center gap-3">
+              <CheckCircle className="text-[#009ee2] shrink-0" size={20} />
+              Estatísticas
+            </li>
+            <li className="flex items-center gap-3">
+              <CheckCircle className="text-[#009ee2] shrink-0" size={20} />
+              Selos de Reputação
+            </li>
+            <li className="flex items-center gap-3">
+              <CheckCircle className="text-[#009ee2] shrink-0" size={20} />
+              Portfólio
+            </li>
+          </ul>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 4. REAL AD MOCKUP SECTION                                                 */}
+        {/* ========================================================================= */}
+        <div className="mt-20 pt-16 border-t border-slate-200/60 max-w-4xl mx-auto text-center select-none animate-in fade-in duration-500">
+          <h4 className="text-2xl font-black text-slate-800 mb-10 tracking-tight">
+            Seu anúncio aparece assim:
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+            
+            {/* Esquerda: Componente AdCard Real Mockado para Paulo Garces */}
+            <div className="md:col-span-7 flex justify-center w-full">
+              <div className="w-full relative transition-all duration-300 hover:scale-[1.01]">
+                <AdCard professional={mockProfessional} />
+              </div>
+            </div>
+
+            {/* Direita: Rótulos Descritivos das Partes do Mockup apontando */}
+            <div className="md:col-span-5 flex flex-col justify-center space-y-4 pl-0 md:pl-6 text-left">
+              <div className="bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-slate-300/40 shadow-sm transition-all hover:-translate-x-1 duration-200">
+                <span className="font-extrabold text-slate-800 text-sm block mb-0.5">Sua foto no perfil ou sua logo</span>
+                <span className="text-xs text-slate-500 font-bold">Imprime credibilidade imediata ao primeiro olhar.</span>
+              </div>
+              
+              <div className="bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-slate-300/40 shadow-sm transition-all hover:-translate-x-1 duration-200">
+                <span className="font-extrabold text-slate-800 text-sm block mb-0.5">Atalho para suas redes sociais</span>
+                <span className="text-xs text-slate-500 font-bold">Direcione clientes para portfólios no Instagram, Facebook e YouTube.</span>
+              </div>
+              
+              <div className="bg-[#25d366]/10 backdrop-blur-md p-4 rounded-2xl border border-emerald-200 shadow-sm transition-all hover:-translate-x-1 duration-200">
+                <span className="font-extrabold text-emerald-800 text-sm block mb-0.5">Botão do Whatsapp</span>
+                <span className="text-xs text-emerald-600 font-bold">Contato direto sem taxas de intermediação, direto na sua mão.</span>
+              </div>
+              
+              <div className="bg-[#009ee2]/10 backdrop-blur-md p-4 rounded-2xl border border-blue-200 shadow-sm transition-all hover:-translate-x-1 duration-200">
+                <span className="font-extrabold text-blue-900 text-sm block mb-0.5">Pagina de perfil</span>
+                <span className="text-xs text-blue-600 font-bold">Seu catálogo completo de serviços e qualificações sempre online.</span>
+              </div>
+            </div>
+
           </div>
         </div>
 
-        {/* Banner Transparência Adicional */}
-        <div className="mt-16 bg-white rounded-2xl p-6 md:p-8 flex items-start md:items-center gap-4 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <div className="bg-green-50 p-3 rounded-full shrink-0">
-            <Shield className="text-green-500" size={28} />
-          </div>
-          <div>
-            <h4 className="font-bold text-slate-900 mb-1">Transparência proITA</h4>
-            <p className="text-slate-600 text-sm leading-relaxed">
-              Não cobramos comissões sobre os seus serviços. O valor pago pela assinatura é a única taxa que a plataforma exige para manter o seu anúncio ativo e o site funcionando para toda a cidade.
-            </p>
-          </div>
+        {/* ========================================================================= */}
+        {/* 5. BOTTOM CTA                                                             */}
+        {/* ========================================================================= */}
+        <div className="mt-20 text-center select-none animate-in fade-in duration-500">
+          <button
+            onClick={handlePlanCta}
+            className="bg-[#009ee2] hover:bg-[#008cc9] text-white text-base font-black px-14 py-4.5 rounded-2xl transition-all shadow-lg shadow-sky-300/40 hover:scale-105 active:scale-95 inline-block cursor-pointer animate-bounce"
+          >
+            Começar
+          </button>
         </div>
+
       </div>
     </div>
   );
