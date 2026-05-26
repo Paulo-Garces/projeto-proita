@@ -11,37 +11,40 @@ export default function Planos() {
 
   const handlePlanCta = async (e) => {
     e?.preventDefault();
-    if (!isAuthenticated) {
+    if (!user) {
       navigate('/auth?mode=register');
       return;
     }
 
-    const currentStatus = user?.planStatus;
-    if (currentStatus !== 'ATIVO' && currentStatus !== 'DEGUSTACAO') {
-      try {
-        const res = await fetch(`${API_URL}/api/subscriptions/trial`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          updateUser({
-            planStatus: data.user.planStatus,
-            trialEndsAt: data.user.trialEndsAt
-          });
+    if (user.planStatus === 'ATIVO' || user.planStatus === 'DEGUSTACAO') {
+      navigate('/dashboard/novo-anuncio');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/subscriptions/trial`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        updateUser(data.user);
+        navigate('/dashboard/novo-anuncio');
+      } else {
+        const message = data.message || 'Erro ao iniciar o período de testes.';
+        if (message === 'Você já possui um plano ativo ou em degustação.') {
+          updateUser({ planStatus: 'DEGUSTACAO' });
           navigate('/dashboard/novo-anuncio');
         } else {
-          alert(data.message || 'Erro ao iniciar o período de testes.');
+          alert(message);
         }
-      } catch (err) {
-        console.error('Erro ao iniciar trial:', err);
-        alert('Erro ao conectar com o servidor para iniciar período de degustação.');
       }
-    } else {
-      navigate('/dashboard/novo-anuncio');
+    } catch (err) {
+      console.error('Erro ao iniciar trial:', err);
+      alert('Erro ao conectar com o servidor para iniciar período de degustação.');
     }
   };
 

@@ -228,7 +228,10 @@ app.post('/api/login', async (req, res) => {
         bairro: user.bairro,
         role: user.role,
         profileImageUrl: user.profileImageUrl || null,
-        hasPassword: !!user.senha
+        hasPassword: !!user.senha,
+        planStatus: user.planStatus,
+        trialEndsAt: user.trialEndsAt,
+        subscriptionEndsAt: user.subscriptionEndsAt
       }
     });
   } catch (error) {
@@ -415,7 +418,10 @@ app.post('/api/auth/google', async (req, res) => {
         bairro: user.bairro,
         role: user.role,
         profileImageUrl: user.profileImageUrl || null,
-        hasPassword: !!user.senha
+        hasPassword: !!user.senha,
+        planStatus: user.planStatus,
+        trialEndsAt: user.trialEndsAt,
+        subscriptionEndsAt: user.subscriptionEndsAt
       }
     });
   } catch (error) {
@@ -661,8 +667,21 @@ app.post('/api/subscriptions/trial', authMiddleware, async (req, res) => {
       success: true,
       message: 'Período de degustação de 30 dias iniciado!',
       user: {
+        id: updatedUser.id,
+        nome: updatedUser.nome,
+        sobrenome: updatedUser.sobrenome,
+        telefone: updatedUser.telefone,
+        email: updatedUser.email || null,
+        emailSecundario: updatedUser.emailSecundario || null,
+        emailSecundarioVerificado: updatedUser.emailSecundarioVerificado || false,
+        googleId: updatedUser.googleId || null,
+        bairro: updatedUser.bairro,
+        role: updatedUser.role,
+        profileImageUrl: updatedUser.profileImageUrl || null,
+        hasPassword: !!updatedUser.senha,
         planStatus: updatedUser.planStatus,
-        trialEndsAt: updatedUser.trialEndsAt
+        trialEndsAt: updatedUser.trialEndsAt,
+        subscriptionEndsAt: updatedUser.subscriptionEndsAt
       }
     });
   } catch (error) {

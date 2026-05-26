@@ -13,10 +13,10 @@ export default function Footer() {
 
   const handleAnuncieClick = (e) => {
     e?.preventDefault();
-    if (!isAuthenticated) {
-      navigate('/planos');
-    } else {
+    if (user) {
       navigate('/dashboard/novo-anuncio');
+    } else {
+      navigate('/planos');
     }
   };
 

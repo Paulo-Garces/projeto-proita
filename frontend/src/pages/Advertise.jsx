@@ -16,16 +16,27 @@ const NETWORK_TO_PLATFORM = {
   Site: 'website',
 };
 
-const formatTime = (seconds) => {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+const formatPhone = (val) => {
+  if (!val) return '';
+  let value = val.replace(/\D/g, '');
+  if (value.length > 11) value = value.slice(0, 11);
+  if (value.length > 2) {
+    value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+  }
+  if (value.length > 10) {
+    value = `${value.slice(0, 10)}-${value.slice(10)}`;
+  }
+  return value;
 };
 
 export default function Advertise() {
   const { user, token, isAuthenticated, loading: authLoading, logout } = useContext(AuthContext);
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
+
+  const [audioBlob, setAudioBlob] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   const [loadingAdCount, setLoadingAdCount] = useState(true);
   const [adCount, setAdCount] = useState(0);
@@ -66,9 +77,8 @@ export default function Advertise() {
   }, [user, isAuthenticated, token, navigate, authLoading]);
 
   // Step 1 states
-  const [nome, setNome] = useState(user?.nome || '');
-  const [sobrenome, setSobrenome] = useState(user?.sobrenome || '');
-  const [telefone, setTelefone] = useState(user?.telefone || '');
+  const [nomeExibicao, setNomeExibicao] = useState('');
+  const [telefoneComercial, setTelefoneComercial] = useState('');
   const [bairro, setBairro] = useState(user?.bairro || '');
   const [showExactAddress, setShowExactAddress] = useState(false);
   const [exibirEnderecoCompleto, setExibirEnderecoCompleto] = useState(true);
@@ -257,6 +267,15 @@ export default function Advertise() {
   };
 
   const cleanupAudio = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {
+        console.error('Erro ao parar MediaRecorder:', e);
+      }
+    }
+    mediaRecorderRef.current = null;
+
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
@@ -390,6 +409,24 @@ export default function Advertise() {
       analyserRef.current = analyser;
       sourceRef.current = source;
 
+      // ── Integração com o MediaRecorder nativo (captura estável em Blob de áudio) ──
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+      };
+
+      mediaRecorder.start(1000); // Coleta fatias de áudio de 1 segundo de forma assíncrona
+
       const recognition = new SpeechRecognition();
       recognition.lang = 'pt-BR';
       recognition.continuous = true;
@@ -422,14 +459,9 @@ export default function Advertise() {
         }
       };
 
+      // Removemos o loop de reinício automático para extinguir o som de bipe periódico no celular
       recognition.onend = () => {
-        if (recordingStateRef.current === 'recording' && recognitionRef.current) {
-          try {
-            recognitionRef.current.start();
-          } catch (e) {
-            console.error('Erro ao reiniciar SpeechRecognition:', e);
-          }
-        }
+        console.log('Reconhecimento de voz encerrado.');
       };
 
       recognitionRef.current = recognition;
@@ -571,9 +603,10 @@ export default function Advertise() {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          nome,
-          sobrenome,
-          telefone,
+          nome: nomeExibicao,
+          sobrenome: '',
+          telefone: telefoneComercial,
+          telefoneComercial: telefoneComercial,
           bairro,
           atividadePrincipal,
           descricaoTrabalho: descricaoFinal,
@@ -724,25 +757,37 @@ export default function Advertise() {
                 <Sparkles size={18} className="text-primary shrink-0 mt-0.5" />
                 <p className="text-sm font-semibold text-slate-800">Estes dados aparecerão no seu anúncio. Pode alterá-los se desejar.</p>
               </div>
-
               <div className="space-y-5">
-                {/* Linha 1: Nome e Sobrenome */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Nome</label>
-                    <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Sobrenome</label>
-                    <input type="text" value={sobrenome} onChange={(e) => setSobrenome(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800" />
-                  </div>
+                {/* Linha 1: Nome de Exibição / Nome Fantasia */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Nome de Exibição / Nome Fantasia</label>
+                  <input
+                    type="text"
+                    value={nomeExibicao}
+                    onChange={(e) => setNomeExibicao(e.target.value)}
+                    placeholder="Ex: Eletricista Silva, Paula Unhas (Opcional)"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Se deixado em branco, o sistema utilizará o seu nome de cadastro pessoal.
+                  </p>
                 </div>
 
-                {/* Linha 2: Apenas Telefone (bairro foi movido para dentro do toggle) */}
+                {/* Linha 2: WhatsApp / Telefone Comercial do Anúncio */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Telefone / WhatsApp</label>
-                  <input type="text" value={telefone} onChange={(e) => setTelefone(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800" />
+                  <label className="block text-sm font-medium text-slate-700 mb-1">WhatsApp / Telefone Comercial do Anúncio</label>
+                  <input
+                    type="text"
+                    value={telefoneComercial}
+                    onChange={(e) => setTelefoneComercial(formatPhone(e.target.value))}
+                    placeholder="Ex: (88) 99999-9999"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Insira o número de contato profissional do anúncio. O número do seu cadastro continuará privado.
+                  </p>
                 </div>
+              </div>
 
                 {/* Toggle de Endereço */}
                 <div className="pt-4 mt-6 border-t border-slate-100">
@@ -858,7 +903,6 @@ export default function Advertise() {
                     </div>
                   )}
                 </div>
-              </div>
 
               <div className="mt-8 flex justify-end">
                 <button onClick={nextStep} className="bg-primary hover:bg-primary-hover text-white px-8 py-3.5 rounded-xl font-bold transition-colors shadow-lg shadow-primary/20">Continuar para o Passo 2</button>

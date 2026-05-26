@@ -26,10 +26,10 @@ export default defineConfig({
             purpose: 'any maskable'
           },
           {
-            src: '/pwa-512x512.png',
+            src: '/logo-proita.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
           }
         ]
       }

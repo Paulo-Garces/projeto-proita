@@ -96,8 +96,19 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
     }
   };
 
-  const displayName = professional.name || getProfileDisplayName(professional) || 'Profissional';
-  const phone = professional.servicePhone || professional.phone;
+  const displayName = getProfileDisplayName(professional) || professional.name || 'Profissional';
+  const phone = 
+    (professional.telefoneComercial != null && String(professional.telefoneComercial).trim() !== '')
+      ? String(professional.telefoneComercial).trim()
+      : (professional.servicePhone != null && String(professional.servicePhone).trim() !== '')
+        ? String(professional.servicePhone).trim()
+        : (professional.whatsapp != null && String(professional.whatsapp).trim() !== '')
+          ? String(professional.whatsapp).trim()
+          : (professional.phone != null && String(professional.phone).trim() !== '')
+            ? String(professional.phone).trim()
+            : (professional.user?.telefone != null && String(professional.user.telefone).trim() !== '')
+              ? String(professional.user.telefone).trim()
+              : null;
   const location = professional.serviceBairro || professional.location || 'Itapipoca';
   const avatar = professional.avatar || professional.avatarUrl;
   const badge = getReputationBadge(professional);

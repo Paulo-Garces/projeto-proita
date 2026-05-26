@@ -483,15 +483,25 @@ function ServiceCatalogSection({ ad, token }) {
 
 // ── Sub-componente: Formulário de edição de anúncio ─────────────
 function AdEditForm({ ad, token, user, onSaved, onCancel }) {
+  const initialPhone = ad.telefoneComercial 
+    ? formatPhone(ad.telefoneComercial.replace(/^\+55/, '')) 
+    : ad.servicePhone 
+      ? formatPhone(ad.servicePhone.replace(/^\+55/, '')) 
+      : ad.whatsapp 
+        ? formatPhone(ad.whatsapp.replace(/^\+55/, '')) 
+        : '';
+
   const [form, setForm] = useState({
+    nomeExibicao: ad.nomeExibicao || '',
+    sobrenomeExibicao: ad.sobrenomeExibicao || '',
     atividadePrincipal: ad.atividadePrincipal || '',
     atividadesSecundarias: (ad.atividadesSecundarias || []).join(', '),
     descricaoTrabalho: ad.descricaoTrabalho || '',
     shortDescription: ad.descricaoCurta || ad.shortDescription || '',
-    servicePhone: ad.servicePhone || user?.telefone || '',
+    servicePhone: initialPhone,
     serviceBairro: ad.serviceBairro || '',
     endereco: ad.endereco || '',
-    telefoneComercial: ad.telefoneComercial ? formatPhone(ad.telefoneComercial.replace(/^\+55/, '')) : '',
+    telefoneComercial: initialPhone,
     fotoAnuncioUrl: ad.fotoAnuncioUrl || '',
     fotoAnuncioFileId: ad.fotoAnuncioFileId || '',
     capaUrl: ad.capaUrl || '',
@@ -642,7 +652,11 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           ...form,
+          nome: form.nomeExibicao,
+          sobrenome: form.sobrenomeExibicao,
           telefoneComercial: convertToInternationalPhone(form.telefoneComercial),
+          servicePhone: convertToInternationalPhone(form.telefoneComercial),
+          whatsapp: convertToInternationalPhone(form.telefoneComercial),
           atividadesSecundarias: form.atividadesSecundarias.split(',').map(s => s.trim()).filter(Boolean),
           socialLinks: mappedSocial,
           redesSociais: mappedSocial,
@@ -808,6 +822,18 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
       <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
         <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Informações Básicas</h4>
         <div>
+          <label className={labelClass}>Nome de Exibição / Nome Fantasia</label>
+          <input
+            value={form.nomeExibicao}
+            onChange={(e) => setForm(prev => ({ ...prev, nomeExibicao: e.target.value, sobrenomeExibicao: '' }))}
+            placeholder="Ex: Eletricista Silva, Paula Unhas (Opcional)"
+            className={inputClass}
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            Se deixado em branco, o sistema utilizará o seu nome de cadastro pessoal.
+          </p>
+        </div>
+        <div>
           <label className={labelClass}>Atividade Principal</label>
           <input value={form.atividadePrincipal} onChange={set('atividadePrincipal')} className={inputClass} />
         </div>
@@ -863,34 +889,36 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
 
       <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
         <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Contato e Redes Sociais</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className={labelClass}>WhatsApp do Serviço <span className="text-slate-400">(pode ser diferente do cadastro)</span></label>
-            <input value={form.servicePhone} onChange={set('servicePhone')} placeholder="Ex: 88999999999" className={inputClass} />
-          </div>
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <label className="text-sm font-medium text-slate-700">Telefone Comercial Dedicado</label>
-              {ad.telefoneComercialVerificado ? (
-                <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-0.5">
-                  <CheckCircle size={10} /> Verificado
-                </span>
-              ) : (
-                <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-0.5">
-                  <AlertCircle size={10} /> Não Verificado
-                </span>
-              )}
-            </div>
-            <input
-              value={form.telefoneComercial}
-              onChange={(e) => setForm(prev => ({ ...prev, telefoneComercial: formatPhone(e.target.value) }))}
-              placeholder="Ex: (88) 99999-9999"
-              className={inputClass}
-            />
-          </div>
-        </div>
-
         <div>
+          <div className="flex justify-between items-center mb-1">
+            <label className={labelClass}>WhatsApp / Telefone Comercial do Anúncio</label>
+            {ad.telefoneComercialVerificado ? (
+              <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-0.5 font-sans">
+                <CheckCircle size={10} /> Verificado
+              </span>
+            ) : (
+              <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-0.5 font-sans">
+                <AlertCircle size={10} /> Não Verificado
+              </span>
+            )}
+          </div>
+          <input
+            value={form.telefoneComercial}
+            onChange={(e) => {
+              const formatted = formatPhone(e.target.value);
+              setForm(prev => ({ 
+                ...prev, 
+                telefoneComercial: formatted,
+                servicePhone: formatted
+              }));
+            }}
+            placeholder="Ex: (88) 99999-9999"
+            className={inputClass}
+          />
+          <p className="text-xs text-slate-500 mt-1">
+            Insira o número de contato do anúncio. O número do seu cadastro continuará privado.
+          </p>
+        </div>
           <div className="flex items-center justify-between mb-3">
             <label className={labelClass + ' mb-0'}>Redes Sociais <span className="text-slate-400">(máx. 3)</span></label>
             {socialLinks.length < 3 && (
@@ -930,7 +958,6 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
               <p className="text-sm text-slate-400">Nenhuma rede adicionada ainda.</p>
             )}
           </div>
-        </div>
       </section>
 
       <PortfolioSection ad={ad} token={token} />
@@ -1050,7 +1077,7 @@ export default function Dashboard() {
       .then(d => { if (d.success) setMyAds(d.data); })
       .catch(console.error)
       .finally(() => setAdsLoading(false));
-  }, [token]);
+  }, [token, activeTab]);
 
   useEffect(() => {
     if (!token || activeTab !== 'favorites') return;

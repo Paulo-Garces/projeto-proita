@@ -27,7 +27,7 @@ model User {
   profileImageFileId         String?
 
   // Controle de Assinatura e Monetização
-  planStatus                 String    @default("DEGUSTACAO") // 'DEGUSTACAO', 'ATIVO', 'EXPIRADO'
+  planStatus                 String    @default("INATIVO") // 'INATIVO', 'DEGUSTACAO', 'ATIVO', 'EXPIRADO'
   trialEndsAt                DateTime?
   subscriptionEndsAt         DateTime?
 

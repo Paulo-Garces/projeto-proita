@@ -174,8 +174,16 @@ export default function Profile() {
             location: profile.serviceBairro || profile.user?.bairro || 'Itapipoca',
             fullDescription: profile.descricaoTrabalho,
             phone: (profile.telefoneComercial && profile.telefoneComercial.trim() !== '')
-              ? profile.telefoneComercial
-              : (profile.user?.telefone || profile.servicePhone || profile.whatsapp || null),
+              ? profile.telefoneComercial.trim()
+              : (profile.servicePhone && profile.servicePhone.trim() !== '')
+                ? profile.servicePhone.trim()
+                : (profile.whatsapp && profile.whatsapp.trim() !== '')
+                  ? profile.whatsapp.trim()
+                  : (profile.phone && profile.phone.trim() !== '')
+                    ? profile.phone.trim()
+                    : (profile.user?.telefone || null),
+            telefoneComercial: profile.telefoneComercial,
+            servicePhone: profile.servicePhone,
             instagram: instagram,
             socialLinks,
             avatar: (profile.fotoAnuncioUrl && profile.fotoAnuncioUrl.trim() !== '')

@@ -8,18 +8,18 @@
 export function getProfileDisplayName(profile, fallbackUser) {
   if (!profile) return '';
   const u = profile.user ?? fallbackUser;
-  const nome =
-    profile.nomeExibicao != null && String(profile.nomeExibicao).trim() !== ''
-      ? String(profile.nomeExibicao).trim()
-      : u?.nome != null
-        ? String(u.nome).trim()
-        : '';
-  const sob =
-    profile.sobrenomeExibicao != null && String(profile.sobrenomeExibicao).trim() !== ''
-      ? String(profile.sobrenomeExibicao).trim()
-      : u?.sobrenome != null
-        ? String(u.sobrenome).trim()
-        : '';
+
+  const hasNomeExibicao = profile.nomeExibicao != null && String(profile.nomeExibicao).trim() !== '';
+  const hasSobrenomeExibicao = profile.sobrenomeExibicao != null && String(profile.sobrenomeExibicao).trim() !== '';
+
+  if (hasNomeExibicao || hasSobrenomeExibicao) {
+    const nome = hasNomeExibicao ? String(profile.nomeExibicao).trim() : '';
+    const sob = hasSobrenomeExibicao ? String(profile.sobrenomeExibicao).trim() : '';
+    return [nome, sob].filter(Boolean).join(' ').trim();
+  }
+
+  const nome = u?.nome != null ? String(u.nome).trim() : '';
+  const sob = u?.sobrenome != null ? String(u.sobrenome).trim() : '';
   return [nome, sob].filter(Boolean).join(' ').trim();
 }
 
