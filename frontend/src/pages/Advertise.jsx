@@ -433,20 +433,10 @@ export default function Advertise() {
       recognition.interimResults = true;
 
       recognition.onresult = (event) => {
-        let currentTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          currentTranscript += event.results[i][0].transcript;
-        }
-        if (currentTranscript.trim()) {
-          setVoiceTranscript(prev => {
-            const base = prev.trim();
-            const partial = currentTranscript.trim();
-            if (base && !base.endsWith(partial)) {
-              return base + ' ' + partial;
-            }
-            return partial;
-          });
-        }
+        const transcript = Array.from(event.results)
+          .map(res => res[0].transcript)
+          .join('');
+        setVoiceTranscript(transcript);
       };
 
       recognition.onerror = (event) => {
@@ -461,6 +451,15 @@ export default function Advertise() {
 
       recognition.onend = () => {
         console.log('Reconhecimento de voz encerrado.');
+        // Auto-restart behavior for mobile browsers (Android/iOS auto-stop quirk)
+        if (recordingStateRef.current === 'recording') {
+          try {
+            recognition.start();
+            console.log('Reconhecimento de voz reiniciado automaticamente.');
+          } catch (e) {
+            console.error('Erro ao reiniciar reconhecimento de voz:', e);
+          }
+        }
       };
 
       recognitionRef.current = recognition;
@@ -487,6 +486,8 @@ export default function Advertise() {
   };
 
   const cancelRecording = () => {
+    changeRecordingState('idle');
+    setIsRecording(false);
     cleanupAudio();
     if (recognitionRef.current) {
       try {
@@ -499,11 +500,11 @@ export default function Advertise() {
     }
     setVoiceTranscript('');
     setAudioError('');
-    changeRecordingState('idle');
-    setIsRecording(false);
   };
 
   const stopAndSendRecording = () => {
+    changeRecordingState('idle');
+    setIsRecording(false);
     if (recognitionRef.current) {
       try {
         recognitionRef.current.onend = null;
@@ -524,8 +525,6 @@ export default function Advertise() {
     }
 
     setVoiceTranscript('');
-    changeRecordingState('idle');
-    setIsRecording(false);
   };
 
   const handleVoiceButtonAction = async () => {
