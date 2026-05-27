@@ -376,10 +376,14 @@ export default function Advertise() {
 
     let stream = null;
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Este dispositivo ou navegador não suporta gravação de áudio ou a conexão não é segura (requer HTTPS).');
+      }
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream; // Define a referência do stream imediatamente!
     } catch (err) {
-      console.error('Permissão de microfone negada:', err);
-      alert('Para usar a gravação de voz, permita o acesso ao microfone nas configurações do seu navegador.');
+      console.error('Erro ao acessar o microfone:', err);
+      alert(err.message || 'Erro: Permissão de microfone negada ou indisponível.');
       changeRecordingState('idle');
       setIsRecording(false);
       return;
@@ -388,15 +392,13 @@ export default function Advertise() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert('Seu navegador não suporta reconhecimento de voz. Tente usar o Google Chrome.');
-      stream.getTracks().forEach(track => track.stop());
+      cleanupAudio();
       changeRecordingState('idle');
       setIsRecording(false);
       return;
     }
 
     try {
-      mediaStreamRef.current = stream;
-
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       const audioContext = new AudioContextClass();
       const analyser = audioContext.createAnalyser();
