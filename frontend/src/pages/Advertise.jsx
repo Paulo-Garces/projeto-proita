@@ -35,6 +35,19 @@ const formatTime = (secs) => {
   return `${m}:${s}`;
 };
 
+const blobToBase64 = (blob) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      const base64Content = base64String.split(',')[1];
+      resolve(base64Content);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
 export default function Advertise() {
   const { user, token, isAuthenticated, loading: authLoading, logout } = useContext(AuthContext);
   const [step, setStep] = useState(1);
@@ -101,8 +114,8 @@ export default function Advertise() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingState, setRecordingState] = useState('idle'); // 'idle', 'starting', 'recording'
   const [recordingTime, setRecordingTime] = useState(0);
-  const [voiceTranscript, setVoiceTranscript] = useState('');
   const [audioError, setAudioError] = useState('');
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [categoryId, setCategoryId] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [bioSugerida, setBioSugerida] = useState('');
@@ -110,7 +123,7 @@ export default function Advertise() {
   const [aiFailed, setAiFailed] = useState(false);
   const [aiErrorMsg, setAiErrorMsg] = useState('');
 
-  const recognitionRef = useRef(null);
+  const isCancelledRef = useRef(false);
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const sourceRef = useRef(null);
@@ -129,14 +142,6 @@ export default function Advertise() {
   useEffect(() => {
     return () => {
       cleanupAudio();
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.onend = null;
-          recognitionRef.current.stop();
-        } catch (e) {
-          // ignore
-        }
-      }
     };
   }, []);
 
@@ -376,7 +381,7 @@ export default function Advertise() {
   };
 
   const startRecording = async () => {
-    setVoiceTranscript('');
+    isCancelledRef.current = false;
     setRecordingTime(0);
     setAudioError(''); // Limpa erros anteriores
     changeRecordingState('starting');
@@ -391,11 +396,6 @@ export default function Advertise() {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream; // Define a referência do stream imediatamente!
 
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        throw new Error('Seu navegador não suporta reconhecimento de voz (Speech Recognition). Tente usar o Google Chrome.');
-      }
-
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       const audioContext = new AudioContextClass();
       const analyser = audioContext.createAnalyser();
@@ -408,7 +408,7 @@ export default function Advertise() {
       analyserRef.current = analyser;
       sourceRef.current = source;
 
-      // ── Integração com o MediaRecorder nativo (captura estável em Blob de áudio) ──
+      // ── Integração com o MediaRecorder nativo ──
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -419,51 +419,69 @@ export default function Advertise() {
         }
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         const type = mediaRecorder.mimeType || 'audio/webm';
         const blob = new Blob(audioChunksRef.current, { type });
         setAudioBlob(blob);
+
+        if (isCancelledRef.current) {
+          console.log('Gravação descartada pelo usuário.');
+          return;
+        }
+
+        try {
+          setIsTranscribing(true);
+          setAudioError('');
+
+          const base64Content = await blobToBase64(blob);
+          const apiKey = import.meta.env.VITE_GOOGLE_SPEECH_API_KEY;
+
+          if (!apiKey) {
+            throw new Error('Chave de API do Google Speech-to-Text (VITE_GOOGLE_SPEECH_API_KEY) não configurada.');
+          }
+
+          const response = await fetch(`https://speech.googleapis.com/v1/speech:recognize?key=${apiKey}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              config: {
+                encoding: 'WEBM_OPUS',
+                languageCode: 'pt-BR'
+              },
+              audio: {
+                content: base64Content
+              }
+            })
+          });
+
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData?.error?.message || `Erro na API do Google Speech: ${response.status}`);
+          }
+
+          const data = await response.json();
+          const transcript = data.results?.[0]?.alternatives?.[0]?.transcript;
+
+          if (transcript && transcript.trim()) {
+            setDescricaoTrabalho(prev => {
+              const trimmed = prev.trim();
+              if (trimmed.length > 0) return trimmed + ' ' + transcript.trim();
+              return transcript.trim();
+            });
+          } else {
+            console.warn('Nenhuma transcrição retornada ou áudio silencioso.');
+          }
+        } catch (err) {
+          console.error('Erro na transcrição Google Cloud:', err);
+          setAudioError(`Falha na transcrição: ${err.message}`);
+        } finally {
+          setIsTranscribing(false);
+        }
       };
 
       mediaRecorder.start(1000); // Coleta fatias de áudio de 1 segundo de forma assíncrona
-
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'pt-BR';
-      recognition.continuous = true;
-      recognition.interimResults = true;
-
-      recognition.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(res => res[0].transcript)
-          .join('');
-        setVoiceTranscript(transcript);
-      };
-
-      recognition.onerror = (event) => {
-        console.error('Erro no reconhecimento de voz:', event.error);
-        if (event.error === 'not-allowed' || event.error === 'audio-capture') {
-          cancelRecording();
-          if (event.error === 'not-allowed') {
-            setAudioError('Permissão de microfone negada no reconhecimento de voz.');
-          }
-        }
-      };
-
-      recognition.onend = () => {
-        console.log('Reconhecimento de voz encerrado.');
-        // Auto-restart behavior for mobile browsers (Android/iOS auto-stop quirk)
-        if (recordingStateRef.current === 'recording') {
-          try {
-            recognition.start();
-            console.log('Reconhecimento de voz reiniciado automaticamente.');
-          } catch (e) {
-            console.error('Erro ao reiniciar reconhecimento de voz:', e);
-          }
-        }
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
 
       timerIntervalRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
@@ -486,45 +504,18 @@ export default function Advertise() {
   };
 
   const cancelRecording = () => {
+    isCancelledRef.current = true;
     changeRecordingState('idle');
     setIsRecording(false);
     cleanupAudio();
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.onend = null;
-        recognitionRef.current.stop();
-      } catch (e) {
-        console.error('Erro ao parar SpeechRecognition:', e);
-      }
-      recognitionRef.current = null;
-    }
-    setVoiceTranscript('');
     setAudioError('');
   };
 
   const stopAndSendRecording = () => {
+    isCancelledRef.current = false;
     changeRecordingState('idle');
     setIsRecording(false);
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.onend = null;
-        recognitionRef.current.stop();
-      } catch (e) {
-        console.error('Erro ao parar SpeechRecognition:', e);
-      }
-      recognitionRef.current = null;
-    }
     cleanupAudio();
-
-    if (voiceTranscript.trim()) {
-      setDescricaoTrabalho(prev => {
-        const trimmed = prev.trim();
-        if (trimmed.length > 0) return trimmed + ' ' + voiceTranscript.trim();
-        return voiceTranscript.trim();
-      });
-    }
-
-    setVoiceTranscript('');
   };
 
   const handleVoiceButtonAction = async () => {
@@ -984,7 +975,7 @@ export default function Advertise() {
 
                         <div className="flex-1 min-w-0 text-center px-2">
                           <p className="text-xs text-slate-400 italic truncate max-w-[280px] md:max-w-[400px] mx-auto">
-                            {voiceTranscript.trim() ? `"${voiceTranscript}"` : 'Fale agora, estamos ouvindo...'}
+                            Gravação em andamento... Fale de forma clara.
                           </p>
                         </div>
 
@@ -992,7 +983,7 @@ export default function Advertise() {
                           type="button"
                           onClick={stopAndSendRecording}
                           className="p-3 bg-primary hover:bg-primary-hover text-white rounded-full transition-all active:scale-95 shadow-md shadow-primary/20 flex items-center justify-center shrink-0"
-                          title="Inserir texto"
+                          title="Concluir e transcrever"
                         >
                           <Send size={20} className="fill-white translate-x-[1px]" />
                         </button>
@@ -1000,9 +991,18 @@ export default function Advertise() {
                     </div>
                   ) : (
                     <div className="relative">
+                      {isTranscribing && (
+                        <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-[2px] rounded-xl flex items-center justify-center z-10 animate-in fade-in duration-200">
+                          <div className="bg-white border border-slate-200 px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3">
+                            <Loader2 className="animate-spin text-primary" size={20} />
+                            <span className="text-sm font-semibold text-slate-800">Transcrevendo áudio com IA do Google...</span>
+                          </div>
+                        </div>
+                      )}
                       <textarea
                         rows={6}
                         value={descricaoTrabalho}
+                        disabled={isTranscribing}
                         onChange={(e) => setDescricaoTrabalho(e.target.value)}
                         onBlur={handleAnalyzeDescription}
                         className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors resize-none pr-24 text-slate-800 placeholder:text-slate-400"
@@ -1013,6 +1013,7 @@ export default function Advertise() {
                       {descricaoTrabalho?.trim() && (
                         <button
                           type="button"
+                          disabled={isTranscribing}
                           onClick={() => {
                             setDescricaoTrabalho('');
                             setAtividadePrincipal('');
@@ -1021,7 +1022,7 @@ export default function Advertise() {
                             setAiFailed(false);
                             setAiErrorMsg('');
                           }}
-                          className="absolute right-14 bottom-3 p-3 rounded-full flex items-center justify-center transition-all bg-slate-200 text-slate-600 hover:bg-red-100 hover:text-red-500"
+                          className="absolute right-14 bottom-3 p-3 rounded-full flex items-center justify-center transition-all bg-slate-200 text-slate-600 hover:bg-red-100 hover:text-red-500 disabled:opacity-50"
                           title="Limpar tudo e recomeçar"
                         >
                           <Trash2 size={18} />
@@ -1031,8 +1032,9 @@ export default function Advertise() {
                       {/* Botão de Controle de Voz */}
                       <button
                         type="button"
+                        disabled={isTranscribing}
                         onClick={handleVoiceButtonAction}
-                        className="absolute right-3 bottom-3 p-3 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer bg-slate-200 text-slate-600 hover:bg-slate-300"
+                        className="absolute right-3 bottom-3 p-3 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer bg-slate-200 text-slate-600 hover:bg-slate-300 disabled:opacity-50"
                         title="Gravar áudio"
                       >
                         <Mic size={20} />
