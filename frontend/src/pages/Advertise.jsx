@@ -96,6 +96,7 @@ export default function Advertise() {
   const [recordingState, setRecordingState] = useState('idle'); // 'idle', 'starting', 'recording'
   const [recordingTime, setRecordingTime] = useState(0);
   const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [audioError, setAudioError] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [bioSugerida, setBioSugerida] = useState('');
@@ -371,6 +372,7 @@ export default function Advertise() {
   const startRecording = async () => {
     setVoiceTranscript('');
     setRecordingTime(0);
+    setAudioError(''); // Limpa erros anteriores
     changeRecordingState('starting');
     setIsRecording(true);
 
@@ -379,26 +381,15 @@ export default function Advertise() {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Este dispositivo ou navegador não suporta gravação de áudio ou a conexão não é segura (requer HTTPS).');
       }
+      
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream; // Define a referência do stream imediatamente!
-    } catch (err) {
-      console.error('Erro ao acessar o microfone:', err);
-      alert(err.message || 'Erro: Permissão de microfone negada ou indisponível.');
-      changeRecordingState('idle');
-      setIsRecording(false);
-      return;
-    }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert('Seu navegador não suporta reconhecimento de voz. Tente usar o Google Chrome.');
-      cleanupAudio();
-      changeRecordingState('idle');
-      setIsRecording(false);
-      return;
-    }
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        throw new Error('Seu navegador não suporta reconhecimento de voz (Speech Recognition). Tente usar o Google Chrome.');
+      }
 
-    try {
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       const audioContext = new AudioContextClass();
       const analyser = audioContext.createAnalyser();
@@ -423,7 +414,8 @@ export default function Advertise() {
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const type = mediaRecorder.mimeType || 'audio/webm';
+        const blob = new Blob(audioChunksRef.current, { type });
         setAudioBlob(blob);
       };
 
@@ -456,12 +448,11 @@ export default function Advertise() {
         if (event.error === 'not-allowed' || event.error === 'audio-capture') {
           cancelRecording();
           if (event.error === 'not-allowed') {
-            alert('Permissão de microfone negada. Verifique as configurações do navegador.');
+            setAudioError('Permissão de microfone negada no reconhecimento de voz.');
           }
         }
       };
 
-      // Removemos o loop de reinício automático para extinguir o som de bipe periódico no celular
       recognition.onend = () => {
         console.log('Reconhecimento de voz encerrado.');
       };
@@ -480,7 +471,9 @@ export default function Advertise() {
       }, 50);
 
     } catch (e) {
-      console.error('Erro ao inicializar gravação:', e);
+      console.error('Erro geral ao inicializar gravação:', e);
+      const errMsg = e.name ? `${e.name}: ${e.message}` : e.message || String(e);
+      setAudioError(errMsg);
       cleanupAudio();
       changeRecordingState('idle');
       setIsRecording(false);
@@ -499,6 +492,7 @@ export default function Advertise() {
       recognitionRef.current = null;
     }
     setVoiceTranscript('');
+    setAudioError('');
     changeRecordingState('idle');
     setIsRecording(false);
   };
@@ -1038,6 +1032,13 @@ export default function Advertise() {
                       >
                         <Mic size={20} />
                       </button>
+                    </div>
+                  )}
+
+                  {audioError && (
+                    <div className="mt-3 bg-red-50 text-red-600 border border-red-200/50 rounded-xl px-4 py-3 text-xs font-semibold flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-red-500 rounded-full shrink-0 animate-pulse"></span>
+                      Erro na gravação: {audioError}
                     </div>
                   )}
 
