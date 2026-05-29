@@ -98,6 +98,9 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   };
 
   const displayName = getProfileDisplayName(professional) || professional.name || 'Profissional';
+  const ownerName = professional.user 
+    ? [professional.user.nome, professional.user.sobrenome].filter(Boolean).join(' ').trim()
+    : '';
   const phone = 
     (professional.telefoneComercial != null && String(professional.telefoneComercial).trim() !== '')
       ? String(professional.telefoneComercial).trim()
@@ -207,7 +210,12 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         
         {/* LINHA 1 ESQUERDA: Foto de perfil centralizada na coluna */}
         <div className="flex justify-center items-center">
-          <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="relative cursor-pointer block hover:scale-105 transition-transform">
+          <Link 
+            to={`/profile/${professional.id}`} 
+            onClick={handleProfileClick} 
+            className="relative cursor-pointer inline-block hover:scale-105 transition-transform rounded-full"
+            style={{ width: 'fit-content', height: 'fit-content' }}
+          >
             {avatar ? (
               <img src={avatar} alt={displayName} className="w-24 h-24 md:w-28 md:h-28 rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md" />
             ) : (
@@ -216,55 +224,79 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               </div>
             )}
             {professional.verified && (
-              <span className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 shadow-sm">
-                <CheckCircle size={22} className="text-emerald-500 fill-emerald-50" />
+              <span className="absolute bottom-0 right-0 translate-x-[2px] translate-y-[2px] bg-white rounded-full p-0.5 shadow-md z-10 flex items-center justify-center">
+                <CheckCircle size={22} className="text-blue-500 fill-blue-50" />
               </span>
             )}
           </Link>
         </div>
 
-        {/* LINHA 1 DIREITA: Nome, avaliação, telefone e bairro com MapPin */}
-        <div className="flex flex-col gap-1 min-w-0 justify-center items-start text-left w-full">
-          <div className="flex justify-between items-start w-full min-w-0 gap-1.5">
-            <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors truncate">
-              <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate">
-                {displayName}
-              </h3>
-            </Link>
-            {badge && (
-              <span title={badge.title} className={`${badge.color} shrink-0`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                {badge.icon === 'ShieldCheck' ? <ShieldCheck size={20} className="stroke-[2.5]" /> : <Award size={20} className="stroke-[2.5]" />}
-              </span>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-1 flex-wrap w-full">
-            <div className="flex items-center gap-0.5">
-              {[1, 2, 3, 4, 5].map(i => (
-                <Star key={i} size={14} className={i <= rating ? "text-amber-400 fill-amber-400" : "text-slate-200 fill-slate-200"} />
-              ))}
+        {/* LINHA 1 DIREITA: Dados/Textos (Centro) + Banner de Apoio (Direita) */}
+        <div className="flex items-center justify-between gap-4 w-full min-w-0">
+          <div className="flex flex-col gap-1 min-w-0 justify-center items-start text-left flex-1">
+            <div className="flex justify-between items-start w-full min-w-0 gap-1.5">
+              <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors truncate">
+                <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate">
+                  {displayName}
+                </h3>
+              </Link>
+              {badge ? (
+                <span title={badge.title} className={`${badge.color} shrink-0`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                  {badge.icon === 'ShieldCheck' ? <ShieldCheck size={20} className="stroke-[2.5]" /> : <Award size={20} className="stroke-[2.5]" />}
+                </span>
+              ) : (
+                <span 
+                  title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista." 
+                  className="text-gray-400 grayscale opacity-50 shrink-0 cursor-help" 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                >
+                  <Award size={20} className="stroke-[2.5]" />
+                </span>
+              )}
             </div>
-            <span className="text-xs font-bold text-slate-700 ml-1">{rating > 0 ? rating.toFixed(1) : 'Novo'}</span>
-            {reviewCount > 0 && <span className="text-[11px] text-slate-400 ml-1">({reviewCount})</span>}
+            
+            <div className="flex items-center gap-1 flex-wrap w-full">
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <Star key={i} size={14} className={i <= rating ? "text-amber-400 fill-amber-400" : "text-slate-200 fill-slate-200"} />
+                ))}
+              </div>
+              <span className="text-xs font-bold text-slate-700 ml-1">{rating > 0 ? rating.toFixed(1) : 'Novo'}</span>
+              {reviewCount > 0 && <span className="text-[11px] text-slate-400 ml-1">({reviewCount})</span>}
+            </div>
+
+            <div className="text-slate-600 text-xs md:text-sm font-medium flex flex-col gap-1 mt-1 items-start w-full">
+              {phone && <span className="truncate">{formatPhone(phone)}</span>}
+              <div className="flex items-center gap-2 flex-wrap text-slate-500 w-full">
+                <span className="truncate flex items-center gap-1">
+                  <MapPin size={14} className="text-slate-400 shrink-0" /> {location}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="text-slate-600 text-xs md:text-sm font-medium flex flex-col gap-1 mt-1 items-start w-full">
-            {phone && <span className="truncate">{formatPhone(phone)}</span>}
-            <div className="flex items-center gap-2 flex-wrap text-slate-500 w-full">
-              <span className="truncate flex items-center gap-1">
-                <MapPin size={14} className="text-slate-400 shrink-0" /> {location}
-              </span>
-              <a
-                href={getMapsLink()}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-[9px] bg-primary/10 text-primary hover:bg-primary hover:text-white px-2 py-0.5 rounded-full font-bold transition-all flex items-center gap-0.5 cursor-pointer shadow-sm hover:scale-105 active:scale-95 shrink-0"
-              >
-                Como Chegar
-              </a>
-            </div>
-          </div>
+          {/* Banner de Apoio (Patrocinador) posicionado no lado direito em formato retrato (vertical) */}
+          {!showEdit && professional.partners && (
+            (() => {
+              let list = [];
+              try {
+                list = typeof professional.partners === 'string' 
+                  ? JSON.parse(professional.partners) 
+                  : (professional.partners || []);
+              } catch {
+                list = professional.partners || [];
+              }
+              const valid = list.filter(p => p && p.imageUrl);
+              if (valid.length === 0) return null;
+
+              return (
+                <div className="flex flex-col items-center gap-1 shrink-0 self-center">
+                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none">Apoio</span>
+                  <SponsorSlider partners={valid} layout="portrait" />
+                </div>
+              );
+            })()
+          )}
         </div>
 
         {/* LINHA 2 ESQUERDA: Título da profissão, centralizado, negrito, azul principal */}
@@ -302,21 +334,28 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
           )}
         </div>
 
-        {/* LINHA 3 ESQUERDA: Redes sociais (sempre 3 espaços) */}
-        <div className="flex items-center gap-1.5 justify-center">
-          {displayedSocials.map((link, idx) => {
-            const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
-            return (
-              <a key={idx} href={url} target="_blank" rel="noopener noreferrer" title={link.platform} onClick={(e) => e.stopPropagation()} className="hover:scale-110 transition-transform">
-                <SocialIconBadge platform={link.platform} />
-              </a>
-            );
-          })}
-          {[...Array(placeholdersCount)].map((_, idx) => (
-            <div key={`placeholder-${idx}`} className="w-9 h-9 md:w-10 md:h-10 rounded-full border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center text-slate-300" title="Rede não cadastrada">
-              <Plus size={12} className="stroke-[2.5]" />
-            </div>
-          ))}
+        {/* LINHA 3 ESQUERDA: Redes sociais (sempre 3 espaços) + Selo de Titularidade */}
+        <div className="flex flex-col items-center gap-1.5 justify-center">
+          <div className="flex items-center gap-1.5 justify-center">
+            {displayedSocials.map((link, idx) => {
+              const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
+              return (
+                <a key={idx} href={url} target="_blank" rel="noopener noreferrer" title={link.platform} onClick={(e) => e.stopPropagation()} className="hover:scale-110 transition-transform">
+                  <SocialIconBadge platform={link.platform} />
+                </a>
+              );
+            })}
+            {[...Array(placeholdersCount)].map((_, idx) => (
+              <div key={`placeholder-${idx}`} className="w-9 h-9 md:w-10 md:h-10 rounded-full border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center text-slate-300" title="Rede não cadastrada">
+                <Plus size={12} className="stroke-[2.5]" />
+              </div>
+            ))}
+          </div>
+          {ownerName && (
+            <span className="text-[10px] md:text-xs text-slate-500 opacity-70 font-semibold truncate max-w-full select-none mt-0.5">
+              Por {ownerName}
+            </span>
+          )}
         </div>
 
         {/* LINHA 3 DIREITA: Botões de Ação centralizados (Ligar, WhatsApp, Compartilhar) ou Editar/Excluir */}
@@ -364,28 +403,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
 
       </div>
 
-      {/* Mini slide de Patrocinadores/Apoio no rodapé do card se houver parceiros */}
-      {!showEdit && professional.partners && (
-        (() => {
-          let list = [];
-          try {
-            list = typeof professional.partners === 'string' 
-              ? JSON.parse(professional.partners) 
-              : (professional.partners || []);
-          } catch {
-            list = professional.partners || [];
-          }
-          const valid = list.filter(p => p && p.imageUrl);
-          if (valid.length === 0) return null;
 
-          return (
-            <div className="border-t border-slate-100 bg-slate-50/40 p-4 flex flex-col gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Apoio</span>
-              <SponsorSlider partners={valid} layout="card" />
-            </div>
-          );
-        })()
-      )}
 
       {showEdit && (
         <div className="border-t border-slate-100 bg-slate-50/50 p-5 rounded-b-2xl animate-in fade-in duration-300">

@@ -604,7 +604,20 @@ const serializeWeeklyHours = (weeklyHours) => {
 };
 
 // ── Sub-componente: Formulário de edição de anúncio ─────────────
-function AdEditForm({ ad, token, user, onSaved, onCancel }) {
+function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
+  const [declarationChecked, setDeclarationChecked] = useState(false);
+
+  const getLockInfo = () => {
+    if (!ad.lastNamePhoneUpdate) return { active: false, days: 0 };
+    const diffMs = Date.now() - new Date(ad.lastNamePhoneUpdate).getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    if (diffDays < 15) {
+      return { active: true, days: Math.ceil(15 - diffDays) };
+    }
+    return { active: false, days: 0 };
+  };
+  const lockInfo = getLockInfo();
+
   const initialPhone = ad.telefoneComercial 
     ? formatPhone(ad.telefoneComercial.replace(/^\+55/, '')) 
     : ad.servicePhone 
@@ -819,6 +832,17 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
     setSocialLinks(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: val } : s));
 
   const handleSave = async () => {
+    const hasNameChanged = form.nomeExibicao !== (ad.nomeExibicao || '') || form.sobrenomeExibicao !== (ad.sobrenomeExibicao || '');
+    const cleanOrigPhone = ad.telefoneComercial ? formatPhone(ad.telefoneComercial.replace(/^\+55/, '')) : '';
+    const hasPhoneChanged = formatPhone(form.telefoneComercial) !== cleanOrigPhone;
+
+    if (hasNameChanged || hasPhoneChanged) {
+      const confirmSave = window.confirm("Atenção: Ao salvar esta alteração, os campos Nome e Telefone só poderão ser editados novamente após 15 dias. Deseja continuar?");
+      if (!confirmSave) {
+        return;
+      }
+    }
+
     setIsSaving(true);
     setError('');
     try {
@@ -991,7 +1015,7 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
             Espaço Parceiro (Monetize seu Perfil)
           </h4>
           <p className="text-xs text-slate-500 mt-1">
-            Venda o espaço "Parceiro" de seu perfil para comerciantes ou patrocinadores locais. Adicione até 3 imagens e links de redirecionamento. O recorte exigido de enquadramento perfeito (16:9) garante um visual de carrossel incrível!
+            Venda o espaço "Parceiro" de seu perfil para comerciantes ou patrocinadores locais. Adicione até 3 imagens e links de redirecionamento. O recorte exigido de enquadramento perfeito (9:16) garante um visual de carrossel incrível!
           </p>
         </div>
 
@@ -1074,7 +1098,7 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
         {cropTarget && (
           <ImageCropperModal
             imageSrc={cropTarget.imageSrc}
-            aspect={16/9}
+            aspect={9/16}
             cropShape="rect"
             onClose={() => setCropTarget(null)}
             onCropComplete={handleCroppedPartner}
@@ -1090,8 +1114,14 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
             value={form.nomeExibicao}
             onChange={(e) => setForm(prev => ({ ...prev, nomeExibicao: e.target.value, sobrenomeExibicao: '' }))}
             placeholder="Ex: Eletricista Silva, Paula Unhas (Opcional)"
-            className={inputClass}
+            disabled={lockInfo.active}
+            className={`${inputClass} ${lockInfo.active ? 'opacity-65 cursor-not-allowed bg-slate-100' : ''}`}
           />
+          {lockInfo.active && (
+            <span className="text-xs text-amber-600 font-semibold block mt-1">
+              Disponível para edição em {lockInfo.days} dia(s)
+            </span>
+          )}
           <p className="text-xs text-slate-500 mt-1">
             Se deixado em branco, o sistema utilizará o seu nome de cadastro pessoal.
           </p>
@@ -1226,8 +1256,14 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
               }));
             }}
             placeholder="Ex: (88) 99999-9999"
-            className={inputClass}
+            disabled={lockInfo.active}
+            className={`${inputClass} ${lockInfo.active ? 'opacity-65 cursor-not-allowed bg-slate-100' : ''}`}
           />
+          {lockInfo.active && (
+            <span className="text-xs text-amber-600 font-semibold block mt-1">
+              Disponível para edição em {lockInfo.days} dia(s)
+            </span>
+          )}
           <p className="text-xs text-slate-500 mt-1">
             Insira o número de contato do anúncio. O número do seu cadastro continuará privado.
           </p>
@@ -1279,11 +1315,26 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
 
       {error && <p className="text-red-500 text-sm">{error}</p>}
 
+      {isSecondAd && (
+        <div className="bg-amber-50/50 border border-amber-200/50 p-4 rounded-xl flex items-start gap-3 mb-4 text-left">
+          <input 
+            type="checkbox" 
+            id="edit-declaration" 
+            checked={declarationChecked}
+            onChange={(e) => setDeclarationChecked(e.target.checked)}
+            className="mt-1 h-5 w-5 rounded border-amber-300 text-amber-650 focus:ring-amber-500 shrink-0 cursor-pointer" 
+          />
+          <label htmlFor="edit-declaration" className="text-xs md:text-sm text-slate-700 leading-relaxed cursor-pointer select-none">
+            Declaro que sou o titular e prestador deste serviço/anúncio bem como a veracidade dos dados fornecidos. Compreendo que, conforme os Termos de Uso, a plataforma proITA poderá suspender a assinatura caso identifique a comercialização ou divisão desta conta com terceiros.
+          </label>
+        </div>
+      )}
+
       <div className="flex items-center gap-3 pt-2">
         <button
           onClick={handleSave}
-          disabled={isSaving || saved}
-          className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-medium transition-all disabled:opacity-70"
+          disabled={isSaving || saved || (isSecondAd && !declarationChecked)}
+          className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-xl font-medium transition-all disabled:opacity-75 disabled:cursor-not-allowed"
         >
           {isSaving ? <Loader2 size={16} className="animate-spin" /> : saved ? <CheckCircle size={16} /> : null}
           {saved ? 'Salvo!' : isSaving ? 'Salvando...' : 'Salvar Alterações'}
@@ -2005,7 +2056,7 @@ export default function Dashboard() {
               {activeTab === 'professional' && (
                 <div className="animate-in fade-in duration-300">
                   {editingAd ? (
-                    <AdEditForm ad={editingAd} token={token} user={user} onSaved={handleAdSaved} onCancel={() => setEditingAd(null)} />
+                    <AdEditForm ad={editingAd} token={token} user={user} isSecondAd={myAds.length >= 2} onSaved={handleAdSaved} onCancel={() => setEditingAd(null)} />
                   ) : (
                     <>
                       <div className="flex items-center justify-between mb-6">

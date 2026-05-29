@@ -93,6 +93,7 @@ model Profile {
   shares                Int      @default(0)
 
   createdAt             DateTime @default(now())
+  lastNamePhoneUpdate   DateTime? @map("last_name_phone_update")
   rating                Float?   @default(0)
   reviewCount           Int      @default(0)
   reviews               Review[]

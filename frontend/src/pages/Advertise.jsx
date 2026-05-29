@@ -60,6 +60,7 @@ export default function Advertise() {
 
   const [loadingAdCount, setLoadingAdCount] = useState(true);
   const [adCount, setAdCount] = useState(0);
+  const [declarationChecked, setDeclarationChecked] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -1197,7 +1198,7 @@ export default function Advertise() {
                   <div>
                     <h4 className="font-semibold text-slate-800 flex items-center gap-2"><Sparkles className="text-primary animate-pulse" size={18} /> Espaço Parceiro (Monetize seu Perfil)</h4>
                     <p className="text-xs text-slate-500 mt-1">
-                      Adicione até 3 patrocinadores ou parceiros locais no seu perfil profissional. O enquadramento exigido de enquadramento perfeito (16:9) ajudará você a revender este espaço para comércios locais!
+                      Adicione até 3 patrocinadores ou parceiros locais no seu perfil profissional. O enquadramento exigido de enquadramento perfeito (9:16) ajudará você a revender este espaço para comércios locais!
                     </p>
                   </div>
 
@@ -1331,12 +1332,27 @@ export default function Advertise() {
                   </label>
                 </div>
 
+                {adCount >= 1 && (
+                  <div className="bg-amber-50/50 border border-amber-200/50 p-4 rounded-xl flex items-start gap-3 mt-4 text-left">
+                    <input 
+                      type="checkbox" 
+                      id="declaration" 
+                      checked={declarationChecked}
+                      onChange={(e) => setDeclarationChecked(e.target.checked)}
+                      className="mt-1 h-5 w-5 rounded border-amber-300 text-amber-650 focus:ring-amber-500 shrink-0 cursor-pointer" 
+                    />
+                    <label htmlFor="declaration" className="text-xs md:text-sm text-slate-700 leading-relaxed cursor-pointer select-none">
+                      Declaro que sou o titular e prestador deste serviço/anúncio bem como a veracidade dos dados fornecidos. Compreendo que, conforme os Termos de Uso, a plataforma proITA poderá suspender a assinatura caso identifique a comercialização ou divisão desta conta com terceiros.
+                    </label>
+                  </div>
+                )}
+
                 <div className="mt-8 flex justify-between items-center">
                   <button type="button" onClick={prevStep} className="text-slate-500 hover:text-slate-800 font-medium px-4 py-3">Voltar</button>
                   <button
                     type="submit"
-                    disabled={isUploading}
-                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 md:px-12 py-4 rounded-xl font-bold text-lg transition-all shadow-xl shadow-emerald-500/30 hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-3"
+                    disabled={isUploading || (adCount >= 1 && !declarationChecked)}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 md:px-12 py-4 rounded-xl font-bold text-lg transition-all shadow-xl shadow-emerald-500/30 hover:scale-105 disabled:opacity-75 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-3"
                   >
                     {isUploading ? (
                       <>
@@ -1366,7 +1382,7 @@ export default function Advertise() {
       {cropTarget && (
         <ImageCropperModal
           imageSrc={cropTarget.imageSrc}
-          aspect={cropTarget.type === 'avatar' ? 1 : 16/9}
+          aspect={cropTarget.type === 'avatar' ? 1 : 9/16}
           cropShape={cropTarget.type === 'avatar' ? 'round' : 'rect'}
           onClose={() => setCropTarget(null)}
           onCropComplete={(blob) => {

@@ -54,7 +54,7 @@ export default function ImageCropperModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-200">
       <div className="bg-slate-900 border border-slate-800 text-white rounded-3xl p-6 w-full max-w-lg shadow-2xl flex flex-col relative overflow-hidden">
         {/* Efeito de brilho de fundo */}
         <div className="absolute top-[-100px] right-[-100px] w-60 h-60 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>

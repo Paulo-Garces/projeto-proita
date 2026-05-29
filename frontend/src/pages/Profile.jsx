@@ -202,7 +202,8 @@ export default function Profile() {
             planStatus: profile.user?.planStatus || profile.planStatus || 'DEGUSTACAO',
             trialEndsAt: profile.user?.trialEndsAt || profile.trialEndsAt || null,
             subscriptionEndsAt: profile.user?.subscriptionEndsAt || profile.subscriptionEndsAt || null,
-            verified: true
+            verified: true,
+            user: profile.user
           });
 
           // Dispara tracking silencioso de visualização
@@ -244,6 +245,9 @@ export default function Profile() {
   }
 
   const badge = getReputationBadge(professional);
+  const ownerName = professional.user 
+    ? [professional.user.nome, professional.user.sobrenome].filter(Boolean).join(' ').trim()
+    : '';
 
   const handleWhatsApp = () => {
     if (professional.phone) {
@@ -531,9 +535,16 @@ export default function Profile() {
                     <CheckCircle size={24} className="text-emerald-500 fill-emerald-50" />
                   </div>
                 )}
-                {badge && (
+                {badge ? (
                   <div className={`absolute -top-2 -right-2 bg-white rounded-full p-2.5 shadow-lg border border-slate-100 hover:scale-110 transition-transform duration-200 ${badge.color}`} title={badge.title}>
                     {badge.icon === 'ShieldCheck' ? <ShieldCheck size={22} className="stroke-[2.5]" /> : <Award size={22} className="stroke-[2.5]" />}
+                  </div>
+                ) : (
+                  <div 
+                    className="absolute -top-2 -right-2 bg-white rounded-full p-2.5 shadow-lg border border-slate-100 hover:scale-110 transition-transform duration-200 text-gray-400 grayscale opacity-50 cursor-help" 
+                    title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista."
+                  >
+                    <Award size={22} className="stroke-[2.5]" />
                   </div>
                 )}
               </div>
@@ -542,10 +553,18 @@ export default function Profile() {
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
                   <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{professional.name}</h1>
-                  {badge && (
+                  {badge ? (
                     <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border shadow-sm ${badge.color}`} title={badge.title}>
                       {badge.icon === 'ShieldCheck' ? <ShieldCheck size={14} className="stroke-[2.5]" /> : <Award size={14} className="stroke-[2.5]" />}
                       Selo {badge.name}
+                    </span>
+                  ) : (
+                    <span 
+                      className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border border-gray-200 bg-gray-50 text-gray-400 grayscale opacity-50 shadow-sm cursor-help select-none" 
+                      title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista."
+                    >
+                      <Award size={14} className="stroke-[2.5]" />
+                      Selo Inativo
                     </span>
                   )}
                 </div>
@@ -648,6 +667,12 @@ export default function Profile() {
                     <p className="text-slate-600 leading-relaxed text-[15px] whitespace-pre-line">
                       {professional.fullDescription || 'Nenhuma descrição detalhada fornecida.'}
                     </p>
+                    {ownerName && (
+                      <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 opacity-85 font-medium">
+                        <span>Anunciante Titular:</span>
+                        <span className="font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100">Por {ownerName}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 

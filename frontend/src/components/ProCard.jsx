@@ -82,15 +82,15 @@ export default function ProCard({ professional }) {
 
         {/* Coluna Esquerda: Foto, Categoria e Redes Sociais */}
         <div className="flex flex-col items-center gap-3 w-20 md:w-24 shrink-0">
-          <div className="relative">
+          <div className="relative inline-block" style={{ width: 'fit-content', height: 'fit-content' }}>
             <img
               src={professional.avatar}
               alt={displayName}
               className="w-20 h-20 md:w-24 md:h-24 rounded-2xl object-cover border border-slate-100 shadow-sm"
             />
             {professional.verified && (
-              <div className="absolute -bottom-2 -right-2 bg-white rounded-full p-0.5 shadow-sm">
-                <CheckCircle size={18} className="text-emerald-500 fill-emerald-50" />
+              <div className="absolute bottom-0 right-0 translate-x-[2px] translate-y-[2px] bg-white rounded-full p-0.5 shadow-md z-10 flex items-center justify-center">
+                <CheckCircle size={18} className="text-blue-500 fill-blue-50" />
               </div>
             )}
           </div>

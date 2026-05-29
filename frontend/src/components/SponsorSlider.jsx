@@ -30,6 +30,7 @@ export default function SponsorSlider({ partners = [], layout = 'card' }) {
     card: 'h-16 sm:h-20 w-full rounded-xl border border-slate-100 bg-slate-50/50 shadow-inner',
     sidebar: 'h-36 sm:h-40 w-full rounded-2xl border border-slate-100 bg-slate-50/30 shadow-sm',
     tab: 'h-48 sm:h-56 w-full rounded-2xl border border-slate-150 bg-slate-50/50 shadow-md',
+    portrait: 'h-[72px] w-[56px] sm:h-[80px] sm:w-[60px] rounded-lg border border-slate-100 bg-slate-50/50 shadow-sm',
   }[layout];
 
   const currentPartner = validPartners[currentIndex];
@@ -67,7 +68,11 @@ export default function SponsorSlider({ partners = [], layout = 'card' }) {
             <img
               src={partner.imageUrl}
               alt={`Patrocinador ${index + 1}`}
-              className="relative z-10 max-w-full max-h-full object-contain p-2 transition-transform duration-500 group-hover:scale-105"
+              className={`relative z-10 transition-transform duration-500 group-hover:scale-105 rounded-lg ${
+                layout === 'portrait'
+                  ? 'w-full h-full object-cover p-0'
+                  : 'max-w-full max-h-full object-contain p-2'
+              }`}
             />
 
             {/* Overlay com Link Indicador se houver link e estiver ativo */}

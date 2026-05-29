@@ -375,6 +375,29 @@ module.exports = (prisma) => {
         partners
       } = req.body;
 
+      // Validação da trava de 15 dias para Nome e Telefone
+      const isChangingName = (nome !== undefined && pickOptionalProfileString(nome) !== existing.nomeExibicao) || 
+                             (sobrenome !== undefined && pickOptionalProfileString(sobrenome) !== existing.sobrenomeExibicao);
+      
+      const incomingPhone = telefoneComercial !== undefined ? convertToInternationalPhone(pickOptionalProfileString(telefoneComercial)) : undefined;
+      const isChangingPhone = incomingPhone !== undefined && incomingPhone !== existing.telefoneComercial;
+
+      if (isChangingName || isChangingPhone) {
+        if (existing.lastNamePhoneUpdate) {
+          const diffMs = Date.now() - new Date(existing.lastNamePhoneUpdate).getTime();
+          const diffDays = diffMs / (1000 * 60 * 60 * 24);
+          if (diffDays < 15) {
+            const remainingDays = Math.ceil(15 - diffDays);
+            return res.status(400).json({ 
+              success: false, 
+              message: `Atenção: Os campos Nome e Telefone só poderão ser alterados novamente em ${remainingDays} dia(s).` 
+            });
+          }
+        }
+      }
+
+      const shouldUpdateTimestamp = isChangingName || isChangingPhone;
+
       let nextSocialLinks = undefined;
       if (socialLinks !== undefined || redesSociais !== undefined) {
         const rawSocial = socialLinks !== undefined ? socialLinks : redesSociais;
@@ -391,6 +414,7 @@ module.exports = (prisma) => {
       const updated = await prisma.profile.update({
         where: { id },
         data: {
+          ...(shouldUpdateTimestamp && { lastNamePhoneUpdate: new Date() }),
           ...(atividadePrincipal !== undefined && { atividadePrincipal }),
           ...(categoriaGeral !== undefined && { categoriaGeral }),
           ...(atividadesSecundarias !== undefined && { atividadesSecundarias }),
