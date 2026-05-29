@@ -255,15 +255,24 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               )}
             </div>
             
-            <div className="flex items-center gap-1 flex-wrap w-full">
+            <Link 
+              to={`/profile/${professional.id}?tab=avaliacoes`}
+              onClick={handleProfileClick}
+              className="flex items-center gap-1 flex-wrap w-full hover:underline hover:text-primary transition-all cursor-pointer group/rating"
+              title="Ver todas as avaliações deste profissional"
+            >
               <div className="flex items-center gap-0.5">
                 {[1, 2, 3, 4, 5].map(i => (
-                  <Star key={i} size={14} className={i <= rating ? "text-amber-400 fill-amber-400" : "text-slate-200 fill-slate-200"} />
+                  <Star key={i} size={14} className={i <= rating ? "text-amber-400 fill-amber-400 group-hover/rating:scale-110 transition-transform duration-200" : "text-slate-200 fill-slate-200"} />
                 ))}
               </div>
-              <span className="text-xs font-bold text-slate-700 ml-1">{rating > 0 ? rating.toFixed(1) : 'Novo'}</span>
-              {reviewCount > 0 && <span className="text-[11px] text-slate-400 ml-1">({reviewCount})</span>}
-            </div>
+              <span className="text-xs font-bold text-slate-750 ml-1">{rating > 0 ? rating.toFixed(1) : 'Novo'}</span>
+              {reviewCount > 0 ? (
+                <span className="text-[11px] text-slate-450 ml-1">({reviewCount} {reviewCount === 1 ? 'avaliação' : 'avaliações'})</span>
+              ) : (
+                <span className="text-[11px] text-slate-400 ml-1">(Sem avaliações)</span>
+              )}
+            </Link>
 
             <div className="text-slate-600 text-xs md:text-sm font-medium flex flex-col gap-1 mt-1 items-start w-full">
               {phone && <span className="truncate">{formatPhone(phone)}</span>}

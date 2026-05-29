@@ -1,6 +1,6 @@
 import { useState, useContext, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard, Sparkles, Clock, Copy } from 'lucide-react';
+import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard, Sparkles, Clock, Copy, ChevronLeft, ChevronRight, Check, X, Link2, Crop, RefreshCw } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
@@ -683,6 +683,19 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
   const [isUploadingPartner, setIsUploadingPartner] = useState(false);
   const [partnerError, setPartnerError] = useState('');
   const [cropTarget, setCropTarget] = useState(null); // { imageSrc: string }
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [editingLinkIndex, setEditingLinkIndex] = useState(null);
+  const [tempLinkValue, setTempLinkValue] = useState('');
+
+  // Auto-slide effect para o preview local, pausado sob interação ou edição de link
+  useEffect(() => {
+    if (adPartners.length <= 1 || isHovered || editingLinkIndex !== null) return;
+    const interval = setInterval(() => {
+      setActiveSlideIndex(prev => (prev + 1) % adPartners.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [adPartners.length, isHovered, editingLinkIndex]);
 
   const logoInputRef = useRef(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -806,11 +819,19 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setAdPartners(prev => [...prev, {
-          imageUrl: data.url,
-          fileId: data.fileId,
-          link: '',
-        }]);
+        if (cropTarget && cropTarget.index !== undefined && cropTarget.index >= 0) {
+          setAdPartners(prev => prev.map((item, idx) => idx === cropTarget.index ? {
+            ...item,
+            imageUrl: data.url,
+            fileId: data.fileId,
+          } : item));
+        } else {
+          setAdPartners(prev => [...prev, {
+            imageUrl: data.url,
+            fileId: data.fileId,
+            link: '',
+          }]);
+        }
       } else {
         setPartnerError(data.message || 'Erro ao carregar parceiro.');
       }
@@ -821,6 +842,36 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
       setIsUploadingPartner(false);
       setCropTarget(null);
     }
+  };
+
+  const handleAddPartnerClick = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setCropTarget({
+        imageSrc: URL.createObjectURL(file),
+        index: undefined
+      });
+    };
+    input.click();
+  };
+
+  const handleEditPartnerImage = (index) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setCropTarget({
+        imageSrc: URL.createObjectURL(file),
+        index: index
+      });
+    };
+    input.click();
   };
 
   const addSocialLink = () => {
@@ -1015,82 +1066,268 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
             Espaço Parceiro (Monetize seu Perfil)
           </h4>
           <p className="text-xs text-slate-500 mt-1">
-            Venda o espaço "Parceiro" de seu perfil para comerciantes ou patrocinadores locais. Adicione até 3 imagens e links de redirecionamento. O recorte exigido de enquadramento perfeito (9:16) garante um visual de carrossel incrível!
+            Venda o espaço "Parceiro" de seu perfil para comerciantes ou patrocinadores locais. Adicione até 3 patrocinadores e seus respectivos links. O recorte perfeito vertical (9:16) garante que o carrossel tenha um visual story incrível!
           </p>
         </div>
 
         <div className="space-y-4">
-          {adPartners.map((partner, index) => (
-            <div key={index} className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 relative flex flex-col sm:flex-row gap-4 items-center animate-in fade-in duration-300">
-              {/* Imagem Cropped Preview */}
-              <div className="relative shrink-0 w-24 h-14 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-                {partner.imageUrl ? (
-                  <img src={partner.imageUrl} alt={`Parceiro ${index + 1}`} className="w-full h-full object-contain" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 font-bold uppercase">Sem foto</div>
-                )}
-              </div>
-
-              {/* Input de link e botão de remover */}
-              <div className="flex-1 w-full space-y-2">
-                <input
-                  type="text"
-                  value={partner.link}
-                  onChange={(e) => {
-                    const newPartners = [...adPartners];
-                    newPartners[index].link = e.target.value;
-                    setAdPartners(newPartners);
-                  }}
-                  placeholder="Link do parceiro (ex: https://wa.me/...)"
-                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-primary"
-                />
-              </div>
-
+          {adPartners.length === 0 ? (
+            /* --- ESTADO VAZIO: Carrossel com Fundo Suave e Botão de Ação --- */
+            <div className="flex flex-col items-center justify-center py-10 px-4 border-2 border-dashed border-slate-200 bg-slate-50/50 hover:bg-slate-50 rounded-2xl md:rounded-3xl transition-colors duration-200 min-h-[300px]">
+              <UploadCloud size={40} className="text-slate-400 mb-3 animate-bounce" />
+              <h5 className="font-bold text-slate-700 text-sm mb-1">Nenhum patrocinador cadastrado</h5>
+              <p className="text-xs text-slate-500 text-center max-w-sm mb-5">
+                Seu espaço patrocinador está vazio. Adicione marcas parceiras para gerar renda com seu perfil público!
+              </p>
               <button
                 type="button"
-                onClick={() => {
-                  setAdPartners(adPartners.filter((_, i) => i !== index));
-                }}
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow hover:bg-red-650 transition-colors cursor-pointer"
-                title="Remover parceiro"
-              >
-                <Trash2 size={12} />
-              </button>
-            </div>
-          ))}
-
-          {partnerError && <p className="text-xs text-red-500">{partnerError}</p>}
-
-          {adPartners.length < 3 && (
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = 'image/*';
-                  input.onchange = (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    setCropTarget({
-                      imageSrc: URL.createObjectURL(file)
-                    });
-                  };
-                  input.click();
-                }}
+                onClick={handleAddPartnerClick}
                 disabled={isUploadingPartner}
-                className="w-full py-3.5 border-2 border-dashed border-slate-300 hover:border-primary/50 text-slate-500 hover:text-primary rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer bg-slate-50/50 hover:bg-primary/5 disabled:opacity-50"
+                className="px-6 py-3 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl text-xs sm:text-sm flex items-center gap-2 transition-all shadow-md shadow-primary/20 hover:scale-105 active:scale-95 disabled:opacity-50 cursor-pointer"
               >
                 {isUploadingPartner ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" /> Carregando parceiro...
+                    <Loader2 size={16} className="animate-spin" /> Processando...
                   </>
                 ) : (
                   <>
-                    <Plus size={16} /> Adicionar Patrocinador/Parceiro ({adPartners.length}/3)
+                    <Plus size={16} /> Adicionar Patrocinador (0/3)
                   </>
                 )}
               </button>
+            </div>
+          ) : (
+            /* --- ESTADO PREENCHIDO: Live Preview Carrossel + Painel de Controle --- */
+            <div className="flex flex-col md:flex-row gap-8 items-center md:items-start justify-center">
+              
+              {/* Lado Esquerdo: Smartphone Story Mockup Frame */}
+              <div className="flex flex-col items-center gap-2 shrink-0">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Visualização em Tempo Real</span>
+                
+                <div 
+                  className="relative w-[210px] h-[373px] rounded-3xl border-4 border-slate-100 bg-slate-900 overflow-hidden shadow-xl group/story select-none flex items-center justify-center shrink-0 transition-transform duration-300"
+                  onMouseEnter={() => setIsHovered(true)}
+                  onMouseLeave={() => setIsHovered(false)}
+                >
+                  {/* Background blur for modern premium aspect ratio framing */}
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center blur-md opacity-35 scale-110 pointer-events-none"
+                    style={{ backgroundImage: `url(${adPartners[activeSlideIndex]?.imageUrl})` }}
+                  />
+
+                  {/* Main Portrait Slide Image */}
+                  {adPartners[activeSlideIndex]?.imageUrl ? (
+                    <img 
+                      src={adPartners[activeSlideIndex].imageUrl} 
+                      alt={`Mockup Patrocinador ${activeSlideIndex + 1}`} 
+                      className="relative z-10 w-full h-full object-cover transition-transform duration-500 rounded-2xl"
+                    />
+                  ) : (
+                    <div className="relative z-10 text-[10px] text-slate-400 font-bold uppercase">Sem imagem</div>
+                  )}
+
+                  {/* Manual Arrow Navigation */}
+                  {adPartners.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveSlideIndex(prev => (prev - 1 + adPartners.length) % adPartners.length);
+                        }}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-slate-900/60 text-white p-1.5 rounded-full opacity-0 group-hover/story:opacity-100 transition-opacity hover:bg-slate-950 shadow-md cursor-pointer"
+                        title="Slide anterior"
+                      >
+                        <ChevronLeft size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveSlideIndex(prev => (prev + 1) % adPartners.length);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-slate-900/60 text-white p-1.5 rounded-full opacity-0 group-hover/story:opacity-100 transition-opacity hover:bg-slate-950 shadow-md cursor-pointer"
+                        title="Próximo slide"
+                      >
+                        <ChevronRight size={14} />
+                      </button>
+                    </>
+                  )}
+
+                  {/* Bottom Navigation Dots */}
+                  {adPartners.length > 1 && (
+                    <div className="absolute bottom-3 left-0 right-0 z-20 flex justify-center gap-1.5 pointer-events-none">
+                      {adPartners.map((_, idx) => (
+                        <span
+                          key={idx}
+                          className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                            idx === activeSlideIndex 
+                              ? 'bg-primary w-3' 
+                              : 'bg-white/60'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Action Overlays on Hover */}
+                  <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs flex flex-col items-center justify-center gap-2.5 z-30 opacity-0 group-hover/story:opacity-100 transition-opacity duration-300">
+                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-300 mb-1">
+                      Banner {activeSlideIndex + 1} de {adPartners.length}
+                    </span>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setCropTarget({ imageSrc: adPartners[activeSlideIndex].imageUrl, index: activeSlideIndex })}
+                      className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold rounded-lg border border-white/25 flex items-center gap-1.5 w-36 justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm"
+                    >
+                      <Crop size={12} /> Reposicionar
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleEditPartnerImage(activeSlideIndex)}
+                      className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold rounded-lg border border-white/25 flex items-center gap-1.5 w-36 justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm"
+                    >
+                      <RefreshCw size={12} /> Trocar Imagem
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingLinkIndex(activeSlideIndex);
+                        setTempLinkValue(adPartners[activeSlideIndex]?.link || '');
+                      }}
+                      className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold rounded-lg border border-white/25 flex items-center gap-1.5 w-36 justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm"
+                    >
+                      <Link2 size={12} /> Editar Link
+                    </button>
+                  </div>
+
+                  {/* Inline Link Editor Overlay */}
+                  {editingLinkIndex === activeSlideIndex && (
+                    <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-40 animate-in fade-in duration-200">
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-slate-300 mb-2 block text-center">Configurar Link</span>
+                      <input
+                        type="text"
+                        value={tempLinkValue}
+                        onChange={(e) => setTempLinkValue(e.target.value)}
+                        placeholder="Ex: https://wa.me/55..."
+                        className="w-full px-2.5 py-1.5 bg-white/15 border border-white/20 rounded-lg text-xs text-white placeholder-white/35 focus:ring-1 focus:ring-primary focus:outline-none mb-3 text-center"
+                      />
+                      <div className="flex gap-2 w-full justify-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdPartners(prev => prev.map((item, idx) => idx === activeSlideIndex ? { ...item, link: tempLinkValue } : item));
+                            setEditingLinkIndex(null);
+                          }}
+                          className="p-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors cursor-pointer hover:scale-105"
+                          title="Salvar link"
+                        >
+                          <Check size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingLinkIndex(null)}
+                          className="p-1.5 bg-slate-650 hover:bg-slate-750 text-white rounded-lg transition-colors cursor-pointer hover:scale-105"
+                          title="Cancelar"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              </div>
+
+              {/* Lado Direito: Listagem com Links Rápidos */}
+              <div className="flex-1 w-full space-y-4">
+                <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                  <span className="font-bold text-slate-700 text-sm">
+                    Carrossel de Patrocinadores ({adPartners.length}/3)
+                  </span>
+                  {adPartners.length < 3 && (
+                    <button
+                      type="button"
+                      onClick={handleAddPartnerClick}
+                      disabled={isUploadingPartner}
+                      className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1 border border-primary/20 disabled:opacity-50"
+                    >
+                      <Plus size={12} /> Adicionar
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  {adPartners.map((partner, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => setActiveSlideIndex(idx)}
+                      className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+                        idx === activeSlideIndex
+                          ? 'border-primary bg-primary/5 shadow-xs'
+                          : 'border-slate-150 bg-slate-50/50 hover:bg-slate-50'
+                      }`}
+                    >
+                      {/* Crop Preview Aspect 9:16 Mini Thumbnail */}
+                      <div className="w-10 h-16 bg-slate-200 rounded-lg overflow-hidden border border-slate-200 shrink-0 relative flex items-center justify-center">
+                        {partner.imageUrl ? (
+                          <img src={partner.imageUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[8px] text-slate-400 uppercase font-bold">Foto</span>
+                        )}
+                      </div>
+
+                      {/* Info & Link field */}
+                      <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className="text-[11px] font-bold text-slate-700">Patrocinador {idx + 1}</span>
+                          <span className="text-[9px] font-semibold text-slate-400">Enquadramento Story (9:16)</span>
+                        </div>
+
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={partner.link}
+                            onChange={(e) => {
+                              const updated = [...adPartners];
+                              updated[idx].link = e.target.value;
+                              setAdPartners(updated);
+                            }}
+                            placeholder="Link de redirecionamento (ex: https://...)"
+                            className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-primary focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Remove Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const filtered = adPartners.filter((_, i) => i !== idx);
+                          setAdPartners(filtered);
+                          setActiveSlideIndex(0);
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                        title="Remover patrocinador"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+
+                    </div>
+                  ))}
+                </div>
+
+                {partnerError && <p className="text-xs text-red-500 font-medium">{partnerError}</p>}
+                
+                <p className="text-[11px] text-slate-400 italic">
+                  Dica: Toque/selecione um patrocinador na lista para focar sua visualização no preview e editar suas informações.
+                </p>
+              </div>
+
             </div>
           )}
         </div>

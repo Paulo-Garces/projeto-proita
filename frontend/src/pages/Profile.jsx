@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { 
@@ -86,7 +86,19 @@ export default function Profile() {
   const { user, token } = useContext(AuthContext);
   const [professional, setProfessional] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('sobre');
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const initialTab = queryParams.get('tab') || 'sobre';
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Sincroniza a aba ativa caso o query parameter da URL seja alterado
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tabParam = searchParams.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+  }, [location.search]);
 
   // Estados para Avaliações
   const [reviews, setReviews] = useState([]);
