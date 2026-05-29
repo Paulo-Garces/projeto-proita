@@ -272,7 +272,8 @@ module.exports = (prisma) => {
       telefone, bairro,
       nome, sobrenome,
       telefoneComercial, fotoAnuncioUrl, fotoAnuncioFileId,
-      capaUrl, capaFileId, enderecoComercial, horariosFuncionamento
+      capaUrl, capaFileId, enderecoComercial, horariosFuncionamento,
+      partners
     } = req.body;
 
     const userId = req.user.id;
@@ -327,6 +328,7 @@ module.exports = (prisma) => {
           capaFileId: pickOptionalProfileString(capaFileId),
           enderecoComercial: pickOptionalProfileString(enderecoComercial),
           horariosFuncionamento: horariosFuncionamento !== undefined ? horariosFuncionamento : null,
+          partners: partners !== undefined ? partners : null,
         },
       });
 
@@ -369,7 +371,8 @@ module.exports = (prisma) => {
         avatarUrl, avatarFileId, socialLinks, redesSociais, exibirEnderecoCompleto,
         nome, sobrenome,
         telefoneComercial, fotoAnuncioUrl, fotoAnuncioFileId,
-        capaUrl, capaFileId, enderecoComercial, horariosFuncionamento
+        capaUrl, capaFileId, enderecoComercial, horariosFuncionamento,
+        partners
       } = req.body;
 
       let nextSocialLinks = undefined;
@@ -419,6 +422,7 @@ module.exports = (prisma) => {
           ...(capaFileId !== undefined && { capaFileId: pickOptionalProfileString(capaFileId) }),
           ...(enderecoComercial !== undefined && { enderecoComercial: pickOptionalProfileString(enderecoComercial) }),
           ...(horariosFuncionamento !== undefined && { horariosFuncionamento: horariosFuncionamento ?? null }),
+          ...(partners !== undefined && { partners }),
         },
       });
 

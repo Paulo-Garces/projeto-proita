@@ -78,6 +78,7 @@ model Profile {
   fotoAnuncioFileId String?
   capaUrl           String?
   capaFileId        String?
+  partners          Json?    // Array of up to 3 objects [{ imageUrl: string, fileId: string, link: string }]
 
   // Campos Legado e Métricas
   redesSociais          Json?

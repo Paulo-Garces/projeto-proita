@@ -1,9 +1,11 @@
 import { useState, useContext, useRef, useEffect } from 'react';
-import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard, Sparkles, Clock, Copy } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import AdCard from '../components/AdCard';
+import ImageCropperModal from '../components/ImageCropperModal';
 import { API_URL } from '../config';
 import { getProfileDisplayName, getProfileAvatarNameParam } from '../utils/profileDisplayName';
 
@@ -481,6 +483,126 @@ function ServiceCatalogSection({ ad, token }) {
   );
 }
 
+
+// ── Auxiliares de Horários Semanais Estruturados ────────────────
+const DAYS_OF_WEEK = [
+  { key: 'segunda', label: 'Segunda-feira' },
+  { key: 'terca', label: 'Terça-feira' },
+  { key: 'quarta', label: 'Quarta-feira' },
+  { key: 'quinta', label: 'Quinta-feira' },
+  { key: 'sexta', label: 'Sexta-feira' },
+  { key: 'sabado', label: 'Sábado' },
+  { key: 'domingo', label: 'Domingo' }
+];
+
+const parseStoredHorarios = (raw) => {
+  const defaultHours = {
+    segunda: { isOpen: true, start: '08:00', end: '18:00' },
+    terca: { isOpen: true, start: '08:00', end: '18:00' },
+    quarta: { isOpen: true, start: '08:00', end: '18:00' },
+    quinta: { isOpen: true, start: '08:00', end: '18:00' },
+    sexta: { isOpen: true, start: '08:00', end: '18:00' },
+    sabado: { isOpen: false, start: '08:00', end: '12:00' },
+    domingo: { isOpen: false, start: '08:00', end: '12:00' }
+  };
+
+  if (!raw) return defaultHours;
+
+  let parsed = {};
+  if (typeof raw === 'object' && !Array.isArray(raw)) {
+    parsed = raw;
+  } else {
+    try {
+      const parsedObj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (typeof parsedObj === 'object' && !Array.isArray(parsedObj)) {
+        parsed = parsedObj;
+      }
+    } catch {
+      // Legacy
+    }
+  }
+
+  const result = { ...defaultHours };
+
+  if (Object.keys(parsed).length > 0) {
+    const dayKeys = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
+    for (const k of dayKeys) {
+      const val = parsed[k] || parsed[k.replace('terca', 'terça').replace('sabado', 'sábado')] || parsed[k.substring(0, 3)];
+      if (val) {
+        if (val.toLowerCase() === 'fechado' || val.toLowerCase().includes('fech')) {
+          result[k] = { isOpen: false, start: '08:00', end: '18:00' };
+        } else {
+          const match = val.match(/(\d{2}[:h]\d{2}|\d{2})/g);
+          if (match && match.length >= 2) {
+            const cleanStart = match[0].replace('h', ':').padEnd(5, '0');
+            const cleanEnd = match[1].replace('h', ':').padEnd(5, '0');
+            result[k] = { isOpen: true, start: cleanStart, end: cleanEnd };
+          } else {
+            result[k] = { isOpen: true, start: '08:00', end: '18:00' };
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  if (typeof raw === 'string' && raw.trim() !== '') {
+    const lines = raw.split('\n');
+    for (const line of lines) {
+      const lower = line.toLowerCase();
+      const match = line.match(/(\d{2}[:h]\d{2}|\d{2})/g);
+      let start = '08:00';
+      let end = '18:00';
+      let hasTimes = false;
+      if (match && match.length >= 2) {
+        start = match[0].replace('h', ':').includes(':') ? match[0].replace('h', ':') : `${match[0]}:00`;
+        end = match[1].replace('h', ':').includes(':') ? match[1].replace('h', ':') : `${match[1]}:00`;
+        hasTimes = true;
+      }
+      
+      const isOpen = !lower.includes('fechado') && (hasTimes || lower.includes('aberto'));
+
+      if (lower.includes('seg') || lower.includes('todos') || lower.includes('diario') || lower.includes('diário')) {
+        result.segunda = { isOpen, start, end };
+      }
+      if (lower.includes('ter') || lower.includes('todos') || lower.includes('diario') || lower.includes('diário')) {
+        result.terca = { isOpen, start, end };
+      }
+      if (lower.includes('qua') || lower.includes('todos') || lower.includes('diario') || lower.includes('diário')) {
+        result.quarta = { isOpen, start, end };
+      }
+      if (lower.includes('qui') || lower.includes('todos') || lower.includes('diario') || lower.includes('diário')) {
+        result.quinta = { isOpen, start, end };
+      }
+      if (lower.includes('sex') || lower.includes('todos') || lower.includes('diario') || lower.includes('diário')) {
+        result.sexta = { isOpen, start, end };
+      }
+      if (lower.includes('sáb') || lower.includes('sab') || lower.includes('todos') || lower.includes('diario') || lower.includes('diário')) {
+        result.sabado = { isOpen, start, end };
+      }
+      if (lower.includes('dom') || lower.includes('todos') || lower.includes('diario') || lower.includes('diário')) {
+        result.domingo = { isOpen, start, end };
+      }
+    }
+  }
+
+  return result;
+};
+
+const serializeWeeklyHours = (weeklyHours) => {
+  const result = {};
+  const dayKeys = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
+  for (const k of dayKeys) {
+    const day = weeklyHours[k];
+    if (day.isOpen) {
+      result[k] = `${day.start} às ${day.end}`;
+    } else {
+      result[k] = 'Fechado';
+    }
+  }
+  return result;
+};
+
 // ── Sub-componente: Formulário de edição de anúncio ─────────────
 function AdEditForm({ ad, token, user, onSaved, onCancel }) {
   const initialPhone = ad.telefoneComercial 
@@ -523,6 +645,31 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const [weeklyHours, setWeeklyHours] = useState(() => parseStoredHorarios(ad.horariosFuncionamento));
+
+  const replicateMondayHours = () => {
+    const monday = weeklyHours.segunda || { isOpen: true, start: '08:00', end: '18:00' };
+    const { start, end } = monday;
+    setWeeklyHours(prev => ({
+      ...prev,
+      terca: { isOpen: true, start, end },
+      quarta: { isOpen: true, start, end },
+      quinta: { isOpen: true, start, end },
+      sexta: { isOpen: true, start, end }
+    }));
+  };
+
+  // Patrocinadores/Parceiros e Crop Local
+  const [adPartners, setAdPartners] = useState(() => {
+    try {
+      return typeof ad.partners === 'string' ? JSON.parse(ad.partners) : (ad.partners || []);
+    } catch {
+      return ad.partners || [];
+    }
+  });
+  const [isUploadingPartner, setIsUploadingPartner] = useState(false);
+  const [partnerError, setPartnerError] = useState('');
+  const [cropTarget, setCropTarget] = useState(null); // { imageSrc: string }
 
   const logoInputRef = useRef(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -630,6 +777,39 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
     }
   };
 
+  const handleCroppedPartner = async (blob) => {
+    setIsUploadingPartner(true);
+    setPartnerError('');
+    try {
+      const file = new File([blob], 'partner.jpg', { type: 'image/jpeg' });
+      const fd = new FormData();
+      fd.append('fotoAnuncio', file);
+
+      const res = await fetch(`${API_URL}/api/upload/foto-anuncio`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: fd,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setAdPartners(prev => [...prev, {
+          imageUrl: data.url,
+          fileId: data.fileId,
+          link: '',
+        }]);
+      } else {
+        setPartnerError(data.message || 'Erro ao carregar parceiro.');
+      }
+    } catch (err) {
+      console.error('[PARTNER UPLOAD] Erro:', err);
+      setPartnerError('Erro de conexão ao enviar o parceiro.');
+    } finally {
+      setIsUploadingPartner(false);
+      setCropTarget(null);
+    }
+  };
+
   const addSocialLink = () => {
     if (socialLinks.length >= 3) return;
     setSocialLinks(prev => [...prev, { platform: 'instagram', url: '' }]);
@@ -657,9 +837,12 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
           telefoneComercial: convertToInternationalPhone(form.telefoneComercial),
           servicePhone: convertToInternationalPhone(form.telefoneComercial),
           whatsapp: convertToInternationalPhone(form.telefoneComercial),
-          atividadesSecundarias: form.atividadesSecundarias.split(',').map(s => s.trim()).filter(Boolean),
+          endereco: form.enderecoComercial || null,
+          atividadesSecundarias: form.atividadesSecundarias ? form.atividadesSecundarias.split(',').map(s => s.trim()).filter(Boolean) : [],
           socialLinks: mappedSocial,
           redesSociais: mappedSocial,
+          partners: adPartners,
+          horariosFuncionamento: serializeWeeklyHours(weeklyHours),
         }),
       });
       const data = await res.json();
@@ -688,139 +871,219 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
       <h3 className="text-xl font-bold text-slate-800">Editando: {ad.atividadePrincipal}</h3>
 
       {/* ── 1. LOGO E FOTO DE CAPA DO ANÚNCIO (Topo Absoluto) ── */}
-      <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-6">
-        <div className="space-y-4">
+      <section className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border-0 shadow-sm space-y-6">
+        <div className="flex flex-col items-center justify-center text-center space-y-4">
           <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Logo / Foto Comercial do Anúncio</h4>
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <div className="relative shrink-0">
-              {form.fotoAnuncioUrl ? (
-                <div className="relative group">
-                  <img src={form.fotoAnuncioUrl} alt="Logo comercial" className="w-20 h-20 rounded-xl object-cover border border-slate-200 shadow-sm bg-white" />
+          <div className="relative">
+            {form.fotoAnuncioUrl ? (
+              <div className="relative group w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg">
+                <img src={form.fotoAnuncioUrl} alt="Logo comercial" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     type="button"
                     onClick={() => setForm(prev => ({ ...prev, fotoAnuncioUrl: '', fotoAnuncioFileId: '' }))}
-                    className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors"
+                    className="bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors shadow-lg"
                     title="Remover foto"
                   >
-                    <Trash2 size={10} />
+                    <Trash2 size={18} />
                   </button>
                 </div>
-              ) : (
-                <div className="w-20 h-20 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center font-bold text-xs uppercase border border-dashed border-slate-300 shadow-sm">
-                  Sem Logo
-                </div>
-              )}
-            </div>
-            <div className="flex-1 w-full space-y-2">
-              <label className={labelClass}>URL da Imagem do Anúncio</label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  value={form.fotoAnuncioUrl}
-                  onChange={set('fotoAnuncioUrl')}
-                  placeholder="https://exemplo.com/sua-foto.jpg"
-                  className={inputClass + ' flex-1'}
-                />
-                <button
-                  type="button"
-                  onClick={() => logoInputRef.current?.click()}
-                  disabled={isUploadingLogo}
-                  className="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition-colors shrink-0 flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
-                >
-                  {isUploadingLogo ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" /> Carregando...
-                    </>
-                  ) : (
-                    <>
-                      <UploadCloud size={14} /> Upload
-                    </>
-                  )}
-                </button>
-                <input
-                  ref={logoInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleLogoUpload}
-                />
               </div>
-              {logoError && <p className="text-xs text-red-500">{logoError}</p>}
-              <p className="text-xs text-slate-500">
-                Personalize o anúncio com uma foto profissional ou logo diferente do seu perfil pessoal.
-              </p>
-            </div>
+            ) : (
+              <div className="w-32 h-32 bg-slate-50 text-slate-400 rounded-full flex flex-col items-center justify-center font-bold text-xs uppercase border-2 border-dashed border-slate-200 shadow-inner">
+                <Camera size={28} className="mb-1 opacity-60" />
+                <span>Sem Logo</span>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col items-center space-y-2">
+            <button
+              type="button"
+              onClick={() => logoInputRef.current?.click()}
+              disabled={isUploadingLogo}
+              className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover transition-all shrink-0 flex items-center gap-2 shadow-md shadow-primary/20 hover:scale-105 active:scale-95 disabled:opacity-60 cursor-pointer"
+            >
+              {isUploadingLogo ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Carregando...
+                </>
+              ) : (
+                <>
+                  <UploadCloud size={16} /> Fazer Upload da Foto
+                </>
+              )}
+            </button>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleLogoUpload}
+            />
+            {logoError && <p className="text-xs text-red-500">{logoError}</p>}
+            <p className="text-xs text-slate-500 max-w-sm">
+              Personalize o anúncio com uma foto profissional ou logo diferente do seu perfil pessoal.
+            </p>
           </div>
         </div>
 
-        <div className="border-t border-slate-200/60 pt-4">
-          <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide mb-4">Foto de Capa do Anúncio (Banner 3:1)</h4>
-          <div className="flex flex-col gap-4">
-            <div className="relative w-full aspect-[3/1] bg-slate-100 rounded-2xl overflow-hidden border border-dashed border-slate-300 shadow-sm">
-              {form.capaUrl ? (
-                <div className="relative w-full h-full group">
-                  <img src={form.capaUrl} alt="Capa comercial" className="w-full h-full object-cover" />
+        <div className="border-t border-slate-100 pt-6 flex flex-col items-center justify-center text-center space-y-4">
+          <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Foto de Capa do Anúncio (Banner 3:1)</h4>
+          <div className="w-full max-w-xl aspect-[3/1] bg-slate-50 rounded-2xl overflow-hidden border-2 border-dashed border-slate-200 shadow-inner relative group">
+            {form.capaUrl ? (
+              <div className="relative w-full h-full">
+                <img src={form.capaUrl} alt="Capa comercial" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     type="button"
                     onClick={() => setForm(prev => ({ ...prev, capaUrl: '', capaFileId: '' }))}
-                    className="absolute top-3 right-3 bg-red-500 text-white rounded-full p-2 shadow-lg hover:bg-red-600 transition-colors"
+                    className="bg-red-500 text-white rounded-full p-2.5 shadow-lg hover:bg-red-650 transition-colors"
                     title="Remover capa"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={18} />
                   </button>
                 </div>
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 font-bold text-xs uppercase p-4">
-                  <Camera size={24} className="mb-1 opacity-60" />
-                  <span>Sem Foto de Capa</span>
-                </div>
-              )}
-            </div>
-            <div className="w-full space-y-2">
-              <label className={labelClass}>URL da Capa do Anúncio</label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  value={form.capaUrl}
-                  onChange={set('capaUrl')}
-                  placeholder="https://exemplo.com/sua-capa.jpg"
-                  className={inputClass + ' flex-1'}
-                />
-                <button
-                  type="button"
-                  onClick={() => capaInputRef.current?.click()}
-                  disabled={isUploadingCapa}
-                  className="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition-colors shrink-0 flex items-center gap-1.5 disabled:opacity-60 cursor-pointer"
-                >
-                  {isUploadingCapa ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" /> Carregando...
-                    </>
-                  ) : (
-                    <>
-                      <UploadCloud size={14} /> Upload Capa
-                    </>
-                  )}
-                </button>
-                <input
-                  ref={capaInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleCapaUpload}
-                />
               </div>
-              {capaError && <p className="text-xs text-red-500">{capaError}</p>}
-              <p className="text-xs text-slate-500">
-                Escolha uma imagem horizontal elegante para o topo do seu perfil público (proporção sugerida 3:1).
-              </p>
-            </div>
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 font-bold text-xs uppercase p-4">
+                <Camera size={28} className="mb-1 opacity-65" />
+                <span>Sem Foto de Capa</span>
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col items-center space-y-2">
+            <button
+              type="button"
+              onClick={() => capaInputRef.current?.click()}
+              disabled={isUploadingCapa}
+              className="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-hover transition-all shrink-0 flex items-center gap-2 shadow-md shadow-primary/20 hover:scale-105 active:scale-95 disabled:opacity-60 cursor-pointer"
+            >
+              {isUploadingCapa ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Carregando...
+                </>
+              ) : (
+                <>
+                  <UploadCloud size={16} /> Fazer Upload da Capa
+                </>
+              )}
+            </button>
+            <input
+              ref={capaInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleCapaUpload}
+            />
+            {capaError && <p className="text-xs text-red-500">{capaError}</p>}
+            <p className="text-xs text-slate-500 max-w-sm">
+              Escolha uma imagem horizontal elegante para o topo do seu perfil público (proporção sugerida 3:1).
+            </p>
           </div>
         </div>
       </section>
 
-      <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
-        <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Informações Básicas</h4>
+      {/* ── SEÇÃO: PARCEIROS / PATROCINADORES (Monetização) ── */}
+      <section className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border-0 shadow-sm space-y-6">
+        <div>
+          <h4 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+            <Sparkles className="text-primary animate-pulse" size={20} />
+            Espaço Parceiro (Monetize seu Perfil)
+          </h4>
+          <p className="text-xs text-slate-500 mt-1">
+            Venda o espaço "Parceiro" de seu perfil para comerciantes ou patrocinadores locais. Adicione até 3 imagens e links de redirecionamento. O recorte exigido de enquadramento perfeito (16:9) garante um visual de carrossel incrível!
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {adPartners.map((partner, index) => (
+            <div key={index} className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 relative flex flex-col sm:flex-row gap-4 items-center animate-in fade-in duration-300">
+              {/* Imagem Cropped Preview */}
+              <div className="relative shrink-0 w-24 h-14 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+                {partner.imageUrl ? (
+                  <img src={partner.imageUrl} alt={`Parceiro ${index + 1}`} className="w-full h-full object-contain" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 font-bold uppercase">Sem foto</div>
+                )}
+              </div>
+
+              {/* Input de link e botão de remover */}
+              <div className="flex-1 w-full space-y-2">
+                <input
+                  type="text"
+                  value={partner.link}
+                  onChange={(e) => {
+                    const newPartners = [...adPartners];
+                    newPartners[index].link = e.target.value;
+                    setAdPartners(newPartners);
+                  }}
+                  placeholder="Link do parceiro (ex: https://wa.me/...)"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setAdPartners(adPartners.filter((_, i) => i !== index));
+                }}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow hover:bg-red-650 transition-colors cursor-pointer"
+                title="Remover parceiro"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+          ))}
+
+          {partnerError && <p className="text-xs text-red-500">{partnerError}</p>}
+
+          {adPartners.length < 3 && (
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setCropTarget({
+                      imageSrc: URL.createObjectURL(file)
+                    });
+                  };
+                  input.click();
+                }}
+                disabled={isUploadingPartner}
+                className="w-full py-3.5 border-2 border-dashed border-slate-300 hover:border-primary/50 text-slate-500 hover:text-primary rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer bg-slate-50/50 hover:bg-primary/5 disabled:opacity-50"
+              >
+                {isUploadingPartner ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Carregando parceiro...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={16} /> Adicionar Patrocinador/Parceiro ({adPartners.length}/3)
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {cropTarget && (
+          <ImageCropperModal
+            imageSrc={cropTarget.imageSrc}
+            aspect={16/9}
+            cropShape="rect"
+            onClose={() => setCropTarget(null)}
+            onCropComplete={handleCroppedPartner}
+          />
+        )}
+      </section>
+
+      <section className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border-0 shadow-sm space-y-6">
+        <h4 className="font-bold text-slate-800 text-lg border-b border-slate-100 pb-3">Informações Básicas</h4>
         <div>
           <label className={labelClass}>Nome de Exibição / Nome Fantasia</label>
           <input
@@ -834,16 +1097,8 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
           </p>
         </div>
         <div>
-          <label className={labelClass}>Atividade Principal</label>
-          <input value={form.atividadePrincipal} onChange={set('atividadePrincipal')} className={inputClass} />
-        </div>
-        <div>
-          <label className={labelClass}>Atividades Secundárias <span className="text-slate-400">(separadas por vírgula)</span></label>
-          <input value={form.atividadesSecundarias} onChange={set('atividadesSecundarias')} placeholder="Ex: Pintura, Gesso, Drywall" className={inputClass} />
-        </div>
-        <div>
           <label className={labelClass}>Descrição Completa</label>
-          <textarea rows={4} value={form.descricaoTrabalho} onChange={set('descricaoTrabalho')} className={inputClass + ' resize-none'} />
+          <textarea rows={10} value={form.descricaoTrabalho} onChange={set('descricaoTrabalho')} className={inputClass + ' resize-none'} />
         </div>
         <div>
           <label className={labelClass}>Descrição Curta <span className="text-slate-400">(aparece no card de busca, máx. 100 caracteres)</span></label>
@@ -852,43 +1107,101 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
         </div>
       </section>
 
-      <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
-        <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Localização</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <section className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border-0 shadow-sm space-y-6">
+        <h4 className="font-bold text-slate-800 text-lg border-b border-slate-100 pb-3">Localização</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className={labelClass}>Bairro de Atendimento</label>
             <input value={form.serviceBairro} onChange={set('serviceBairro')} placeholder="Ex: Centro, Aldeota..." className={inputClass} />
           </div>
           <div>
-            <label className={labelClass}>Endereço completo (opcional)</label>
-            <input value={form.endereco} onChange={set('endereco')} placeholder="Deixe em branco se atende a domicílio" className={inputClass} />
+            <label className={labelClass}>Endereço Comercial Dedicado <span className="text-slate-400">(Aparece em destaque no perfil público)</span></label>
+            <input value={form.enderecoComercial} onChange={set('enderecoComercial')} placeholder="Ex: Rua Floriano Peixoto, 123 - Centro" className={inputClass} />
           </div>
         </div>
-        <div>
-          <label className={labelClass}>Endereço Comercial Dedicado <span className="text-slate-400">(Aparece em destaque no perfil público)</span></label>
-          <input value={form.enderecoComercial} onChange={set('enderecoComercial')} placeholder="Ex: Rua Floriano Peixoto, 123 - Centro" className={inputClass} />
+      </section>
+
+      <section className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border-0 shadow-sm space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-primary/10 text-primary rounded-xl"><Clock size={20} /></div>
+            <div>
+              <h4 className="font-bold text-slate-800 text-lg">Horários de Atendimento</h4>
+              <p className="text-xs text-slate-500 mt-0.5">Defina os dias e horários em que você está disponível para atender clientes.</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={replicateMondayHours}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl transition-all duration-200 border border-indigo-100/50 hover:shadow-sm active:scale-95 self-start sm:self-auto shrink-0"
+          >
+            <Copy size={14} /> Replicar horário para Segunda a Sexta
+          </button>
+        </div>
+
+        <div className="divide-y divide-slate-100">
+          {DAYS_OF_WEEK.map(({ key, label }) => {
+            const day = weeklyHours[key] || { isOpen: false, start: '08:00', end: '18:00' };
+            return (
+              <div key={key} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 first:pt-0 last:pb-0">
+                {/* Day label and Toggle */}
+                <div className="flex items-center justify-between sm:justify-start gap-4 flex-1">
+                  <span className="font-bold text-slate-800 text-sm w-28 text-left">{label}</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={day.isOpen}
+                      onChange={(e) => {
+                        setWeeklyHours(prev => ({
+                          ...prev,
+                          [key]: { ...prev[key], isOpen: e.target.checked }
+                        }));
+                      }}
+                    />
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                  <span className={`text-xs font-bold ${day.isOpen ? 'text-primary' : 'text-slate-400'}`}>
+                    {day.isOpen ? 'Aberto' : 'Fechado'}
+                  </span>
+                </div>
+
+                {/* Time inputs */}
+                {day.isOpen && (
+                  <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200 shrink-0">
+                    <input
+                      type="time"
+                      value={day.start}
+                      onChange={(e) => {
+                        setWeeklyHours(prev => ({
+                          ...prev,
+                          [key]: { ...prev[key], start: e.target.value }
+                        }));
+                      }}
+                      className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none font-semibold"
+                    />
+                    <span className="text-xs text-slate-400 font-bold">às</span>
+                    <input
+                      type="time"
+                      value={day.end}
+                      onChange={(e) => {
+                        setWeeklyHours(prev => ({
+                          ...prev,
+                          [key]: { ...prev[key], end: e.target.value }
+                        }));
+                      }}
+                      className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none font-semibold"
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </section>
 
-      <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
-        <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Horários de Atendimento</h4>
-        <div>
-          <label className={labelClass}>Horário de Funcionamento</label>
-          <textarea
-            rows={2}
-            value={form.horariosFuncionamento}
-            onChange={set('horariosFuncionamento')}
-            placeholder="Ex: Seg a Sex: 08h às 18h&#10;Sáb: 08h às 12h"
-            className={inputClass + ' resize-none'}
-          />
-          <p className="text-xs text-slate-500 mt-1">
-            Descreva seus dias e horários de atendimento de forma simples (um por linha).
-          </p>
-        </div>
-      </section>
-
-      <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-4">
-        <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Contato e Redes Sociais</h4>
+      <section className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border-0 shadow-sm space-y-6">
+        <h4 className="font-bold text-slate-800 text-lg border-b border-slate-100 pb-3">Contato e Redes Sociais</h4>
         <div>
           <div className="flex justify-between items-center mb-1">
             <label className={labelClass}>WhatsApp / Telefone Comercial do Anúncio</label>
@@ -919,7 +1232,7 @@ function AdEditForm({ ad, token, user, onSaved, onCancel }) {
             Insira o número de contato do anúncio. O número do seu cadastro continuará privado.
           </p>
         </div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 border-t border-slate-100 pt-4">
             <label className={labelClass + ' mb-0'}>Redes Sociais <span className="text-slate-400">(máx. 3)</span></label>
             {socialLinks.length < 3 && (
               <button type="button" onClick={addSocialLink}
@@ -991,6 +1304,9 @@ export default function Dashboard() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState('');
   const fileInputRef = useRef(null);
+
+  // Crop de Foto de Perfil Pessoal
+  const [cropTarget, setCropTarget] = useState(null); // { type: string, imageSrc: string }
 
   const [myAds, setMyAds] = useState([]);
   const [adsLoading, setAdsLoading] = useState(false);
@@ -1120,21 +1436,23 @@ export default function Dashboard() {
     }
   }, [activeTab, user?.googleId, token]);
 
-  const handlePhotoChange = async (e) => {
+  const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setCropTarget({
+      type: 'profile',
+      imageSrc: URL.createObjectURL(file)
+    });
+    e.target.value = '';
+  };
+
+  const handleCroppedProfileImage = async (blob) => {
     setPhotoError('');
     setIsUploadingPhoto(true);
     try {
-      const options = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1024,
-        useWebWorker: true,
-        fileType: 'image/jpeg',
-      };
-      const compressed = await imageCompression(file, options);
+      const file = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
       const fd = new FormData();
-      fd.append('profileImage', compressed, 'profile.jpg');
+      fd.append('profileImage', file);
 
       const res = await fetch(`${API_URL}/api/upload/profile-image`, {
         method: 'PATCH',
@@ -1148,11 +1466,11 @@ export default function Dashboard() {
         setPhotoError(data.message || 'Erro ao enviar a foto.');
       }
     } catch (err) {
-      console.error('[UPLOAD] Erro na compressão ou envio:', err);
+      console.error('[UPLOAD] Erro no envio:', err);
       setPhotoError('Erro ao processar a imagem. Tente outra foto.');
     } finally {
       setIsUploadingPhoto(false);
-      e.target.value = '';
+      setCropTarget(null);
     }
   };
 
@@ -1556,7 +1874,7 @@ export default function Dashboard() {
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
 
           <main className="flex-1">
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-10">
+            <div className={(activeTab === 'professional' && editingAd) ? "space-y-6 animate-in fade-in duration-300" : "bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-10"}>
 
               {activeTab === 'profile' && (
                 <div className="animate-in fade-in duration-300">
@@ -2278,6 +2596,16 @@ export default function Dashboard() {
             </form>
           </div>
         </div>
+      )}
+
+      {cropTarget && cropTarget.type === 'profile' && (
+        <ImageCropperModal
+          imageSrc={cropTarget.imageSrc}
+          aspect={1}
+          cropShape="round"
+          onClose={() => setCropTarget(null)}
+          onCropComplete={handleCroppedProfileImage}
+        />
       )}
     </div>
   );

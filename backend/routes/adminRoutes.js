@@ -57,7 +57,7 @@ module.exports = (prisma) => {
           telefone: true,
           role: true,
           createdAt: true,
-          profile: {
+          profiles: {
             select: { id: true }
           }
         },
@@ -71,7 +71,7 @@ module.exports = (prisma) => {
         nome: `${user.nome} ${user.sobrenome}`,
         telefone: user.telefone,
         role: user.role,
-        hasAd: !!user.profile, // Converte para booleano
+        hasAd: !!(user.profiles && user.profiles.length > 0), // Converte para booleano se houver pelo menos um anúncio
         createdAt: user.createdAt
       }));
 

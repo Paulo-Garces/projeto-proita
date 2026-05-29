@@ -1,7 +1,7 @@
 import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Sparkles } from 'lucide-react';
 import { API_URL } from '../config';
 import AdCard from '../components/AdCard';
 
@@ -195,6 +195,29 @@ export default function Planos() {
             </button>
           </div>
 
+        </div>
+
+        {/* ========================================================================= */}
+        {/* MONETIZATION HIGHLIGHT (SPONSOR RESELLING AD)                             */}
+        {/* ========================================================================= */}
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row items-center gap-6 max-w-4xl mx-auto mb-16 text-left animate-in fade-in duration-500 select-none">
+          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center shrink-0 border border-amber-200">
+            <Sparkles className="text-amber-600 animate-pulse" size={32} />
+          </div>
+          <div className="space-y-2 flex-1">
+            <h4 className="text-lg font-black text-amber-850 flex items-center gap-1.5">
+              💸 Dica de Ouro: Seu Anúncio proITA pode sair 100% GRÁTIS!
+            </h4>
+            <p className="text-sm text-slate-700 font-bold leading-relaxed">
+              Com o novo recurso de <span className="text-indigo-600 font-extrabold">Espaço Parceiro</span>, você pode fazer o upload de até 3 logotipos de comerciantes locais (mercantis, oficinas, salões de beleza ou lojas de amigos) diretamente no seu perfil público.
+            </p>
+            <p className="text-xs text-slate-500 leading-relaxed font-normal">
+              Cobrando apenas R$ 5,00/mês de cada patrocinador local, você acumula R$ 15,00 mensais — custeando totalmente a sua anuidade do proITA (de R$ 35,90 ou R$ 59,90, que equivalem a apenas R$ 2,99 ou R$ 2,48 por mês) e ainda gera lucro líquido direto no seu bolso!
+            </p>
+          </div>
+          <div className="bg-amber-400 text-slate-900 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider whitespace-nowrap shadow-sm">
+            Custo Zero
+          </div>
         </div>
 
         {/* ========================================================================= */}

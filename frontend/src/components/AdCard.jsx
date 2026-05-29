@@ -9,6 +9,7 @@ import { API_URL } from '../config';
 import { getProfileDisplayName } from '../utils/profileDisplayName';
 import { AuthContext } from '../context/AuthContext';
 import { getReputationBadge } from '../utils/reputationBadge';
+import SponsorSlider from './SponsorSlider';
 
 // ─── SVGs Diretos (Blindados contra erro de versão de biblioteca) ──────────────
 const INSTAGRAM_SVG = <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" /></svg>;
@@ -112,6 +113,10 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   const location = professional.serviceBairro || professional.location || 'Itapipoca';
   const avatar = professional.avatar || professional.avatarUrl;
   const badge = getReputationBadge(professional);
+  const getMapsLink = () => {
+    const address = professional.enderecoComercial || professional.endereco || location;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${address}, Itapipoca, CE`)}`;
+  };
 
   const rating = professional.rating || 0;
   const reviewCount = professional.reviewCount || 0;
@@ -243,11 +248,22 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             {reviewCount > 0 && <span className="text-[11px] text-slate-400 ml-1">({reviewCount})</span>}
           </div>
 
-          <div className="text-slate-600 text-xs md:text-sm font-medium flex flex-col gap-0.5 mt-1 items-start w-full">
+          <div className="text-slate-600 text-xs md:text-sm font-medium flex flex-col gap-1 mt-1 items-start w-full">
             {phone && <span className="truncate">{formatPhone(phone)}</span>}
-            <span className="truncate text-slate-500 flex items-center gap-1">
-              <MapPin size={14} className="text-slate-400 shrink-0" /> {location}
-            </span>
+            <div className="flex items-center gap-2 flex-wrap text-slate-500 w-full">
+              <span className="truncate flex items-center gap-1">
+                <MapPin size={14} className="text-slate-400 shrink-0" /> {location}
+              </span>
+              <a
+                href={getMapsLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-[9px] bg-primary/10 text-primary hover:bg-primary hover:text-white px-2 py-0.5 rounded-full font-bold transition-all flex items-center gap-0.5 cursor-pointer shadow-sm hover:scale-105 active:scale-95 shrink-0"
+              >
+                Como Chegar
+              </a>
+            </div>
           </div>
         </div>
 
@@ -347,6 +363,29 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         </div>
 
       </div>
+
+      {/* Mini slide de Patrocinadores/Apoio no rodapé do card se houver parceiros */}
+      {!showEdit && professional.partners && (
+        (() => {
+          let list = [];
+          try {
+            list = typeof professional.partners === 'string' 
+              ? JSON.parse(professional.partners) 
+              : (professional.partners || []);
+          } catch {
+            list = professional.partners || [];
+          }
+          const valid = list.filter(p => p && p.imageUrl);
+          if (valid.length === 0) return null;
+
+          return (
+            <div className="border-t border-slate-100 bg-slate-50/40 p-4 flex flex-col gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Apoio</span>
+              <SponsorSlider partners={valid} layout="card" />
+            </div>
+          );
+        })()
+      )}
 
       {showEdit && (
         <div className="border-t border-slate-100 bg-slate-50/50 p-5 rounded-b-2xl animate-in fade-in duration-300">

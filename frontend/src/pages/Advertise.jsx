@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 import imageCompression from 'browser-image-compression';
 import { Briefcase, MapPin, AlignLeft, CheckCircle, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, Square, Send } from 'lucide-react';
+import ImageCropperModal from '../components/ImageCropperModal';
 
 const MAX_PORTFOLIO_FILES = 8;
 const MAX_PORTFOLIO_MB = 2;
@@ -99,6 +100,7 @@ export default function Advertise() {
   const [nomeExibicao, setNomeExibicao] = useState('');
   const [telefoneComercial, setTelefoneComercial] = useState('');
   const [bairro, setBairro] = useState(user?.bairro || '');
+  const [enderecoComercial, setEnderecoComercial] = useState('');
   const [showExactAddress, setShowExactAddress] = useState(false);
   const [exibirEnderecoCompleto, setExibirEnderecoCompleto] = useState(true);
   const [cep, setCep] = useState('');
@@ -157,6 +159,10 @@ export default function Advertise() {
   const [portfolioQueue, setPortfolioQueue] = useState([]);
   const portfolioInputRef = useRef(null);
 
+  // Estados do Crop e Parceiros (Sponsors)
+  const [cropTarget, setCropTarget] = useState(null); // { type: 'avatar' | 'partner', imageSrc: string }
+  const [partners, setPartners] = useState([]); // [{ file: File, previewUrl: string, link: string }]
+
   const addSocialNetwork = () => {
     setSocialNetworks([...socialNetworks, { network: 'Instagram', link: '' }]);
   };
@@ -176,8 +182,11 @@ export default function Advertise() {
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
+    setCropTarget({
+      type: 'avatar',
+      imageSrc: URL.createObjectURL(file),
+    });
+    e.target.value = '';
   };
 
   const appendPortfolioFiles = useCallback((fileList) => {
@@ -586,6 +595,34 @@ export default function Advertise() {
         setIsUploading(false);
       }
 
+      // Upload das imagens de parceiros
+      const uploadedPartners = [];
+      if (partners.length > 0) {
+        setIsUploading(true);
+        for (const partner of partners) {
+          if (partner.file) {
+            const formData = new FormData();
+            formData.append('fotoAnuncio', partner.file);
+            const uploadRes = await fetch(`${API_URL}/api/upload/foto-anuncio`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` },
+              body: formData,
+            });
+            const uploadData = await uploadRes.json();
+            if (uploadRes.ok && uploadData.success) {
+              uploadedPartners.push({
+                imageUrl: uploadData.url,
+                fileId: uploadData.fileId,
+                link: partner.link || '',
+              });
+            } else {
+              console.error('Erro ao fazer upload da imagem de parceiro:', uploadData.message);
+            }
+          }
+        }
+        setIsUploading(false);
+      }
+
       const descricaoFinal = (bioSugerida && bioSugerida.trim()) ? bioSugerida.trim() : descricaoTrabalho.trim();
 
       const response = await fetch(`${API_URL}/api/ads`, {
@@ -609,9 +646,11 @@ export default function Advertise() {
           avatarFileId: uploadedAvatarFileId || null,
           categoryId: categoryId || null,
           categoriaGeral: categoriaGeral || null,
-          endereco: showExactAddress ? [rua, numero, complemento].filter(Boolean).join(', ') : null,
+          endereco: enderecoComercial || null,
+          enderecoComercial: enderecoComercial || null,
           serviceBairro: bairro || null,
-          exibirEnderecoCompleto: showExactAddress ? exibirEnderecoCompleto : false,
+          exibirEnderecoCompleto: true,
+          partners: uploadedPartners.length > 0 ? uploadedPartners : null,
         })
       });
       const data = await response.json();
@@ -781,119 +820,36 @@ export default function Advertise() {
                 </div>
               </div>
 
-                {/* Toggle de Endereço */}
-                <div className="pt-4 mt-6 border-t border-slate-100">
-                  <div className="flex items-center justify-between mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div>
-                      <h4 className="font-medium text-slate-800">Adicionar endereço</h4>
-                      <p className="text-xs text-slate-500 mt-1">Escolha o que deseja exibir.</p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" checked={showExactAddress} onChange={() => setShowExactAddress(!showExactAddress)} />
-                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                    </label>
+                {/* Localização e Bairro */}
+                <div className="pt-4 mt-6 border-t border-slate-100 space-y-5">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Bairro de Atendimento</label>
+                    <input
+                      type="text"
+                      value={bairro}
+                      onChange={(e) => setBairro(e.target.value)}
+                      placeholder="Ex: Centro, Aldeota, Bairro de Fátima..."
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
+                      required
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      Informe o bairro onde você realiza seus atendimentos em Itapipoca.
+                    </p>
                   </div>
 
-                  {showExactAddress && (
-                    <div className="space-y-5 animate-in slide-in-from-top-2 duration-300">
-
-                      {/* Bairro (texto livre — preenchido automaticamente pelo CEP) */}
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Bairro</label>
-                        <input
-                          type="text"
-                          value={bairro}
-                          onChange={(e) => setBairro(e.target.value)}
-                          placeholder="Digite seu bairro ou preencha o CEP"
-                          className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary"
-                        />
-                      </div>
-
-                      {/* CEP + Buscar */}
-                      <div className="flex items-end gap-3">
-                        <div className="flex-1">
-                          <label className="block text-sm font-medium text-slate-700 mb-1">CEP <span className="text-slate-400 font-normal">(opcional)</span></label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              value={cep}
-                              onChange={handleCepChange}
-                              onBlur={handleCepBlur}
-                              placeholder="00000-000"
-                              className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary"
-                            />
-                            {loadingCep && (
-                              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full"></div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <button type="button" onClick={handleCepBlur} className="bg-slate-800 text-white px-5 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-slate-700">
-                          <Search size={18} /> Buscar
-                        </button>
-                      </div>
-
-                      {/* Rua */}
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Rua</label>
-                        <input type="text" value={rua} onChange={(e) => setRua(e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary" />
-                      </div>
-
-                      {/* Número + Complemento */}
-                      <div className="grid grid-cols-2 gap-5">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-1">Número</label>
-                          <input type="text" value={numero} onChange={(e) => setNumero(e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary" />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-1">Complemento</label>
-                          <input type="text" value={complemento} onChange={(e) => setComplemento(e.target.value)} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary" />
-                        </div>
-                      </div>
-
-                      {/* Radio Buttons — Privacidade */}
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mt-2">
-                        <p className="text-sm font-semibold text-slate-800 mb-3">O que o público poderá ver no seu perfil?</p>
-                        <div className="space-y-3">
-                          <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                            exibirEnderecoCompleto
-                              ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
-                              : 'border-slate-200 bg-white hover:bg-slate-50'
-                          }`}>
-                            <input
-                              type="radio"
-                              name="privacidadeEndereco"
-                              checked={exibirEnderecoCompleto === true}
-                              onChange={() => setExibirEnderecoCompleto(true)}
-                              className="h-4 w-4 text-primary focus:ring-primary border-slate-300"
-                            />
-                            <div>
-                              <span className="text-sm font-medium text-slate-800">Endereço completo</span>
-                              <span className="text-xs text-slate-500 block">Rua, Número e Bairro</span>
-                            </div>
-                          </label>
-                          <label className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                            !exibirEnderecoCompleto
-                              ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
-                              : 'border-slate-200 bg-white hover:bg-slate-50'
-                          }`}>
-                            <input
-                              type="radio"
-                              name="privacidadeEndereco"
-                              checked={exibirEnderecoCompleto === false}
-                              onChange={() => setExibirEnderecoCompleto(false)}
-                              className="h-4 w-4 text-primary focus:ring-primary border-slate-300"
-                            />
-                            <div>
-                              <span className="text-sm font-medium text-slate-800">Apenas o Bairro</span>
-                              <span className="text-xs text-slate-500 block">Mais privacidade — mostra só o nome do bairro</span>
-                            </div>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Endereço Comercial Dedicado <span className="text-slate-400 font-normal">(Opcional)</span></label>
+                    <input
+                      type="text"
+                      value={enderecoComercial}
+                      onChange={(e) => setEnderecoComercial(e.target.value)}
+                      placeholder="Ex: Rua Floriano Peixoto, 123 - Centro"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      Preencha apenas se possuir estabelecimento físico ou sede comercial (sala, clínica, loja).
+                    </p>
+                  </div>
                 </div>
 
               <div className="mt-8 flex justify-end">
@@ -1000,7 +956,7 @@ export default function Advertise() {
                         </div>
                       )}
                       <textarea
-                        rows={6}
+                        rows={12}
                         value={descricaoTrabalho}
                         disabled={isTranscribing}
                         onChange={(e) => setDescricaoTrabalho(e.target.value)}
@@ -1069,42 +1025,39 @@ export default function Advertise() {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-100">
-
-                  {/* Campo da Categoria Geral (somente leitura) */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Sua Categoria Principal
-                    </label>
-                    <input
-                      type="text"
-                      value={categoriaGeral || ''}
-                      readOnly
-                      placeholder="Preenchido automaticamente após a análise..."
-                      className="w-full px-4 py-3 border rounded-xl transition-colors bg-slate-100 text-slate-600 border-slate-200 focus:outline-none focus:ring-0 cursor-not-allowed"
-                    />
+                {/* Categorização por IA ou Fallback Manual */}
+                {categoriaGeral && atividadePrincipal && !aiFailed ? (
+                  <div className="pt-4 border-t border-slate-100 animate-in fade-in duration-300">
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-center gap-3">
+                      <Sparkles className="text-emerald-500 shrink-0 animate-pulse" size={20} />
+                      <div className="text-left">
+                        <span className="text-xs text-emerald-600 font-bold uppercase tracking-wider block">Classificação por Inteligência Artificial</span>
+                        <span className="text-sm text-slate-800 font-semibold">
+                          Definido como: <span className="text-emerald-700 font-bold">{categoriaGeral}</span> &raquo; <span className="text-emerald-700 font-bold">{atividadePrincipal}</span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
-
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Sua Atividade Principal {aiFailed ? '(Preencha manualmente)' : '(Definida pela IA)'}
-                  </label>
-                  <input
-                    type="text"
-                    value={atividadePrincipal || ''}
-                    readOnly={!aiFailed}
-                    onChange={aiFailed ? (e) => setAtividadePrincipal(e.target.value) : undefined}
-                    placeholder={aiFailed ? 'Ex: Encanador, Eletricista, Cabeleireira...' : 'Preenchido automaticamente após a análise...'}
-                    className={`w-full px-4 py-3 border rounded-xl transition-colors ${aiFailed
-                        ? 'bg-white text-slate-800 border-amber-400 focus:ring-2 focus:ring-amber-400 cursor-text'
-                        : 'bg-slate-100 text-slate-600 border-slate-200 focus:outline-none focus:ring-0 cursor-not-allowed'
-                      }`}
-                  />
-                  {aiFailed && (
-                    <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
-                      ⚠️ {aiErrorMsg}
-                    </p>
-                  )}
-                </div>
+                ) : aiFailed ? (
+                  <div className="pt-4 border-t border-slate-100 space-y-4 animate-in fade-in duration-300">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        Sua Atividade Principal <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={atividadePrincipal || ''}
+                        onChange={(e) => setAtividadePrincipal(e.target.value)}
+                        placeholder="Ex: Encanador, Eletricista, Cabeleireira..."
+                        required
+                        className="w-full px-4 py-3 bg-white border border-amber-400 rounded-xl focus:ring-2 focus:ring-amber-400 text-slate-800"
+                      />
+                      <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
+                        ⚠️ Não conseguimos categorizar automaticamente: {aiErrorMsg || 'Por favor, informe sua profissão.'}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <div className="mt-10 flex justify-between">
@@ -1130,14 +1083,14 @@ export default function Advertise() {
                 {/* Foto de Perfil */}
                 <div className="flex flex-col items-center">
                   <label htmlFor="avatar-upload" className="cursor-pointer group">
-                    <div className="w-28 h-28 bg-slate-100 rounded-full border-4 border-white shadow-lg flex items-center justify-center relative overflow-hidden group-hover:ring-4 group-hover:ring-primary/30 transition-all">
+                    <div className="w-32 h-32 bg-slate-100 rounded-full border-4 border-white shadow-lg flex items-center justify-center relative overflow-hidden group-hover:ring-4 group-hover:ring-primary/30 transition-all">
                       {avatarPreview ? (
                         <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
                       ) : (
-                        <Camera size={32} className="text-slate-400" />
+                        <Camera size={36} className="text-slate-400" />
                       )}
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Camera size={24} className="text-white" />
+                        <Camera size={28} className="text-white" />
                       </div>
                     </div>
                   </label>
@@ -1239,6 +1192,80 @@ export default function Advertise() {
                   )}
                 </div>
 
+                {/* Seção: Parceiros/Patrocinadores */}
+                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-slate-800 flex items-center gap-2"><Sparkles className="text-primary animate-pulse" size={18} /> Espaço Parceiro (Monetize seu Perfil)</h4>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Adicione até 3 patrocinadores ou parceiros locais no seu perfil profissional. O enquadramento exigido de enquadramento perfeito (16:9) ajudará você a revender este espaço para comércios locais!
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    {partners.map((partner, index) => (
+                      <div key={index} className="bg-white p-4 rounded-xl border border-slate-200/60 relative flex flex-col sm:flex-row gap-4 items-center animate-in fade-in duration-300">
+                        {/* Imagem Cropped Preview */}
+                        <div className="relative shrink-0 w-24 h-14 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+                          {partner.previewUrl ? (
+                            <img src={partner.previewUrl} alt={`Parceiro ${index + 1}`} className="w-full h-full object-contain" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 font-bold uppercase">Sem foto</div>
+                          )}
+                        </div>
+
+                        {/* Input de link e botão de remover */}
+                        <div className="flex-1 w-full space-y-2">
+                          <input
+                            type="text"
+                            value={partner.link}
+                            onChange={(e) => {
+                              const newPartners = [...partners];
+                              newPartners[index].link = e.target.value;
+                              setPartners(newPartners);
+                            }}
+                            placeholder="Link do parceiro (ex: https://wa.me/...)"
+                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-primary"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPartners(partners.filter((_, i) => i !== index));
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow hover:bg-red-600 transition-colors cursor-pointer"
+                          title="Remover parceiro"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+
+                    {partners.length < 3 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = (e) => {
+                            const file = e.target.files[0];
+                            if (!file) return;
+                            setCropTarget({
+                              type: 'partner',
+                              imageSrc: URL.createObjectURL(file),
+                            });
+                          };
+                          input.click();
+                        }}
+                        className="w-full py-3.5 border-2 border-dashed border-slate-350 hover:border-primary/50 text-slate-500 hover:text-primary rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer bg-slate-50/50 hover:bg-primary/5"
+                      >
+                        <Plus size={16} /> Adicionar Patrocinador/Parceiro ({partners.length}/3)
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {/* Portfolio Drag & Drop */}
                 <div>
                   <h4 className="font-medium text-slate-800 mb-2">Portfólio (Fotos do seu trabalho)</h4>
@@ -1335,6 +1362,27 @@ export default function Advertise() {
           )}
         </div>
       </div>
+
+      {cropTarget && (
+        <ImageCropperModal
+          imageSrc={cropTarget.imageSrc}
+          aspect={cropTarget.type === 'avatar' ? 1 : 16/9}
+          cropShape={cropTarget.type === 'avatar' ? 'round' : 'rect'}
+          onClose={() => setCropTarget(null)}
+          onCropComplete={(blob) => {
+            const file = new File([blob], cropTarget.type === 'avatar' ? 'avatar.jpg' : 'partner.jpg', { type: 'image/jpeg' });
+            const previewUrl = URL.createObjectURL(file);
+
+            if (cropTarget.type === 'avatar') {
+              setAvatarFile(file);
+              setAvatarPreview(previewUrl);
+            } else {
+              setPartners(prev => [...prev, { file, previewUrl, link: '' }]);
+            }
+            setCropTarget(null);
+          }}
+        />
+      )}
     </div>
   );
 }

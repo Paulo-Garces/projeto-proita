@@ -18,8 +18,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Award,
-  ShieldCheck
+  ShieldCheck,
+  Users,
+  Sparkles
 } from 'lucide-react';
+import SponsorSlider from '../components/SponsorSlider';
 
 const InstagramIcon = ({ size = 24, className }) => (
   <svg
@@ -599,21 +602,25 @@ export default function Profile() {
 
           {/* 3. Menu de Abas */}
           <div className="border-b border-slate-100 flex gap-4 overflow-x-auto scrollbar-none">
-            {['sobre', 'portfolio', 'servicos', 'avaliacoes'].map((tab) => {
+            {['sobre', 'portfolio', 'servicos', 'avaliacoes', 'parceiros'].map((tab) => {
               const label = {
                 sobre: 'Sobre',
                 portfolio: 'Portfólio',
                 servicos: 'Serviços',
-                avaliacoes: `Avaliações (${reviews.length})`
+                avaliacoes: `Avaliações (${reviews.length})`,
+                parceiros: 'Parceiros'
               }[tab];
               
               const isActive = activeTab === tab;
+              
+              // Oculta a aba parceiros no desktop (já que ela fica na sidebar no desktop)
+              const displayClass = tab === 'parceiros' ? 'lg:hidden' : '';
               
               return (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-4 px-4 font-bold text-sm transition-all border-b-2 -mb-[2px] whitespace-nowrap ${
+                  className={`py-4 px-4 font-bold text-sm transition-all border-b-2 -mb-[2px] whitespace-nowrap ${displayClass} ${
                     isActive 
                       ? 'border-indigo-600 text-indigo-600' 
                       : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -662,28 +669,74 @@ export default function Profile() {
                   </div>
 
                   {/* Quadro 3: Localização / Endereço */}
-                  <div className="bg-slate-50/50 rounded-3xl p-6 border border-slate-100">
-                    <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-                      <MapPin className="text-indigo-600" size={18} />
-                      Localização / Endereço
-                    </h3>
-                    {professional.enderecoComercial ? (
-                      <div className="space-y-2">
-                        <p className="text-slate-700 text-sm font-medium">
-                          {professional.enderecoComercial}
-                        </p>
-                        {professional.location && (
+                  <div className="bg-slate-50/50 rounded-3xl p-6 border border-slate-100 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <MapPin className="text-indigo-600" size={18} />
+                        Localização / Endereço
+                      </h3>
+                      {professional.enderecoComercial ? (
+                        <div className="space-y-2">
+                          <p className="text-slate-700 text-sm font-medium">
+                            {professional.enderecoComercial}
+                          </p>
+                          {professional.location && (
+                            <p className="text-slate-500 text-xs">
+                              Bairro de atuação principal: {professional.location}
+                            </p>
+                          )}
+                        </div>
+                      ) : professional.location ? (
+                        <div className="space-y-2">
+                          <p className="text-slate-700 text-sm font-medium">
+                            Atendimento a Domicílio
+                          </p>
                           <p className="text-slate-500 text-xs">
                             Bairro de atuação principal: {professional.location}
                           </p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-slate-400 text-sm italic">
-                        Endereço comercial não adicionado
-                      </p>
+                        </div>
+                      ) : (
+                        <p className="text-slate-400 text-sm italic">
+                          Localização não definida
+                        </p>
+                      )}
+                    </div>
+
+                    {(professional.enderecoComercial || professional.location) && (
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${professional.enderecoComercial || professional.location}, Itapipoca, CE`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-5 w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-800 border border-indigo-200 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-sm shadow-indigo-100/50"
+                      >
+                        <MapPin size={14} /> Como Chegar (Abrir GPS)
+                      </a>
                     )}
                   </div>
+
+                  {/* Quadro de Parceiros (Desktop Sidebar) */}
+                  {(() => {
+                    let list = [];
+                    try {
+                      list = typeof professional.partners === 'string'
+                        ? JSON.parse(professional.partners)
+                        : (professional.partners || []);
+                    } catch {
+                      list = professional.partners || [];
+                    }
+                    const valid = list.filter(p => p && p.imageUrl);
+                    if (valid.length === 0) return null;
+
+                    return (
+                      <div className="bg-slate-50/50 rounded-3xl p-6 border border-slate-100 hidden lg:block">
+                        <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                          <Users className="text-indigo-600" size={18} />
+                          Parceiro
+                        </h3>
+                        <SponsorSlider partners={valid} layout="sidebar" />
+                      </div>
+                    );
+                  })()}
 
                   {/* Quadro Extra de Garantias/Segurança */}
                   <div className="bg-gradient-to-br from-indigo-50/50 to-indigo-100/30 p-6 rounded-3xl border border-indigo-100/50 text-center">
@@ -936,6 +989,45 @@ export default function Profile() {
                     </p>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Aba 'Parceiros' (Mobile Only) */}
+            {activeTab === 'parceiros' && (
+              <div className="lg:hidden animate-in fade-in duration-300 space-y-6">
+                {(() => {
+                  let list = [];
+                  try {
+                    list = typeof professional.partners === 'string'
+                      ? JSON.parse(professional.partners)
+                      : (professional.partners || []);
+                  } catch {
+                    list = professional.partners || [];
+                  }
+                  const valid = list.filter(p => p && p.imageUrl);
+                  if (valid.length === 0) {
+                    return (
+                      <div className="bg-slate-50/50 rounded-3xl p-10 border border-slate-100 text-center">
+                        <Sparkles className="text-slate-300 mx-auto mb-4 animate-pulse" size={48} />
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">Sem Parceiros</h3>
+                        <p className="text-slate-500 text-sm max-w-md mx-auto italic">
+                          Este profissional ainda não cadastrou parceiros ou patrocinadores locais.
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-4">
+                      <div className="bg-gradient-to-br from-indigo-50/50 to-emerald-50/30 p-6 rounded-3xl border border-slate-100 text-center">
+                        <Sparkles className="text-indigo-600 mx-auto mb-3 animate-pulse" size={32} />
+                        <h4 className="font-bold text-slate-900 mb-1">Nossos Patrocinadores</h4>
+                        <p className="text-xs text-slate-600">Apoie os negócios locais que patrocinam e tornam este trabalho possível!</p>
+                      </div>
+                      <SponsorSlider partners={valid} layout="tab" />
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
