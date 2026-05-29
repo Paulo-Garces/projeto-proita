@@ -824,11 +824,13 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
             ...item,
             imageUrl: data.url,
             fileId: data.fileId,
+            originalImageUrl: cropTarget.imageSrc, // Preserva a imagem original local em memória
           } : item));
         } else {
           setAdPartners(prev => [...prev, {
             imageUrl: data.url,
             fileId: data.fileId,
+            originalImageUrl: cropTarget.imageSrc, // Armazena a imagem original local em memória
             link: '',
           }]);
         }
@@ -1176,13 +1178,15 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
                       Banner {activeSlideIndex + 1} de {adPartners.length}
                     </span>
                     
-                    <button
-                      type="button"
-                      onClick={() => setCropTarget({ imageSrc: adPartners[activeSlideIndex].imageUrl, index: activeSlideIndex })}
-                      className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold rounded-lg border border-white/25 flex items-center gap-1.5 w-36 justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm"
-                    >
-                      <Crop size={12} /> Reposicionar
-                    </button>
+                    {adPartners[activeSlideIndex]?.originalImageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setCropTarget({ imageSrc: adPartners[activeSlideIndex].originalImageUrl, index: activeSlideIndex })}
+                        className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold rounded-lg border border-white/25 flex items-center gap-1.5 w-36 justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm animate-in fade-in duration-300"
+                      >
+                        <Crop size={12} /> Reposicionar
+                      </button>
+                    )}
 
                     <button
                       type="button"
