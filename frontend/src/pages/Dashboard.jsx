@@ -2458,7 +2458,11 @@ export default function Dashboard() {
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
                               <div>
                                 <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">
-                                  Plano Profissional proITA (SaaS)
+                                  Plano Profissional proITA - {
+                                    status === 'ATIVO' ? 'Patrocinador' :
+                                    status === 'BASICO' ? 'Básico' :
+                                    status === 'DEGUSTACAO' ? 'Degustação' : 'Expirado'
+                                  }
                                 </h3>
                                 <p className="text-xs text-slate-500 mt-0.5">Assinatura vinculada à conta: {user?.email || user?.telefone}</p>
                               </div>
@@ -2494,7 +2498,6 @@ export default function Dashboard() {
                               </div>
                             </div>
 
-                            {/* Detalhes de anúncios e selos */}
                             <div className="bg-slate-50 border border-slate-200/50 rounded-2xl p-4 space-y-2">
                               <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Benefícios da Assinatura</h4>
                               <ul className="text-xs text-slate-600 space-y-1.5">
@@ -2502,7 +2505,7 @@ export default function Dashboard() {
                                   <span className="text-emerald-500 font-bold">✓</span> Limite de até 2 anúncios profissionais por conta (Atualmente cadastrados: {myAds.length}/2).
                                 </li>
                                 <li className="flex items-center gap-2">
-                                  <span className="text-emerald-500 font-bold">✓</span> {status === 'ATIVO' ? (
+                                  <span className="text-emerald-500 font-bold">✓</span> {status === 'ATIVO' || status === 'BASICO' ? (
                                     <span className="text-emerald-600 font-bold">Selos de Reputação ATIVOS e exibidos nos seus anúncios!</span>
                                   ) : (
                                     <span>Ative sua conta para exibir seus Selos de Reputação (Bronze, Prata e Ouro).</span>
@@ -2511,7 +2514,6 @@ export default function Dashboard() {
                               </ul>
                             </div>
 
-                            {/* Botões de Ação */}
                             <div className="flex flex-col sm:flex-row gap-3 pt-2">
                               <button
                                 onClick={handlePay}
@@ -2524,22 +2526,6 @@ export default function Dashboard() {
                                 className="flex-1 flex justify-center items-center bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 px-6 rounded-2xl font-bold text-sm transition-all active:scale-95 cursor-pointer"
                               >
                                 Gerar Recibo
-                              </button>
-                            </div>
-
-                            {/* Bloco Exclusivo de Desenvolvimento */}
-                            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 mt-6">
-                              <div className="flex items-center gap-2 mb-2 text-slate-700">
-                                <span className="text-xs font-bold uppercase tracking-wider">Modo Desenvolvimento</span>
-                              </div>
-                              <p className="text-xs text-slate-500 mb-3 leading-relaxed">
-                                Use o botão abaixo para simular instantaneamente a confirmação de pagamento de anuidade anual (365 dias) no banco de dados para a sua conta, ativando sua assinatura de plataforma.
-                              </p>
-                              <button
-                                onClick={handleSimulatePayment}
-                                className="w-full flex justify-center items-center bg-amber-500 hover:bg-amber-600 text-white py-2.5 px-4 rounded-xl font-bold text-xs transition-colors cursor-pointer shadow-sm shadow-amber-500/10"
-                              >
-                                🧪 Simular Pagamento (Teste)
                               </button>
                             </div>
                           </div>

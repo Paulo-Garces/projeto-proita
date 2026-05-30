@@ -223,11 +223,22 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                 {displayName?.[0]?.toUpperCase() || 'P'}
               </div>
             )}
-            {professional.verified && (
-              <span className="absolute bottom-0 right-0 translate-x-[2px] translate-y-[2px] bg-white rounded-full p-0.5 shadow-md z-10 flex items-center justify-center">
-                <CheckCircle size={22} className="text-blue-500 fill-blue-50" />
-              </span>
-            )}
+            
+            {/* Selo Reputação (Ativo ou Inativo) no bottom-0 right-0 da foto como condecoração */}
+            <div className="absolute bottom-0 right-0 translate-x-[2px] translate-y-[2px] bg-white rounded-full p-1 shadow-md z-10 flex items-center justify-center border border-slate-100 cursor-help" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+              {badge ? (
+                <span title={badge.title} className={`${badge.color} shrink-0`}>
+                  {badge.icon === 'ShieldCheck' ? <ShieldCheck size={20} className="stroke-[2.5]" /> : <Award size={20} className="stroke-[2.5]" />}
+                </span>
+              ) : (
+                <span 
+                  title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista." 
+                  className="text-gray-400 grayscale opacity-50 shrink-0" 
+                >
+                  <Award size={20} className="stroke-[2.5]" />
+                </span>
+              )}
+            </div>
           </Link>
         </div>
 
@@ -236,23 +247,13 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
           <div className="flex flex-col gap-1 min-w-0 justify-center items-start text-left flex-1">
             <div className="flex justify-between items-start w-full min-w-0 gap-1.5">
               <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors truncate">
-                <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate">
+                <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate flex items-center gap-1.5">
                   {displayName}
+                  {professional.verified && (
+                    <CheckCircle size={18} className="text-blue-500 fill-blue-50 shrink-0 inline-block align-middle" />
+                  )}
                 </h3>
               </Link>
-              {badge ? (
-                <span title={badge.title} className={`${badge.color} shrink-0`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                  {badge.icon === 'ShieldCheck' ? <ShieldCheck size={20} className="stroke-[2.5]" /> : <Award size={20} className="stroke-[2.5]" />}
-                </span>
-              ) : (
-                <span 
-                  title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista." 
-                  className="text-gray-400 grayscale opacity-50 shrink-0 cursor-help" 
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                >
-                  <Award size={20} className="stroke-[2.5]" />
-                </span>
-              )}
             </div>
             
             <Link 
@@ -267,10 +268,8 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                 ))}
               </div>
               <span className="text-xs font-bold text-slate-750 ml-1">{rating > 0 ? rating.toFixed(1) : 'Novo'}</span>
-              {reviewCount > 0 ? (
+              {reviewCount > 0 && (
                 <span className="text-[11px] text-slate-450 ml-1">({reviewCount} {reviewCount === 1 ? 'avaliação' : 'avaliações'})</span>
-              ) : (
-                <span className="text-[11px] text-slate-400 ml-1">(Sem avaliações)</span>
               )}
             </Link>
 

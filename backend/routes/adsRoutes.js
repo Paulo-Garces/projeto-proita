@@ -612,12 +612,27 @@ module.exports = (prisma) => {
     const userId = req.user.id;
 
     try {
-      const subscriptionEndsAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // Daqui a 365 dias
+      const { planId } = req.body || {};
+      
+      let planStatus = 'ATIVO';
+      let durationDays = 365;
+
+      if (planId) {
+        if (String(planId).toLowerCase().includes('basico')) {
+          planStatus = 'BASICO';
+        }
+        
+        if (String(planId).toLowerCase().includes('bienal')) {
+          durationDays = 730;
+        }
+      }
+
+      const subscriptionEndsAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
 
       const updatedUser = await prisma.user.update({
         where: { id: userId },
         data: {
-          planStatus: 'ATIVO',
+          planStatus,
           subscriptionEndsAt,
         }
       });

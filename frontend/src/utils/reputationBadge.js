@@ -18,9 +18,9 @@
 export function getReputationBadge(p) {
   if (!p) return null;
 
-  // 0. Elegibilidade de Assinatura: deve estar ATIVO
+  // 0. Elegibilidade de Assinatura: deve estar ATIVO ou BASICO
   const planStatus = p.user?.planStatus || p.planStatus || 'DEGUSTACAO';
-  if (planStatus !== 'ATIVO') return null;
+  if (planStatus !== 'ATIVO' && planStatus !== 'BASICO') return null;
 
   // 1. Conta criada há pelo menos 30 dias
   const createdAt = p.createdAt || p.profileCreatedAt;

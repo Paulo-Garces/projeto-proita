@@ -74,6 +74,31 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'API do proITA rodando com sucesso!' });
 });
 
+// Rota Temporária de Migração de Planos para Contas de Teste
+app.get('/api/admin/migrate-plans', async (req, res) => {
+  try {
+    const oneYearFromNow = new Date();
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
+    const updated = await prisma.user.updateMany({
+      data: {
+        planStatus: 'ATIVO',
+        subscriptionEndsAt: oneYearFromNow,
+        trialEndsAt: null
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `Migração concluída com sucesso! ${updated.count} usuários foram migrados para o plano Patrocinador por 1 ano.`,
+      count: updated.count
+    });
+  } catch (err) {
+    console.error('Erro na migração de planos:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Rota de teste do banco de dados usando Prisma
 app.get('/api/test-db', async (req, res) => {
   try {

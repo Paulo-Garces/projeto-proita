@@ -67,7 +67,7 @@ export default function Advertise() {
 
     // 1. Check if user has active plan/trial
     const isTrialExpired = user?.planStatus === 'DEGUSTACAO' && user?.trialEndsAt && new Date(user.trialEndsAt) < new Date();
-    const hasActivePlan = isAuthenticated && (user?.planStatus === 'ATIVO' || (user?.planStatus === 'DEGUSTACAO' && !isTrialExpired));
+    const hasActivePlan = isAuthenticated && (user?.planStatus === 'ATIVO' || user?.planStatus === 'BASICO' || (user?.planStatus === 'DEGUSTACAO' && !isTrialExpired));
 
     if (!hasActivePlan) {
       navigate('/planos');

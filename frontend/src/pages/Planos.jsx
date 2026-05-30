@@ -1,22 +1,27 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { CheckCircle, Sparkles } from 'lucide-react';
+import { CheckCircle, Sparkles, Check, X } from 'lucide-react';
 import { API_URL } from '../config';
 import AdCard from '../components/AdCard';
 
 export default function Planos() {
   const navigate = useNavigate();
   const { isAuthenticated, user, token, updateUser } = useContext(AuthContext);
+  const [billingCycle, setBillingCycle] = useState('anual');
 
-  const handlePlanCta = async (e) => {
+  const handlePlanCta = async (planId, e) => {
     e?.preventDefault();
+    if (planId) {
+      localStorage.setItem('selected_plan', planId);
+    }
+    
     if (!user) {
-      navigate('/auth?mode=register');
+      navigate(`/auth?mode=register&plan=${planId}`);
       return;
     }
 
-    if (user.planStatus === 'ATIVO' || user.planStatus === 'DEGUSTACAO') {
+    if (user.planStatus === 'ATIVO' || user.planStatus === 'BASICO' || user.planStatus === 'DEGUSTACAO') {
       navigate('/dashboard/novo-anuncio');
       return;
     }
@@ -27,7 +32,8 @@ export default function Planos() {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify({ planId })
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -108,7 +114,7 @@ export default function Planos() {
             {/* Direita: Botão de Chamada com Sol's Yellow e Header style */}
             <div className="md:col-span-4 flex justify-start md:justify-end items-center">
               <button
-                onClick={handlePlanCta}
+                onClick={(e) => handlePlanCta('trial', e)}
                 className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold px-6 py-2 rounded-full shadow-md transition-all text-base text-center select-none cursor-pointer"
               >
                 Começar
@@ -129,69 +135,196 @@ export default function Planos() {
         </div>
 
         {/* ========================================================================= */}
-        {/* 2. PRICING CARDS (SLIM & CENTERED IN SOLID COLORS)                        */}
+        {/* 2. DYNAMIC BILLING TOGGLE AND COMPARISON CARDS                            */}
         {/* ========================================================================= */}
-        <div className="flex flex-col md:flex-row justify-center gap-6 items-stretch max-w-4xl mx-auto mb-16">
+        
+        {/* Toggle de Ciclo de Faturamento */}
+        <div className="flex justify-center mb-10 select-none">
+          <div className="bg-slate-200/80 backdrop-blur-sm p-1 rounded-2xl flex items-center shadow-inner border border-slate-300/40">
+            <button
+              onClick={() => setBillingCycle('anual')}
+              className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 ${
+                billingCycle === 'anual'
+                  ? 'bg-white text-slate-900 shadow-md transform scale-100'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Cobrança Anual
+            </button>
+            <button
+              onClick={() => setBillingCycle('bienal')}
+              className={`px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 flex items-center gap-1.5 ${
+                billingCycle === 'bienal'
+                  ? 'bg-white text-slate-900 shadow-md transform scale-100'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Cobrança Bienal
+              <span className="bg-emerald-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black animate-pulse uppercase tracking-wider">
+                Desconto
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-col md:flex-row justify-center gap-8 items-stretch max-w-4xl mx-auto mb-16 px-4">
           
-          {/* Card 1: Plano Anual (Solid Soft Green Theme) */}
-          <div className="bg-[#4dbfa2] rounded-3xl p-8 flex flex-col justify-between hover:scale-[1.02] hover:shadow-2xl transition-all duration-300 relative w-full max-w-[260px] mx-auto md:mx-0">
-            <div className="text-left space-y-4 mb-8">
-              <h3 className="text-xl font-black text-slate-900 leading-none">Plano Anual</h3>
-              
-              <div className="flex items-baseline gap-1 select-none text-slate-900">
-                <span className="text-lg font-bold">R$</span>
-                <span className="text-5xl font-extrabold tracking-tight">35,90</span>
-                <span className="text-slate-800 font-bold text-xs">/ano</span>
+          {/* CARD 1: Plano Básico */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-8 flex flex-col justify-between hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 relative w-full max-w-[340px] mx-auto md:mx-0 shadow-md">
+            <div>
+              <div className="text-left space-y-4 mb-8">
+                <div className="inline-block bg-slate-100 text-slate-700 px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider">
+                  Essencial
+                </div>
+                <h3 className="text-2xl font-black text-slate-900 leading-none">Plano Básico</h3>
+                <p className="text-xs text-slate-500 font-bold leading-relaxed">
+                  Perfeito para divulgar seus serviços com extrema qualidade, avaliações reais e portfólio.
+                </p>
+                
+                <div className="pt-2 select-none">
+                  {billingCycle === 'anual' ? (
+                    <div className="space-y-1">
+                      <div className="flex items-baseline gap-1 text-slate-900">
+                        <span className="text-lg font-bold">R$</span>
+                        <span className="text-5xl font-extrabold tracking-tight">35,90</span>
+                        <span className="text-slate-500 font-bold text-sm">/ano</span>
+                      </div>
+                      <p className="text-xs font-extrabold text-emerald-600">
+                        (Apenas R$ 2,99 por mês)
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <div className="flex items-baseline gap-1 text-slate-900">
+                        <span className="text-lg font-bold">R$</span>
+                        <span className="text-5xl font-extrabold tracking-tight">59,90</span>
+                        <span className="text-slate-500 font-bold text-sm">/2 anos</span>
+                      </div>
+                      <p className="text-xs font-extrabold text-emerald-600">
+                        (Apenas R$ 2,49 por mês)
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-              
-              <p className="text-xs font-bold text-slate-800/80">
-                (Equivalente a 2,99 por mês)
-              </p>
-              
-              <p className="text-slate-950 text-sm font-extrabold pt-2 leading-relaxed">
-                Anúncio ativo por 12 meses + Período Grátis
-              </p>
+
+              {/* Divisor */}
+              <div className="h-px bg-slate-100 my-6"></div>
+
+              {/* Lista de Vantagens */}
+              <ul className="space-y-4 text-left">
+                <li className="flex items-start gap-3 text-slate-700 font-bold text-sm">
+                  <Check className="text-emerald-500 shrink-0 mt-0.5" size={18} />
+                  <span>Perfil completo no proITA</span>
+                </li>
+                <li className="flex items-start gap-3 text-slate-700 font-bold text-sm">
+                  <Check className="text-emerald-500 shrink-0 mt-0.5" size={18} />
+                  <span>Avaliações e notas completas</span>
+                </li>
+                <li className="flex items-start gap-3 text-slate-700 font-bold text-sm">
+                  <Check className="text-emerald-500 shrink-0 mt-0.5" size={18} />
+                  <span>Portfólio de serviços com fotos</span>
+                </li>
+                <li className="flex items-start gap-3 text-slate-700 font-bold text-sm">
+                  <Check className="text-emerald-500 shrink-0 mt-0.5" size={18} />
+                  <span>Selos de Verificação (Bronze/Prata/Ouro)</span>
+                </li>
+                {/* Restrição Clara */}
+                <li className="flex items-start gap-3 text-red-500/80 font-bold text-sm select-none">
+                  <X className="text-red-500 shrink-0 mt-0.5" size={18} />
+                  <span className="line-through">Sem acesso ao Espaço Parceiro (Monetização)</span>
+                </li>
+              </ul>
             </div>
 
             <button
-              onClick={handlePlanCta}
-              className="block w-full py-3.5 px-4 bg-[#eae8e6] hover:bg-[#dfdddb] text-slate-800 font-black text-center rounded-xl transition-all duration-200 active:scale-95 text-sm select-none cursor-pointer"
+              onClick={(e) => handlePlanCta(billingCycle === 'anual' ? 'basico_anual' : 'basico_bienal', e)}
+              className="block w-full py-4 px-4 bg-slate-900 hover:bg-slate-800 text-white font-black text-center rounded-2xl transition-all duration-200 active:scale-95 text-base select-none cursor-pointer mt-8 shadow-md"
             >
-              Assinar
+              Assinar Plano Básico
             </button>
           </div>
 
-          {/* Card 2: Plano Bienal (Solid Vibrant Blue Theme) */}
-          <div className="bg-[#009ee2] rounded-3xl p-8 flex flex-col justify-between hover:scale-[1.02] hover:shadow-2xl transition-all duration-300 relative w-full max-w-[260px] mx-auto md:mx-0">
-            {/* Top orange badge */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-orange-500 text-white px-4 py-1 rounded-full text-[10px] font-black shadow-md whitespace-nowrap animate-pulse select-none z-10">
-              Aprox. 16% de Economia
+          {/* CARD 2: Plano Patrocinador (Highlighted) */}
+          <div className="bg-slate-900 text-white rounded-3xl border-2 border-indigo-500 p-8 flex flex-col justify-between hover:shadow-2xl hover:shadow-indigo-500/20 hover:scale-[1.03] transition-all duration-300 relative w-full max-w-[340px] mx-auto md:mx-0 shadow-xl">
+            {/* Tag Recomendado */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 px-5 py-1.5 rounded-full text-xs font-black shadow-md uppercase tracking-wider animate-pulse whitespace-nowrap z-10">
+              Recomendado
             </div>
 
-            {/* Pure white text inside this card for clear contrast */}
-            <div className="text-left space-y-4 mb-8 text-white">
-              <h3 className="text-xl font-black leading-none pt-1">Plano Bienal</h3>
-              
-              <div className="flex items-baseline gap-1 select-none text-white">
-                <span className="text-lg font-bold">R$</span>
-                <span className="text-5xl font-extrabold tracking-tight">59,90</span>
-                <span className="text-blue-100 font-bold text-xs">/2 anos</span>
+            <div>
+              <div className="text-left space-y-4 mb-8">
+                <div className="flex justify-between items-center">
+                  <div className="inline-block bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider">
+                    Premium
+                  </div>
+                  {billingCycle === 'bienal' && (
+                    <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider shrink-0 select-none">
+                      Economize R$ 11,90
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-2xl font-black text-white leading-none">Plano Patrocinador</h3>
+                <p className="text-xs text-slate-350 font-bold leading-relaxed">
+                  Todos os benefícios inclusos + direito a revender espaço publicitário local diretamente no perfil!
+                </p>
+                
+                <div className="pt-2 select-none">
+                  {billingCycle === 'anual' ? (
+                    <div className="space-y-1">
+                      <div className="flex items-baseline gap-1 text-white">
+                        <span className="text-lg font-bold">R$</span>
+                        <span className="text-5xl font-extrabold tracking-tight">45,90</span>
+                        <span className="text-slate-350 font-bold text-sm">/ano</span>
+                      </div>
+                      <p className="text-xs font-extrabold text-amber-400">
+                        (Apenas R$ 3,82 por mês)
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <div className="flex items-baseline gap-1 text-white">
+                        <span className="text-lg font-bold">R$</span>
+                        <span className="text-5xl font-extrabold tracking-tight">79,90</span>
+                        <span className="text-slate-350 font-bold text-sm">/2 anos</span>
+                      </div>
+                      <p className="text-xs font-extrabold text-amber-400">
+                        (Apenas R$ 3,32 por mês - Poupe R$ 11,90!)
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-              
-              <p className="text-xs font-bold text-blue-100">
-                (Equivalente a 2,48 por mês)
-              </p>
-              
-              <p className="text-blue-50 text-sm font-extrabold pt-2 leading-relaxed">
-                Anúncio ativo por 24 meses + Período Grátis
-              </p>
+
+              {/* Divisor */}
+              <div className="h-px bg-slate-800 my-6"></div>
+
+              {/* Lista de Vantagens */}
+              <ul className="space-y-4 text-left">
+                <li className="flex items-start gap-3 text-slate-200 font-bold text-sm">
+                  <Check className="text-indigo-400 shrink-0 mt-0.5" size={18} />
+                  <span>Todos os benefícios do plano básico</span>
+                </li>
+                <li className="flex items-start gap-3 text-slate-200 font-bold text-sm">
+                  <Check className="text-indigo-400 shrink-0 mt-0.5" size={18} />
+                  <span>Destaque prioritário na busca do guia</span>
+                </li>
+                <li className="flex items-start gap-3 text-slate-200 font-bold text-sm">
+                  <Check className="text-indigo-400 shrink-0 mt-0.5" size={18} />
+                  <span>Suporte prioritário e relatórios de acessos</span>
+                </li>
+                <li className="flex items-start gap-3 text-amber-400 font-black text-sm bg-indigo-950/40 border border-indigo-500/30 p-3 rounded-2xl">
+                  <Sparkles className="text-amber-400 shrink-0 mt-0.5 animate-pulse" size={18} />
+                  <span>Libera a revenda de 3 cotas do Espaço Parceiro (Monetize seu perfil!)</span>
+                </li>
+              </ul>
             </div>
 
             <button
-              onClick={handlePlanCta}
-              className="block w-full py-3.5 px-4 bg-[#eae8e6] hover:bg-[#dfdddb] text-slate-800 font-black text-center rounded-xl transition-all duration-200 active:scale-95 text-sm select-none cursor-pointer"
+              onClick={(e) => handlePlanCta(billingCycle === 'anual' ? 'patrocinador_anual' : 'patrocinador_bienal', e)}
+              className="block w-full py-4 px-4 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-center rounded-2xl transition-all duration-200 active:scale-95 text-base select-none cursor-pointer mt-8 shadow-lg shadow-amber-500/20"
             >
-              Assinar
+              Assinar Plano Patrocinador
             </button>
           </div>
 
@@ -212,7 +345,7 @@ export default function Planos() {
               Com o novo recurso de <span className="text-indigo-600 font-extrabold">Espaço Parceiro</span>, você pode fazer o upload de até 3 logotipos de comerciantes locais (mercantis, oficinas, salões de beleza ou lojas de amigos) diretamente no seu perfil público.
             </p>
             <p className="text-xs text-slate-500 leading-relaxed font-normal">
-              Cobrando apenas R$ 5,00/mês de cada patrocinador local, você acumula R$ 15,00 mensais — custeando totalmente a sua anuidade do proITA (de R$ 35,90 ou R$ 59,90, que equivalem a apenas R$ 2,99 ou R$ 2,48 por mês) e ainda gera lucro líquido direto no seu bolso!
+              Cobrando apenas R$ 5,00/mês de cada patrocinador local, você acumula R$ 15,00 mensais — custeando totalmente a sua anuidade do proITA (de R$ 45,90 ou R$ 79,90, que equivalem a apenas R$ 3,82 ou R$ 3,32 por mês) e ainda gera lucro líquido direto no seu bolso!
             </p>
           </div>
           <div className="bg-amber-400 text-slate-900 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider whitespace-nowrap shadow-sm">
@@ -251,6 +384,10 @@ export default function Planos() {
             <li className="flex items-center gap-3">
               <CheckCircle className="text-[#009ee2] shrink-0" size={20} />
               Portfólio
+            </li>
+            <li className="flex items-center gap-3 md:col-span-2 text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-2 rounded-2xl shadow-xs">
+              <Sparkles className="text-indigo-650 shrink-0 animate-pulse" size={20} />
+              <span>Acesso exclusivo à revenda de 3 cotas publicitárias no <strong>Espaço Parceiro</strong></span>
             </li>
           </ul>
         </div>
@@ -303,7 +440,7 @@ export default function Planos() {
         {/* ========================================================================= */}
         <div className="mt-20 text-center select-none animate-in fade-in duration-500">
           <button
-            onClick={handlePlanCta}
+            onClick={(e) => handlePlanCta('trial', e)}
             className="bg-[#009ee2] hover:bg-[#008cc9] text-white text-base font-black px-14 py-4.5 rounded-2xl transition-all shadow-lg shadow-sky-300/40 hover:scale-105 active:scale-95 inline-block cursor-pointer animate-bounce"
           >
             Começar
