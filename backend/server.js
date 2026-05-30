@@ -770,6 +770,89 @@ app.use('/api/upload', uploadRoutes);
 const serviceRoutes = require('./routes/serviceRoutes')(prisma);
 app.use('/api/services', serviceRoutes);
 
+// Helper local de classificação caso o Gemini falhe (ex: API key expirada ou rede)
+function localKeywordClassifier(description) {
+  const desc = (description || '').toLowerCase();
+  let categoriaGeral = "Outros Serviços";
+  let atividadePrincipal = "Prestador de Serviços";
+  let descricaoCurta = "Profissional dedicado a oferecer serviços de qualidade.";
+  let biografiaCompleta = "Olá! Ofereço serviços especializados com foco em qualidade, pontualidade e satisfação do cliente. Entre em contato para conversarmos sobre suas necessidades e fazer um orçamento sem compromisso.";
+
+  if (desc.includes("cano") || desc.includes("vazamento") || desc.includes("encanador") || desc.includes("hidraulica") || desc.includes("infiltração")) {
+    categoriaGeral = "Reparos e Assistência Técnica";
+    atividadePrincipal = "Encanador";
+    descricaoCurta = "Especialista em reparos hidráulicos, vazamentos e desentupimentos.";
+    biografiaCompleta = "Olá! Sou encanador profissional com anos de experiência no mercado. Trabalho com dedicação e agilidade para solucionar problemas de infiltrações, consertos de torneiras, válvulas, encanamentos em geral e desentupimento de pias e ralos. Atendimento rápido e garantido, sempre buscando a satisfação dos meus clientes com orçamentos justos.";
+  } else if (desc.includes("eletricista") || desc.includes("energia") || desc.includes("fio") || desc.includes("tomada") || desc.includes("disjuntor") || desc.includes("elétrica")) {
+    categoriaGeral = "Reparos e Assistência Técnica";
+    atividadePrincipal = "Eletricista";
+    descricaoCurta = "Soluções elétricas seguras para sua residência ou comércio.";
+    biografiaCompleta = "Olá! Ofereço serviços de eletricista com máxima segurança e conformidade técnica. Realizo desde a troca de tomadas e chuveiros até reformas completas de quadros de distribuição, fiação e projetos de iluminação. Conte com um serviço limpo, organizado e focado na segurança do seu patrimônio e da sua família.";
+  } else if (desc.includes("cabelo") || desc.includes("corte") || desc.includes("escova") || desc.includes("unha") || desc.includes("manicure") || desc.includes("pedicure") || desc.includes("estética") || desc.includes("maquiagem") || desc.includes("barba") || desc.includes("sobrancelha")) {
+    categoriaGeral = "Beleza e Estética";
+    atividadePrincipal = desc.includes("unha") || desc.includes("manicure") ? "Manicure e Pedicure" : (desc.includes("barba") || desc.includes("barbeiro") ? "Barbeiro" : "Cabeleireira");
+    descricaoCurta = "Realçando sua beleza e bem-estar com atendimento personalizado.";
+    biografiaCompleta = "Olá! Sou especialista em estética e bem-estar, dedicada a proporcionar a melhor experiência de cuidados pessoais para você. Utilizo produtos de alta qualidade e técnicas modernas para garantir um resultado incrível que eleva sua autoestima. Venha cuidar de você em um ambiente confortável ou no aconchego do seu lar.";
+  } else if (desc.includes("bolo") || desc.includes("doce") || desc.includes("comida") || desc.includes("salgado") || desc.includes("buffet") || desc.includes("gastronomia") || desc.includes("cozinha") || desc.includes("salgados") || desc.includes("doces")) {
+    categoriaGeral = "Alimentação e Gastronomia";
+    atividadePrincipal = desc.includes("confeitaria") || desc.includes("bolo") || desc.includes("doce") ? "Confeiteira" : "Cozinheira";
+    descricaoCurta = "Sabores inesquecíveis para seus momentos especiais.";
+    biografiaCompleta = "Olá! Preparo alimentos com muito amor, higiene e ingredientes selecionados. Trabalho sob encomenda para festas, eventos ou consumo diário, com opções deliciosas que agradam a todos os paladares. Entre em contato para conhecer nosso cardápio e fazer seu pedido com antecedência!";
+  } else if (desc.includes("obra") || desc.includes("reforma") || desc.includes("pedreiro") || desc.includes("pintor") || desc.includes("parede") || desc.includes("tijolo") || desc.includes("cimento") || desc.includes("azulejo") || desc.includes("gesso")) {
+    categoriaGeral = "Construção e Reformas";
+    atividadePrincipal = desc.includes("pintor") || desc.includes("pintura") ? "Pintor" : "Pedreiro";
+    descricaoCurta = "Construindo e reformando seus sonhos com qualidade e confiança.";
+    biografiaCompleta = "Olá! Atuo na área de construção e reformas oferecendo serviços de alta qualidade, acabamento impecável e respeito aos prazos combinados. Seja uma pequena reforma residencial ou uma grande obra comercial, conto com experiência para executar desde a fundação até os retoques de acabamento e pintura. Solicite um orçamento!";
+  } else if (desc.includes("aula") || desc.includes("professor") || desc.includes("ensino") || desc.includes("matemática") || desc.includes("inglês") || desc.includes("português") || desc.includes("explicador") || desc.includes("tutoria")) {
+    categoriaGeral = "Educação e Aulas";
+    atividadePrincipal = "Professor Particular";
+    descricaoCurta = "Aulas particulares personalizadas para o seu desenvolvimento acadêmico.";
+    biografiaCompleta = "Olá! Ofereço suporte pedagógico e aulas particulares personalizadas para ajudar estudantes a superarem dificuldades escolares, se prepararem para exames ou aprenderem um novo idioma. Com metodologia dinâmica e foco nas necessidades individuais de cada aluno, garanto um aprendizado leve e eficiente.";
+  } else if (desc.includes("limpeza") || desc.includes("diarista") || desc.includes("faxina") || desc.includes("passar") || desc.includes("lavar") || desc.includes("doméstica") || desc.includes("passadeira")) {
+    categoriaGeral = "Serviços Domésticos e Cuidados";
+    atividadePrincipal = "Diarista";
+    descricaoCurta = "Organização e limpeza impecável para a sua casa ou escritório.";
+    biografiaCompleta = "Olá! Presto serviços de limpeza e organização doméstica com total discrição, confiança e agilidade. Garanto um ambiente cheiroso, limpo e super agradável para você aproveitar seu tempo livre com o que realmente importa. Disponibilidade para diárias avulsas ou pacotes quinzenais e mensais.";
+  } else if (desc.includes("cachorro") || desc.includes("gato") || desc.includes("pet") || desc.includes("banho") || desc.includes("tosa") || desc.includes("passeador")) {
+    categoriaGeral = "Serviços Domésticos e Cuidados";
+    atividadePrincipal = "Pet Sitter / Tosador(a)";
+    descricaoCurta = "Cuidado amoroso e profissional para o seu melhor amigo de quatro patas.";
+    biografiaCompleta = "Olá! Sou apaixonado por animais e ofereço serviços de Pet Sitter e passeios para cães e gatos. Cuido do seu pet com toda a atenção, carinho e responsabilidade que ele merece enquanto você trabalha ou viaja. Mantenho você atualizado com fotos e vídeos diários para sua total tranquilidade.";
+  } else if (desc.includes("computador") || desc.includes("site") || desc.includes("desenvolvedor") || desc.includes("programador") || desc.includes("design") || desc.includes("logotipo") || desc.includes("marketing") || desc.includes("digital") || desc.includes("ti") || desc.includes("suporte")) {
+    categoriaGeral = "Tecnologia e Design";
+    atividadePrincipal = desc.includes("design") || desc.includes("logotipo") ? "Designer Gráfico" : "Desenvolvedor Web";
+    descricaoCurta = "Transformando ideias em soluções digitais criativas e eficientes.";
+    biografiaCompleta = "Olá! Auxilio empresas e profissionais liberais a se posicionarem de forma profissional no mundo digital. Desenvolvimento de websites modernos, identidades visuais marcantes, design para redes sociais e suporte em tecnologia com foco em gerar resultados e destacar sua marca no mercado.";
+  } else if (desc.includes("frete") || desc.includes("mudança") || desc.includes("carreto") || desc.includes("transporte") || desc.includes("viagem") || desc.includes("motorista") || desc.includes("entregador") || desc.includes("motoboy")) {
+    categoriaGeral = "Transporte e Logística";
+    atividadePrincipal = desc.includes("mudança") || desc.includes("frete") || desc.includes("carreto") ? "Profissional de Mudanças" : "Motorista Particular";
+    descricaoCurta = "Transporte seguro, pontual e com total responsabilidade.";
+    biografiaCompleta = "Olá! Trabalho com serviços de carretos, mudanças e transportes em geral. Conto com veículo adequado e toda a dedicação para que seus pertences cheguem ao destino final de forma intacta e no horário combinado. Atendimento com responsabilidade e foco na segurança da sua carga.";
+  } else if (desc.includes("médico") || desc.includes("fisioterapeuta") || desc.includes("massagem") || desc.includes("terapia") || desc.includes("psicólogo") || desc.includes("saúde") || desc.includes("dentista") || desc.includes("personal") || desc.includes("treino")) {
+    categoriaGeral = "Saúde e Bem-estar";
+    atividadePrincipal = desc.includes("massagem") || desc.includes("massoterapeuta") ? "Massoterapeuta" : (desc.includes("psicólogo") || desc.includes("terapia") ? "Terapeuta" : "Fisioterapeuta");
+    descricaoCurta = "Promovendo saúde, equilíbrio e qualidade de vida para você.";
+    biografiaCompleta = "Olá! Sou profissional da área da saúde e bem-estar, focado em oferecer tratamentos personalizados para alívio de dores, reabilitação física ou equilíbrio mental. Através de técnicas modernas e atendimento humanizado, ajudo você a conquistar uma rotina mais saudável e livre de limitações.";
+  } else if (desc.includes("jardim") || desc.includes("grama") || desc.includes("planta") || desc.includes("poda") || desc.includes("paisagismo") || desc.includes("rural") || desc.includes("fazenda") || desc.includes("jardineiro")) {
+    categoriaGeral = "Serviços Rurais e Paisagismo";
+    atividadePrincipal = "Jardineiro";
+    descricaoCurta = "Deixando seu jardim verdejante, saudável e sempre florido.";
+    biografiaCompleta = "Olá! Ofereço serviços completos de jardinagem e paisagismo para residências, condomínios e chácaras. Realizo poda de árvores, corte de grama, plantio de mudas, controle de pragas e manutenção geral de canteiros. Transformo sua área externa em um espaço agradável e harmonioso com a natureza.";
+  } else if (desc.includes("costura") || desc.includes("roupa") || desc.includes("ajuste") || desc.includes("conserto") || desc.includes("moda") || desc.includes("costureira") || desc.includes("alfaiate")) {
+    categoriaGeral = "Moda e Costura";
+    atividadePrincipal = "Costureira";
+    descricaoCurta = "Ajustes precisos e confecções sob medida para valorizar seu estilo.";
+    biografiaCompleta = "Olá! Sou costureira especializada em reformas de roupas, bainhas, ajustes de medidas, troca de zíperes e confecção de peças sob medida. Trabalho com fino acabamento e muito zelo por cada tecido, garantindo que suas roupas tenham o caimento perfeito e durem por muito mais tempo.";
+  } else if (desc.includes("festa") || desc.includes("cerimonial") || desc.includes("decoração") || desc.includes("música") || desc.includes("dj") || desc.includes("show") || desc.includes("evento") || desc.includes("fotógrafo") || desc.includes("foto")) {
+    categoriaGeral = "Eventos e Produção";
+    atividadePrincipal = desc.includes("fotógrafo") || desc.includes("foto") ? "Fotógrafo" : "Produtor de Eventos";
+    descricaoCurta = "Eternizando seus momentos mais felizes com profissionalismo.";
+    biografiaCompleta = "Olá! Ajudo a transformar seu evento ou comemoração em um momento mágico e inesquecível. Desde a organização de cerimoniais até serviços artísticos como fotografia e música, coloco dedicação em cada detalhe para que você e seus convidados apenas desfrutem da festa.";
+  }
+
+  return { categoriaGeral, atividadePrincipal, descricaoCurta, biografiaCompleta };
+}
+
 // Configuração do Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -781,51 +864,76 @@ app.post('/api/analyze-description', async (req, res) => {
       return res.status(400).json({ error: 'Descrição é obrigatória.' });
     }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    let parsedResult = null;
 
-    const prompt = `Você é um assistente de categorização de serviços de alto nível. Leia a descrição do serviço a seguir.
-    Identifique a ÚNICA PROFISSÃO PRINCIPAL (a especialidade dominante) e gere dois textos de marketing.
-    
-    REGRA ABSOLUTA DE CATEGORIZAÇÃO:
-    Você é OBRIGADA a classificar o serviço em EXATAMENTE UMA destas categorias abaixo (copie o nome exato):
-    - Alimentação e Gastronomia
-    - Beleza e Estética
-    - Construção e Reformas
-    - Educação e Aulas
-    - Eventos e Produção
-    - Reparos e Assistência Técnica
-    - Serviços Domésticos e Cuidados
-    - Tecnologia e Design
-    - Transporte e Logística
-    - Saúde e Bem-estar
-    - Serviços Rurais e Paisagismo
-    - Moda e Costura
-    - Turismo e Lazer
-    - Serviços Administrativos e Consultoria
-    - Outros Serviços
-    
-    Retorne um JSON estrito contendo quatro chaves:
-    1. "categoriaGeral": O nome EXATO de uma das categorias da lista acima. Se não se encaixar em nenhuma, use "Outros Serviços".
-    2. "atividadePrincipal": A profissão exata e principal (ex: Encanador, Fisioterapeuta, Vaqueiro, Digital Maker).
-    3. "descricaoCurta": Uma frase de impacto com NO MÁXIMO 90 caracteres descrevendo o profissional.
-    4. "biografiaCompleta": O texto de marketing persuasivo completo (cerca de 2 a 3 parágrafos curtos, em primeira pessoa).
-    
-    Apenas retorne o JSON, sem formatação Markdown.
-    
-    Descrição original do usuário: "${description}"`;
+    try {
+      if (process.env.GEMINI_API_KEY) {
+        const model = genAI.getGenerativeModel({ 
+          model: "gemini-2.5-flash",
+          generationConfig: { responseMimeType: "application/json" }
+        });
 
-    const result = await model.generateContent(prompt);
-    let text = result.response.text();
+        const prompt = `Você é um assistente de categorização de serviços de alto nível. Leia a descrição do serviço a seguir.
+        Identifique a ÚNICA PROFISSÃO PRINCIPAL (a especialidade dominante) e gere dois textos de marketing.
+        
+        REGRA ABSOLUTA DE CATEGORIZAÇÃO:
+        Você é OBRIGADA a classificar o serviço em EXATAMENTE UMA destas categorias abaixo (copie o nome exato):
+        - Alimentação e Gastronomia
+        - Beleza e Estética
+        - Construção e Reformas
+        - Educação e Aulas
+        - Eventos e Produção
+        - Reparos e Assistência Técnica
+        - Serviços Domésticos e Cuidados
+        - Tecnologia e Design
+        - Transporte e Logística
+        - Saúde e Bem-estar
+        - Serviços Rurais e Paisagismo
+        - Moda e Costura
+        - Turismo e Lazer
+        - Serviços Administrativos e Consultoria
+        - Outros Serviços
+        
+        Retorne um JSON estrito contendo quatro chaves:
+        1. "categoriaGeral": O nome EXATO de uma das categorias da lista acima. Se não se encaixar em nenhuma, use "Outros Serviços".
+        2. "atividadePrincipal": A profissão exata e principal (ex: Encanador, Fisioterapeuta, Vaqueiro, Digital Maker).
+        3. "descricaoCurta": Uma frase de impacto com NO MÁXIMO 90 caracteres descrevendo o profissional.
+        4. "biografiaCompleta": O texto de marketing persuasivo completo (cerca de 2 a 3 parágrafos curtos, em primeira pessoa).
+        
+        Apenas retorne o JSON, sem formatação Markdown.
+        
+        Descrição original do usuário: "${description}"`;
 
-    // Limpar formatação Markdown se a IA retornar (ex: ```json ... ```)
-    text = text.replace(/```json\n?|\n?```/g, '').trim();
+        const result = await model.generateContent(prompt);
+        let text = result.response.text();
 
-    const jsonResult = JSON.parse(text);
-    const { categoriaGeral, atividadePrincipal, descricaoCurta, biografiaCompleta } = jsonResult;
+        // Limpar formatação Markdown se a IA retornar (ex: ```json ... ```)
+        text = text.replace(/```json\n?|\n?```/g, '').trim();
 
-    if (!categoriaGeral || !atividadePrincipal) {
-      return res.status(500).json({ error: 'Falha ao analisar a descrição pela IA. Campos faltando.' });
+        // Isolar o JSON se vier com texto extra
+        const firstBrace = text.indexOf('{');
+        const lastBrace = text.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+          text = text.substring(firstBrace, lastBrace + 1);
+        }
+
+        const jsonResult = JSON.parse(text);
+        const { categoriaGeral, atividadePrincipal, descricaoCurta, biografiaCompleta } = jsonResult;
+
+        if (categoriaGeral && atividadePrincipal) {
+          parsedResult = { categoriaGeral, atividadePrincipal, descricaoCurta, biografiaCompleta };
+        }
+      }
+    } catch (aiErr) {
+      console.warn('Erro ao chamar a API do Gemini. Usando classificador de fallback local:', aiErr.message || aiErr);
     }
+
+    // Se a IA falhou, usa o classificador local de palavras-chave
+    if (!parsedResult) {
+      parsedResult = localKeywordClassifier(description);
+    }
+
+    const { categoriaGeral, atividadePrincipal, descricaoCurta, biografiaCompleta } = parsedResult;
 
     // Auto-criação ou Busca no Banco de Dados
     // 1. Upsert da Categoria (busca pelo nome, cria se não existir)

@@ -1068,7 +1068,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
             Espaço Parceiro (Monetize seu Perfil)
           </h4>
           <p className="text-xs text-slate-500 mt-1">
-            Venda o espaço "Parceiro" de seu perfil para comerciantes ou patrocinadores locais. Adicione até 3 patrocinadores e seus respectivos links. O recorte perfeito vertical (9:16) garante que o carrossel tenha um visual story incrível!
+            Venda o espaço "Parceiro" de seu perfil para comerciantes ou patrocinadores locais. Adicione até 3 patrocinadores e seus respectivos links. O recorte perfeito vertical (3:4) garante que o carrossel tenha um visual incrível!
           </p>
         </div>
 
@@ -1107,7 +1107,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Visualização em Tempo Real</span>
                 
                 <div 
-                  className="relative w-[210px] h-[373px] rounded-3xl border-4 border-slate-100 bg-slate-900 overflow-hidden shadow-xl group/story select-none flex items-center justify-center shrink-0 transition-transform duration-300"
+                  className="relative w-[280px] h-[373px] rounded-3xl border-4 border-slate-100 bg-slate-900 overflow-hidden shadow-xl group/story select-none flex items-center justify-center shrink-0 transition-transform duration-300"
                   onMouseEnter={() => setIsHovered(true)}
                   onMouseLeave={() => setIsHovered(false)}
                 >
@@ -1276,7 +1276,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
                       }`}
                     >
                       {/* Crop Preview Aspect 9:16 Mini Thumbnail */}
-                      <div className="w-10 h-16 bg-slate-200 rounded-lg overflow-hidden border border-slate-200 shrink-0 relative flex items-center justify-center">
+                      <div className="w-12 h-16 bg-slate-200 rounded-lg overflow-hidden border border-slate-200 shrink-0 relative flex items-center justify-center">
                         {partner.imageUrl ? (
                           <img src={partner.imageUrl} alt="" className="w-full h-full object-cover" />
                         ) : (
@@ -1288,7 +1288,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
                       <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-between gap-1 mb-1">
                           <span className="text-[11px] font-bold text-slate-700">Patrocinador {idx + 1}</span>
-                          <span className="text-[9px] font-semibold text-slate-400">Enquadramento Story (9:16)</span>
+                          <span className="text-[9px] font-semibold text-slate-400">Enquadramento Banner (3:4)</span>
                         </div>
 
                         <div className="relative">
@@ -1339,7 +1339,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
         {cropTarget && (
           <ImageCropperModal
             imageSrc={cropTarget.imageSrc}
-            aspect={9/16}
+            aspect={3/4}
             cropShape="rect"
             onClose={() => setCropTarget(null)}
             onCropComplete={handleCroppedPartner}

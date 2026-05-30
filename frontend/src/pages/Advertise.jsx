@@ -3,11 +3,29 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 import imageCompression from 'browser-image-compression';
-import { Briefcase, MapPin, AlignLeft, CheckCircle, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, Square, Send } from 'lucide-react';
+import { Briefcase, MapPin, AlignLeft, CheckCircle, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, Square, Send, Pause, Play, Lock } from 'lucide-react';
 import ImageCropperModal from '../components/ImageCropperModal';
 
 const MAX_PORTFOLIO_FILES = 8;
-const MAX_PORTFOLIO_MB = 2;
+const MAX_PORTFOLIO_MB = 5;
+
+const LISTA_CATEGORIAS = [
+  "Alimentação e Gastronomia",
+  "Beleza e Estética",
+  "Construção e Reformas",
+  "Educação e Aulas",
+  "Eventos e Produção",
+  "Reparos e Assistência Técnica",
+  "Serviços Domésticos e Cuidados",
+  "Tecnologia e Design",
+  "Transporte e Logística",
+  "Saúde e Bem-estar",
+  "Serviços Rurais e Paisagismo",
+  "Moda e Costura",
+  "Turismo e Lazer",
+  "Serviços Administrativos e Consultoria",
+  "Outros Serviços"
+];
 
 const NETWORK_TO_PLATFORM = {
   Instagram: 'instagram',
@@ -109,6 +127,20 @@ export default function Advertise() {
   const [rua, setRua] = useState('');
   const [numero, setNumero] = useState('');
   const [complemento, setComplemento] = useState('');
+
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (!nomeExibicao) {
+        const fullCadName = [user.nome, user.sobrenome].filter(Boolean).join(' ').trim();
+        setNomeExibicao(fullCadName);
+      }
+      if (!telefoneComercial && user.telefone) {
+        setTelefoneComercial(formatPhone(user.telefone));
+      }
+    }
+  }, [user]);
 
   // Step 2 states
   const [atividadePrincipal, setAtividadePrincipal] = useState('');
@@ -249,8 +281,9 @@ export default function Advertise() {
       .slice(0, 3);
   };
 
-  const handleAnalyzeDescription = async () => {
-    if (!descricaoTrabalho?.trim() || isAnalyzing) return;
+  const handleAnalyzeDescription = async (textToAnalyze) => {
+    const text = typeof textToAnalyze === 'string' ? textToAnalyze : descricaoTrabalho;
+    if (!text?.trim() || isAnalyzing) return;
     setIsAnalyzing(true);
     setAiFailed(false);
     setAiErrorMsg('');
@@ -261,7 +294,7 @@ export default function Advertise() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ description: descricaoTrabalho })
+        body: JSON.stringify({ description: text })
       });
       const data = await response.json();
       if (response.ok && data?.success && data?.data?.subcategory?.name) {
@@ -368,7 +401,7 @@ export default function Advertise() {
 
         const rawHeight = (amplitude / 255) * height * 1.5;
         const barHeight = Math.max(4, Math.min(rawHeight, height - 8));
-        const x = startX + i * (BAR_WIDTH + SPACING);
+        const x = startX + (BAR_COUNT - 1 - i) * (BAR_WIDTH + SPACING);
         const y = (height - barHeight) / 2;
 
         const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
@@ -475,11 +508,15 @@ export default function Advertise() {
           const transcript = data.results?.[0]?.alternatives?.[0]?.transcript;
 
           if (transcript && transcript.trim()) {
+            let finalDescription = '';
             setDescricaoTrabalho(prev => {
               const trimmed = prev.trim();
-              if (trimmed.length > 0) return trimmed + ' ' + transcript.trim();
-              return transcript.trim();
+              finalDescription = trimmed.length > 0 ? trimmed + ' ' + transcript.trim() : transcript.trim();
+              return finalDescription;
             });
+            setTimeout(() => {
+              handleAnalyzeDescription(finalDescription);
+            }, 100);
           } else {
             console.warn('Nenhuma transcrição retornada ou áudio silencioso.');
           }
@@ -519,6 +556,7 @@ export default function Advertise() {
     setIsRecording(false);
     cleanupAudio();
     setAudioError('');
+    setIsPaused(false);
   };
 
   const stopAndSendRecording = () => {
@@ -526,11 +564,37 @@ export default function Advertise() {
     changeRecordingState('idle');
     setIsRecording(false);
     cleanupAudio();
+    setIsPaused(false);
+  };
+
+  const togglePauseRecording = () => {
+    if (!mediaRecorderRef.current) return;
+    if (recordingState === 'recording') {
+      mediaRecorderRef.current.pause();
+      changeRecordingState('paused');
+      setIsPaused(true);
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    } else if (recordingState === 'paused') {
+      mediaRecorderRef.current.resume();
+      changeRecordingState('recording');
+      setIsPaused(false);
+      timerIntervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+      setTimeout(() => {
+        startVisualizerLoop();
+      }, 50);
+    }
   };
 
   const handleVoiceButtonAction = async () => {
     if (recordingState === 'idle') {
       startRecording();
+    } else if (recordingState === 'paused') {
+      togglePauseRecording();
     }
   };
 
@@ -637,7 +701,7 @@ export default function Advertise() {
           sobrenome: '',
           telefone: telefoneComercial,
           telefoneComercial: telefoneComercial,
-          bairro,
+          bairro: showExactAddress ? bairro : null,
           atividadePrincipal,
           descricaoTrabalho: descricaoFinal,
           descricaoCurta,
@@ -647,10 +711,10 @@ export default function Advertise() {
           avatarFileId: uploadedAvatarFileId || null,
           categoryId: categoryId || null,
           categoriaGeral: categoriaGeral || null,
-          endereco: enderecoComercial || null,
-          enderecoComercial: enderecoComercial || null,
-          serviceBairro: bairro || null,
-          exibirEnderecoCompleto: true,
+          endereco: showExactAddress ? [rua, numero, complemento].filter(Boolean).join(', ') : null,
+          enderecoComercial: showExactAddress ? [rua, numero, complemento].filter(Boolean).join(', ') : null,
+          serviceBairro: showExactAddress ? bairro : null,
+          exibirEnderecoCompleto: showExactAddress ? exibirEnderecoCompleto : false,
           partners: uploadedPartners.length > 0 ? uploadedPartners : null,
         })
       });
@@ -697,6 +761,14 @@ export default function Advertise() {
   };
 
   const nextStep = () => {
+    if (step === 1) {
+      if (showExactAddress) {
+        if (!bairro?.trim() || !rua?.trim() || !numero?.trim()) {
+          alert('Por favor, preencha o Bairro, Rua e Número do seu endereço comercial.');
+          return;
+        }
+      }
+    }
     if (step === 2) {
       if (!atividadePrincipal.trim() || !descricaoTrabalho.trim()) {
         alert('Por favor, descreva seu trabalho e clique em "Analisar com IA" antes de continuar.');
@@ -780,7 +852,7 @@ export default function Advertise() {
               <div className="flex items-center gap-3 mb-4 border-b border-slate-100 pb-4">
                 <div className="p-3 bg-primary/10 text-primary rounded-xl"><MapPin size={24} /></div>
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900">Confirmação e Localização</h2>
+                  <h2 className="text-2xl font-bold text-slate-900">Dados, contato e endereço</h2>
                 </div>
               </div>
 
@@ -801,7 +873,7 @@ export default function Advertise() {
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
                   />
                   <p className="text-xs text-slate-500 mt-1">
-                    Se deixado em branco, o sistema utilizará o seu nome de cadastro pessoal.
+                    <span className="font-semibold text-primary">Estas são as informações públicas do seu anúncio.</span> Se deixado em branco, o sistema utilizará o seu nome de cadastro pessoal.
                   </p>
                 </div>
 
@@ -816,42 +888,127 @@ export default function Advertise() {
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
                   />
                   <p className="text-xs text-slate-500 mt-1">
-                    Insira o número de contato profissional do anúncio. O número do seu cadastro continuará privado.
+                    <span className="font-semibold text-primary">Estas são as informações públicas do seu anúncio.</span> Insira o número de contato profissional do anúncio. O número do seu cadastro continuará privado.
                   </p>
                 </div>
               </div>
 
-                {/* Localização e Bairro */}
-                <div className="pt-4 mt-6 border-t border-slate-100 space-y-5">
+              {/* Localização e Bairro com Lógica de CEP */}
+              <div className="pt-4 mt-6 border-t border-slate-100 space-y-6">
+                <div className="flex items-center justify-between">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Bairro de Atendimento</label>
-                    <input
-                      type="text"
-                      value={bairro}
-                      onChange={(e) => setBairro(e.target.value)}
-                      placeholder="Ex: Centro, Aldeota, Bairro de Fátima..."
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
-                      required
-                    />
-                    <p className="text-xs text-slate-500 mt-1">
-                      Informe o bairro onde você realiza seus atendimentos em Itapipoca.
-                    </p>
+                    <label className="block text-sm font-bold text-slate-800">Deseja adicionar endereço comercial?</label>
+                    <p className="text-xs text-slate-500">Ative se você possui um estabelecimento físico para atendimento de clientes (loja, sala comercial, consultório).</p>
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Endereço Comercial Dedicado <span className="text-slate-400 font-normal">(Opcional)</span></label>
-                    <input
-                      type="text"
-                      value={enderecoComercial}
-                      onChange={(e) => setEnderecoComercial(e.target.value)}
-                      placeholder="Ex: Rua Floriano Peixoto, 123 - Centro"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={showExactAddress} 
+                      onChange={() => setShowExactAddress(!showExactAddress)} 
                     />
-                    <p className="text-xs text-slate-500 mt-1">
-                      Preencha apenas se possuir estabelecimento físico ou sede comercial (sala, clínica, loja).
-                    </p>
-                  </div>
+                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
                 </div>
+
+                {showExactAddress && (
+                  <div className="space-y-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 animate-in slide-in-from-top-2 duration-300">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-650 mb-1">CEP</label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={cep}
+                            onChange={handleCepChange}
+                            onBlur={handleCepBlur}
+                            placeholder="Ex: 62500-000"
+                            className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary text-slate-800"
+                          />
+                          {loadingCep && (
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                              <Loader2 className="animate-spin text-slate-400" size={16} />
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-650 mb-1">Bairro <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          value={bairro}
+                          onChange={(e) => setBairro(e.target.value)}
+                          required={showExactAddress}
+                          placeholder="Ex: Centro"
+                          className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary text-slate-800"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="col-span-2">
+                        <label className="block text-xs font-semibold text-slate-650 mb-1">Rua <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          value={rua}
+                          onChange={(e) => setRua(e.target.value)}
+                          required={showExactAddress}
+                          placeholder="Ex: Rua Floriano Peixoto"
+                          className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary text-slate-800"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-650 mb-1">Número <span className="text-red-500">*</span></label>
+                        <input
+                          type="text"
+                          value={numero}
+                          onChange={(e) => setNumero(e.target.value)}
+                          required={showExactAddress}
+                          placeholder="Ex: 123"
+                          className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary text-slate-800"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-650 mb-1">Complemento / Ponto de Referência <span className="text-slate-400 font-normal">(Opcional)</span></label>
+                      <input
+                        type="text"
+                        value={complemento}
+                        onChange={(e) => setComplemento(e.target.value)}
+                        placeholder="Ex: Sala 4, próximo à praça..."
+                        className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary text-slate-800"
+                      />
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-200">
+                      <label className="block text-xs font-bold text-slate-700 mb-2">Opções de Privacidade do Endereço</label>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="privacidadeEndereco"
+                            checked={exibirEnderecoCompleto}
+                            onChange={() => setExibirEnderecoCompleto(true)}
+                            className="h-4 w-4 text-primary focus:ring-primary border-slate-350"
+                          />
+                          <span>Exibir endereço completo</span>
+                        </label>
+                        <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="privacidadeEndereco"
+                            checked={!exibirEnderecoCompleto}
+                            onChange={() => setExibirEnderecoCompleto(false)}
+                            className="h-4 w-4 text-primary focus:ring-primary border-slate-350"
+                          />
+                          <span>Exibir somente o bairro</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="mt-8 flex justify-end">
                 <button onClick={nextStep} className="bg-primary hover:bg-primary-hover text-white px-8 py-3.5 rounded-xl font-bold transition-colors shadow-lg shadow-primary/20">Continuar para o Passo 2</button>
@@ -865,7 +1022,7 @@ export default function Advertise() {
               <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
                 <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl"><Briefcase size={24} /></div>
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900">Agora vamos construir seu perfil</h2>
+                  <h2 className="text-2xl font-bold text-slate-900">Descrição da atividade</h2>
                   <p className="text-sm text-slate-500">Preencha as informações para construirmos o melhor perfil para você.</p>
                 </div>
               </div>
@@ -1026,24 +1183,68 @@ export default function Advertise() {
                   </div>
                 </div>
 
-                {/* Categorização por IA ou Fallback Manual */}
-                {categoriaGeral && atividadePrincipal && !aiFailed ? (
-                  <div className="pt-4 border-t border-slate-100 animate-in fade-in duration-300">
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-center gap-3">
-                      <Sparkles className="text-emerald-500 shrink-0 animate-pulse" size={20} />
-                      <div className="text-left">
-                        <span className="text-xs text-emerald-600 font-bold uppercase tracking-wider block">Classificação por Inteligência Artificial</span>
-                        <span className="text-sm text-slate-800 font-semibold">
-                          Definido como: <span className="text-emerald-700 font-bold">{categoriaGeral}</span> &raquo; <span className="text-emerald-700 font-bold">{atividadePrincipal}</span>
-                        </span>
-                      </div>
+                {/* Container de Categorização do Perfil (Sempre Visível) */}
+                <div className="mt-6 p-5 bg-slate-50 border border-slate-200 rounded-2xl relative overflow-hidden text-left shadow-sm">
+                  {/* Efeito visual de carregamento da IA */}
+                  {isAnalyzing && (
+                    <div className="absolute inset-0 bg-white/90 backdrop-blur-[1.5px] flex flex-col items-center justify-center z-10 animate-in fade-in duration-200">
+                      <Loader2 className="animate-spin text-primary mb-2" size={28} />
+                      <span className="text-sm font-bold text-slate-800 animate-pulse">Inteligência Artificial categorizando seu perfil...</span>
+                      <span className="text-xs text-slate-500 mt-1">Aguarde um instante.</span>
                     </div>
+                  )}
+
+                  <div className="flex items-center gap-2 mb-4">
+                    <Sparkles size={18} className="text-primary animate-pulse" />
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Classificação do seu Serviço</h3>
                   </div>
-                ) : aiFailed ? (
-                  <div className="pt-4 border-t border-slate-100 space-y-4 animate-in fade-in duration-300">
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Campo Categoria Principal */}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
-                        Sua Atividade Principal <span className="text-red-500">*</span>
+                      <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                        Categoria Principal 
+                        {categoriaGeral && (
+                          <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-md font-semibold flex items-center gap-0.5 animate-in zoom-in duration-200">
+                            ✓ IA
+                          </span>
+                        )}
+                      </label>
+                      <div className="relative">
+                        {categoriaGeral ? (
+                          <>
+                            <input
+                              type="text"
+                              value={categoriaGeral}
+                              disabled
+                              className="w-full pl-3 pr-10 py-3 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-semibold cursor-not-allowed select-none"
+                            />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" title="Protegido pelo sistema para manter filtros precisos">
+                              <Lock size={16} />
+                            </div>
+                          </>
+                        ) : (
+                          <select
+                            value={categoriaGeral}
+                            onChange={(e) => setCategoriaGeral(e.target.value)}
+                            className="w-full px-3 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary text-slate-700 font-semibold appearance-none cursor-pointer"
+                          >
+                            <option value="">Selecione uma categoria...</option>
+                            {LISTA_CATEGORIAS.map((cat) => (
+                              <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        A categoria define em qual seção do site seu anúncio aparecerá.
+                      </p>
+                    </div>
+
+                    {/* Campo Atividade Principal */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                        Atividade / Especialidade <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -1051,19 +1252,31 @@ export default function Advertise() {
                         onChange={(e) => setAtividadePrincipal(e.target.value)}
                         placeholder="Ex: Encanador, Eletricista, Cabeleireira..."
                         required
-                        className="w-full px-4 py-3 bg-white border border-amber-400 rounded-xl focus:ring-2 focus:ring-amber-400 text-slate-800"
+                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary text-slate-800 font-bold shadow-sm"
                       />
-                      <p className="text-xs text-amber-600 mt-1.5 flex items-center gap-1">
-                        ⚠️ Não conseguimos categorizar automaticamente: {aiErrorMsg || 'Por favor, informe sua profissão.'}
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        Sua profissão ou especialidade principal, editável para melhor precisão.
                       </p>
                     </div>
                   </div>
-                ) : null}
-              </div>
 
-              <div className="mt-10 flex justify-between">
-                <button onClick={prevStep} className="text-slate-500 hover:text-slate-800 font-medium px-6 py-3.5">Voltar</button>
-                <button onClick={nextStep} className="bg-primary hover:bg-primary-hover text-white px-8 py-3.5 rounded-xl font-bold transition-colors shadow-lg shadow-primary/20">Continuar</button>
+                  {aiFailed && (
+                    <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5 animate-in fade-in duration-300">
+                      <span className="text-amber-500 text-sm">⚠️</span>
+                      <div className="text-left">
+                        <span className="text-xs text-amber-700 font-bold block">Preenchimento Manual</span>
+                        <span className="text-xs text-slate-600">
+                          {aiErrorMsg || 'Não conseguimos categorizar automaticamente. Por favor, selecione a categoria e digite sua atividade nos campos acima.'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-10 flex justify-between">
+                  <button onClick={prevStep} className="text-slate-500 hover:text-slate-800 font-medium px-6 py-3.5">Voltar</button>
+                  <button onClick={nextStep} className="bg-primary hover:bg-primary-hover text-white px-8 py-3.5 rounded-xl font-bold transition-colors shadow-lg shadow-primary/20">Continuar</button>
+                </div>
               </div>
             </div>
           )}
@@ -1074,8 +1287,8 @@ export default function Advertise() {
               <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
                 <div className="p-3 bg-amber-100 text-amber-600 rounded-xl"><AlignLeft size={24} /></div>
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900">Aparência e Portfólio</h2>
-                  <p className="text-sm text-slate-500">Revise seu perfil gerado pela IA e adicione fotos.</p>
+                  <h2 className="text-2xl font-bold text-slate-900">Visual</h2>
+                  <p className="text-sm text-slate-500">Adicione suas fotos e configure as informações visuais do perfil.</p>
                 </div>
               </div>
 
@@ -1193,79 +1406,7 @@ export default function Advertise() {
                   )}
                 </div>
 
-                {/* Seção: Parceiros/Patrocinadores */}
-                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-slate-800 flex items-center gap-2"><Sparkles className="text-primary animate-pulse" size={18} /> Espaço Parceiro (Monetize seu Perfil)</h4>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Adicione até 3 patrocinadores ou parceiros locais no seu perfil profissional. O enquadramento exigido de enquadramento perfeito (9:16) ajudará você a revender este espaço para comércios locais!
-                    </p>
-                  </div>
 
-                  <div className="space-y-4">
-                    {partners.map((partner, index) => (
-                      <div key={index} className="bg-white p-4 rounded-xl border border-slate-200/60 relative flex flex-col sm:flex-row gap-4 items-center animate-in fade-in duration-300">
-                        {/* Imagem Cropped Preview */}
-                        <div className="relative shrink-0 w-24 h-14 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-                          {partner.previewUrl ? (
-                            <img src={partner.previewUrl} alt={`Parceiro ${index + 1}`} className="w-full h-full object-contain" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 font-bold uppercase">Sem foto</div>
-                          )}
-                        </div>
-
-                        {/* Input de link e botão de remover */}
-                        <div className="flex-1 w-full space-y-2">
-                          <input
-                            type="text"
-                            value={partner.link}
-                            onChange={(e) => {
-                              const newPartners = [...partners];
-                              newPartners[index].link = e.target.value;
-                              setPartners(newPartners);
-                            }}
-                            placeholder="Link do parceiro (ex: https://wa.me/...)"
-                            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:ring-2 focus:ring-primary"
-                          />
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPartners(partners.filter((_, i) => i !== index));
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow hover:bg-red-600 transition-colors cursor-pointer"
-                          title="Remover parceiro"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    ))}
-
-                    {partners.length < 3 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = 'image/*';
-                          input.onchange = (e) => {
-                            const file = e.target.files[0];
-                            if (!file) return;
-                            setCropTarget({
-                              type: 'partner',
-                              imageSrc: URL.createObjectURL(file),
-                            });
-                          };
-                          input.click();
-                        }}
-                        className="w-full py-3.5 border-2 border-dashed border-slate-350 hover:border-primary/50 text-slate-500 hover:text-primary rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer bg-slate-50/50 hover:bg-primary/5"
-                      >
-                        <Plus size={16} /> Adicionar Patrocinador/Parceiro ({partners.length}/3)
-                      </button>
-                    )}
-                  </div>
-                </div>
 
                 {/* Portfolio Drag & Drop */}
                 <div>
@@ -1382,7 +1523,7 @@ export default function Advertise() {
       {cropTarget && (
         <ImageCropperModal
           imageSrc={cropTarget.imageSrc}
-          aspect={cropTarget.type === 'avatar' ? 1 : 9/16}
+          aspect={cropTarget.type === 'avatar' ? 1 : 3/4}
           cropShape={cropTarget.type === 'avatar' ? 'round' : 'rect'}
           onClose={() => setCropTarget(null)}
           onCropComplete={(blob) => {

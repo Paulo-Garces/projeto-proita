@@ -30,7 +30,7 @@ export default function SponsorSlider({ partners = [], layout = 'card' }) {
     card: 'h-16 sm:h-20 w-full rounded-xl border border-slate-100 bg-slate-50/50 shadow-inner',
     sidebar: 'h-36 sm:h-40 w-full rounded-2xl border border-slate-100 bg-slate-50/30 shadow-sm',
     tab: 'h-48 sm:h-56 w-full rounded-2xl border border-slate-150 bg-slate-50/50 shadow-md',
-    portrait: 'h-24 md:h-28 aspect-[9/16] w-auto rounded-lg border border-slate-100 bg-slate-50/50 shadow-sm',
+    portrait: 'h-24 md:h-28 aspect-[3/4] w-auto rounded-lg border border-slate-100 bg-slate-50/50 shadow-sm',
   }[layout];
 
   const currentPartner = validPartners[currentIndex];
