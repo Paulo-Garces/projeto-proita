@@ -11,6 +11,7 @@ export default function ImageCropperModal({
   aspect = 1, 
   cropShape = 'rect', 
   onCropComplete, 
+  onComplete, // Suporte a onComplete além de onCropComplete
   onClose,
   isOpen = true
 }) {
@@ -54,6 +55,14 @@ export default function ImageCropperModal({
     };
   }, []);
 
+  const handleRotateLeft = () => {
+    cropperRef.current?.cropper?.rotate(-90);
+  };
+
+  const handleRotateRight = () => {
+    cropperRef.current?.cropper?.rotate(90);
+  };
+
   const handleConfirm = async () => {
     if (isProcessing) return;
     setIsProcessing(true);
@@ -73,7 +82,8 @@ export default function ImageCropperModal({
 
         croppedCanvas.toBlob((blob) => {
           if (blob) {
-            onCropComplete(blob);
+            if (onCropComplete) onCropComplete(blob);
+            if (onComplete) onComplete(blob);
           } else {
             alert('Falha ao gerar o arquivo recortado.');
           }
