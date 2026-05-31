@@ -18,6 +18,7 @@ export default function ImageCropperModal({
   const cropperRef = useRef(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [srcUrl, setSrcUrl] = useState(null);
+  const [zoomValue, setZoomValue] = useState(0);
 
   // Converter imageSrc se for File/Blob e limpar no desmonte
   useEffect(() => {
@@ -46,12 +47,17 @@ export default function ImageCropperModal({
     };
   }, [imageSrc]);
 
-  // Bloquear o scroll do body enquanto o modal estiver aberto
+  // Bloquear o scroll do body e html enquanto o modal estiver aberto
   useEffect(() => {
-    const originalStyle = window.getComputedStyle(document.body).overflow;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    
     return () => {
-      document.body.style.overflow = originalStyle;
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
     };
   }, []);
 
@@ -100,7 +106,7 @@ export default function ImageCropperModal({
 
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 overflow-hidden">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 overflow-hidden p-4 pt-24 sm:pt-28 overscroll-contain touch-none">
       {/* Estilos locais para visualização circular do crop do avatar */}
       {cropShape === 'round' && (
         <style>{`
@@ -112,16 +118,16 @@ export default function ImageCropperModal({
       )}
 
       {/* CAIXA BRANCA FORÇADA */}
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden text-slate-900 mx-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden text-slate-900 mx-4 max-h-[85vh] overscroll-none" onWheel={(e) => e.stopPropagation()}>
         
         {/* HEADER */}
-        <div className="p-4 border-b flex justify-between items-center bg-white">
+        <div className="p-4 border-b flex justify-between items-center bg-white shrink-0">
           <h3 className="text-lg font-bold">Recortar Imagem</h3>
           <button onClick={onClose} className="text-red-500 font-bold p-2 cursor-pointer">X</button>
         </div>
 
-        {/* ÁREA DO CROPPER (Altura Fixa Obrigatória) */}
-        <div className="w-full h-[400px] bg-slate-100 flex items-center justify-center relative">
+        {/* ÁREA DO CROPPER (Altura Fixa Obrigatória com maxHeight e contenção) */}
+        <div className="w-full h-[400px] max-h-[60vh] bg-slate-100 flex items-center justify-center relative overflow-hidden flex-1">
           {!srcUrl ? (
              <div className="flex flex-col items-center gap-2">
                <Loader2 className="animate-spin text-blue-600" size={24} />
@@ -131,16 +137,45 @@ export default function ImageCropperModal({
              <Cropper
                ref={cropperRef}
                src={srcUrl}
-               style={{ height: 400, width: "100%" }}
-               aspectRatio={aspect}
+               style={{ height: '400px', width: '100%', maxHeight: '60vh' }}
+               aspectRatio={aspect || 1}
+               initialAspectRatio={aspect || 1}
                guides={true}
-               zoomable={false}
-               cropBoxResizable={true}
-               cropBoxMovable={true}
+               zoomable={true}
+               zoomOnWheel={false}
+               zoomOnTouch={true}
+               zoom={(e) => setZoomValue(e.detail.ratio)}
+               cropBoxResizable={false}
+               cropBoxMovable={false}
                background={true}
+               dragMode="move"
+               toggleDragModeOnDblclick={false}
+               viewMode={0}
+               autoCropArea={1}
+               responsive={true}
+               minCropBoxHeight={100}
+               minCropBoxWidth={100}
                className={cropShape === 'round' ? 'cropper-round' : ''}
              />
           )}
+        </div>
+
+        {/* SLIDER DE ZOOM */}
+        <div className="px-6 py-3 flex items-center gap-4 bg-white border-t border-slate-100">
+          <span className="text-slate-500 text-sm font-bold">Zoom:</span>
+          <input
+            type="range"
+            min="0.1"
+            max="3"
+            step="0.1"
+            value={zoomValue || 1}
+            onChange={(e) => {
+              const val = parseFloat(e.target.value);
+              setZoomValue(val);
+              cropperRef.current?.cropper?.zoomTo(val);
+            }}
+            className="flex-1 accent-blue-600"
+          />
         </div>
 
         {/* FOOTER - BOTÕES */}
