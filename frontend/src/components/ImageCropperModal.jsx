@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Cropper from 'react-cropper';
 import { Loader2 } from 'lucide-react';
 import 'cropperjs/dist/cropper.css';
@@ -105,8 +106,8 @@ export default function ImageCropperModal({
 
 
 
-  return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 overflow-hidden p-4 pt-24 sm:pt-28 overscroll-contain touch-none">
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 overflow-hidden p-4 overscroll-contain touch-none">
       {/* Estilos locais para visualização circular do crop do avatar */}
       {cropShape === 'round' && (
         <style>{`
@@ -187,6 +188,7 @@ export default function ImageCropperModal({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
