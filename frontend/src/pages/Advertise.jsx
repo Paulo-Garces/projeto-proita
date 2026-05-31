@@ -292,7 +292,8 @@ export default function Advertise() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'X-Gemini-Key': import.meta.env.VITE_GEMINI_API_KEY || ''
         },
         body: JSON.stringify({ description: text })
       });
@@ -312,7 +313,7 @@ export default function Advertise() {
         else if (data?.data?.bioSugerida) setBioSugerida(data.data.bioSugerida);
       }
     } catch (err) {
-      console.error('Erro ao analisar com IA:', err);
+      console.error("Erro no Gemini: ", err);
       alert('Ocorreu um erro ao analisar a descrição. Por favor, preencha os campos manualmente.');
       setAiFailed(true);
       setAiErrorMsg('Erro de conexão com a IA. Por favor, preencha a atividade principal manualmente.');
@@ -792,7 +793,7 @@ export default function Advertise() {
 
   if (adCount >= 2) {
     return (
-      <div className="bg-slate-50 min-h-[calc(100vh-64px)] py-12 px-4 flex items-center justify-center animate-in fade-in duration-500">
+      <div className="bg-slate-50 min-h-[calc(100vh-64px)] pt-28 pb-12 px-4 flex items-center justify-center animate-in fade-in duration-500">
         <div className="max-w-xl w-full bg-white border border-slate-100 rounded-3xl p-8 md:p-12 shadow-xl shadow-slate-100/50 text-center relative overflow-hidden">
           {/* Subtle glowing backgrounds */}
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -827,7 +828,7 @@ export default function Advertise() {
   }
 
   return (
-    <div className="bg-slate-50 min-h-[calc(100vh-64px)] py-12 px-4">
+    <div className="bg-slate-50 min-h-[calc(100vh-64px)] pt-28 pb-12 px-4">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-extrabold text-slate-900">Crie seu Anúncio Profissional</h1>

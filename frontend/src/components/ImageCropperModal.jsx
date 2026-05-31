@@ -1,160 +1,146 @@
-import { useState, useCallback } from 'react';
-import Cropper from 'react-easy-crop';
-import { ZoomIn, ZoomOut, RotateCw, Check, X, Loader2 } from 'lucide-react';
-import { getCroppedImgBlob } from '../utils/cropImage';
+import React, { useState, useEffect, useRef } from 'react';
+import Cropper from 'react-cropper';
+import { Loader2 } from 'lucide-react';
+import 'cropperjs/dist/cropper.css';
 
 /**
- * ImageCropperModal — Modal de alta fidelidade para recorte de imagens.
- * 
- * @param {string} imageSrc - URL local da imagem original (ObjectURL)
- * @param {number} aspect - Proporção de aspecto (ex: 1 para 1:1, 16/9 para 16:9)
- * @param {string} cropShape - Formato do recorte: 'rect' ou 'round'
- * @param {function} onCropComplete - Callback chamado com o arquivo Blob recortado
- * @param {function} onClose - Callback chamado ao cancelar/fechar o modal
+ * ImageCropperModal — Modal de alta fidelidade para recorte preciso de imagens com alças de dimensionamento.
  */
 export default function ImageCropperModal({ 
   imageSrc, 
   aspect = 1, 
   cropShape = 'rect', 
   onCropComplete, 
-  onClose 
+  onClose,
+  isOpen = true
 }) {
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [rotation, setRotation] = useState(0);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
+  const cropperRef = useRef(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [srcUrl, setSrcUrl] = useState(null);
 
-  const onCropChange = (crop) => {
-    setCrop(crop);
-  };
+  // Converter imageSrc se for File/Blob e limpar no desmonte
+  useEffect(() => {
+    if (!imageSrc) return;
 
-  const onZoomChange = (zoom) => {
-    setZoom(zoom);
-  };
+    let url = '';
+    let isCreated = false;
 
-  const onCropCompleteCallback = useCallback((croppedArea, croppedAreaPixels) => {
-    setCroppedAreaPixels(croppedAreaPixels);
+    if (typeof imageSrc === 'string') {
+      url = imageSrc;
+    } else {
+      try {
+        url = URL.createObjectURL(imageSrc);
+        isCreated = true;
+      } catch (e) {
+        console.error('[CROP] Erro ao gerar ObjectURL local:', e);
+      }
+    }
+
+    setSrcUrl(url);
+
+    return () => {
+      if (isCreated && url) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [imageSrc]);
+
+  // Bloquear o scroll do body enquanto o modal estiver aberto
+  useEffect(() => {
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
   }, []);
 
   const handleConfirm = async () => {
-    if (!croppedAreaPixels || isProcessing) return;
+    if (isProcessing) return;
     setIsProcessing(true);
     try {
-      const croppedBlob = await getCroppedImgBlob(imageSrc, croppedAreaPixels);
-      if (croppedBlob) {
-        onCropComplete(croppedBlob);
+      const cropperInstance = cropperRef.current?.cropper;
+      if (cropperInstance) {
+        // Obter o canvas recortado preenchendo espaços extras com branco sólido
+        const croppedCanvas = cropperInstance.getCroppedCanvas({
+          fillColor: '#ffffff', // Garante que o fundo letterbox seja branco sólido para logotipos
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high'
+        });
+
+        if (!croppedCanvas) {
+          throw new Error('Falha ao obter canvas recortado');
+        }
+
+        croppedCanvas.toBlob((blob) => {
+          if (blob) {
+            onCropComplete(blob);
+          } else {
+            alert('Falha ao gerar o arquivo recortado.');
+          }
+          setIsProcessing(false);
+        }, 'image/jpeg', 0.95);
       }
     } catch (e) {
       console.error('[CROP] Erro ao recortar imagem:', e);
       alert('Ocorreu um erro ao processar o recorte da imagem.');
-    } finally {
       setIsProcessing(false);
     }
   };
 
+
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-slate-800 text-white rounded-3xl p-6 w-full max-w-lg shadow-2xl flex flex-col relative overflow-hidden">
-        {/* Efeito de brilho de fundo */}
-        <div className="absolute top-[-100px] right-[-100px] w-60 h-60 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 overflow-hidden">
+      {/* Estilos locais para visualização circular do crop do avatar */}
+      {cropShape === 'round' && (
+        <style>{`
+          .cropper-round .cropper-view-box,
+          .cropper-round .cropper-face {
+            border-radius: 50% !important;
+          }
+        `}</style>
+      )}
 
-        {/* Cabeçalho */}
-        <div className="flex justify-between items-center mb-4 relative z-10">
-          <h3 className="text-lg font-bold text-slate-100">Recortar Imagem</h3>
-          <button 
-            type="button" 
-            onClick={onClose} 
-            className="text-slate-400 hover:text-white p-1 bg-slate-800/40 hover:bg-slate-800 rounded-full transition-colors cursor-pointer"
-          >
-            <X size={18} />
+      {/* CAIXA BRANCA FORÇADA */}
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden text-slate-900 mx-4">
+        
+        {/* HEADER */}
+        <div className="p-4 border-b flex justify-between items-center bg-white">
+          <h3 className="text-lg font-bold">Recortar Imagem</h3>
+          <button onClick={onClose} className="text-red-500 font-bold p-2 cursor-pointer">X</button>
+        </div>
+
+        {/* ÁREA DO CROPPER (Altura Fixa Obrigatória) */}
+        <div className="w-full h-[400px] bg-slate-100 flex items-center justify-center relative">
+          {!srcUrl ? (
+             <div className="flex flex-col items-center gap-2">
+               <Loader2 className="animate-spin text-blue-600" size={24} />
+               <p className="text-slate-600 font-semibold">Processando imagem...</p>
+             </div>
+          ) : (
+             <Cropper
+               ref={cropperRef}
+               src={srcUrl}
+               style={{ height: 400, width: "100%" }}
+               aspectRatio={aspect}
+               guides={true}
+               zoomable={false}
+               cropBoxResizable={true}
+               cropBoxMovable={true}
+               background={true}
+               className={cropShape === 'round' ? 'cropper-round' : ''}
+             />
+          )}
+        </div>
+
+        {/* FOOTER - BOTÕES */}
+        <div className="p-4 border-t flex justify-end gap-3 bg-white">
+          <button onClick={onClose} className="px-4 py-2 bg-slate-200 text-slate-800 rounded font-bold cursor-pointer">Cancelar</button>
+          <button onClick={handleConfirm} disabled={isProcessing} className="px-4 py-2 bg-blue-600 text-white rounded font-bold cursor-pointer">
+            {isProcessing ? 'Processando...' : 'Aplicar Recorte'}
           </button>
         </div>
 
-        {/* Container do Cropper (react-easy-crop precisa de parent com position: relative e altura) */}
-        <div className="relative w-full h-80 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800/60 shadow-inner">
-          <Cropper
-            image={imageSrc}
-            crop={crop}
-            zoom={zoom}
-            rotation={rotation}
-            aspect={aspect}
-            cropShape={cropShape}
-            showGrid={true}
-            onCropChange={onCropChange}
-            onZoomChange={onZoomChange}
-            onCropComplete={onCropCompleteCallback}
-          />
-        </div>
-
-        {/* Controles de Ajuste */}
-        <div className="space-y-4 my-6 relative z-10">
-          {/* Zoom */}
-          <div className="flex items-center gap-3">
-            <ZoomOut size={16} className="text-slate-400" />
-            <input
-              type="range"
-              min={1}
-              max={3}
-              step={0.05}
-              value={zoom}
-              onChange={(e) => setZoom(parseFloat(e.target.value))}
-              className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary"
-            />
-            <ZoomIn size={16} className="text-slate-400" />
-          </div>
-
-          {/* Rotação */}
-          <div className="flex items-center justify-between text-sm text-slate-400 bg-slate-800/20 p-3 rounded-xl border border-slate-800/40">
-            <span className="font-medium flex items-center gap-1.5">
-              <RotateCw size={15} /> Rotação da imagem
-            </span>
-            <div className="flex items-center gap-2">
-              <button 
-                type="button"
-                onClick={() => setRotation(prev => (prev - 90 + 360) % 360)}
-                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors font-medium cursor-pointer"
-              >
-                -90°
-              </button>
-              <button 
-                type="button"
-                onClick={() => setRotation(prev => (prev + 90) % 360)}
-                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors font-medium cursor-pointer"
-              >
-                +90°
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Botões de Ação */}
-        <div className="flex justify-end gap-3 border-t border-slate-800/80 pt-4 relative z-10">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isProcessing}
-            className="px-5 py-2.5 bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={isProcessing}
-            className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-sm font-bold transition-all shadow-md shadow-primary/20 flex items-center gap-1.5 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 size={16} className="animate-spin" /> Processando...
-              </>
-            ) : (
-              <>
-                <Check size={16} /> Aplicar Recorte
-              </>
-            )}
-          </button>
-        </div>
       </div>
     </div>
   );

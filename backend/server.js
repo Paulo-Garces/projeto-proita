@@ -853,8 +853,8 @@ function localKeywordClassifier(description) {
   return { categoriaGeral, atividadePrincipal, descricaoCurta, biografiaCompleta };
 }
 
-// Configuração do Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Configuração do Gemini (Chave inicializada dinamicamente por requisição)
+const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '');
 
 // Rota de Análise de Descrição com IA
 app.post('/api/analyze-description', async (req, res) => {
@@ -865,10 +865,13 @@ app.post('/api/analyze-description', async (req, res) => {
     }
 
     let parsedResult = null;
+    const clientApiKey = req.headers['x-gemini-key'];
+    const apiKey = clientApiKey || process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '';
 
     try {
-      if (process.env.GEMINI_API_KEY) {
-        const model = genAI.getGenerativeModel({ 
+      if (apiKey) {
+        const dynamicGenAI = new GoogleGenerativeAI(apiKey);
+        const model = dynamicGenAI.getGenerativeModel({ 
           model: "gemini-2.5-flash",
           generationConfig: { responseMimeType: "application/json" }
         });
@@ -907,25 +910,27 @@ app.post('/api/analyze-description', async (req, res) => {
         const result = await model.generateContent(prompt);
         let text = result.response.text();
 
-        // Limpar formatação Markdown se a IA retornar (ex: ```json ... ```)
-        text = text.replace(/```json\n?|\n?```/g, '').trim();
+        // Sanitização do JSON conforme exigido
+        let cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
-        // Isolar o JSON se vier com texto extra
-        const firstBrace = text.indexOf('{');
-        const lastBrace = text.lastIndexOf('}');
+        // Isolar o JSON se vier com texto extra para maior robustez
+        const firstBrace = cleanText.indexOf('{');
+        const lastBrace = cleanText.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-          text = text.substring(firstBrace, lastBrace + 1);
+          cleanText = cleanText.substring(firstBrace, lastBrace + 1);
         }
 
-        const jsonResult = JSON.parse(text);
+        const jsonResult = JSON.parse(cleanText);
         const { categoriaGeral, atividadePrincipal, descricaoCurta, biografiaCompleta } = jsonResult;
 
         if (categoriaGeral && atividadePrincipal) {
           parsedResult = { categoriaGeral, atividadePrincipal, descricaoCurta, biografiaCompleta };
         }
+      } else {
+        throw new Error('Nenhuma chave de API do Gemini configurada.');
       }
     } catch (aiErr) {
-      console.warn('Erro ao chamar a API do Gemini. Usando classificador de fallback local:', aiErr.message || aiErr);
+      console.error("Erro no Gemini: ", aiErr);
     }
 
     // Se a IA falhou, usa o classificador local de palavras-chave

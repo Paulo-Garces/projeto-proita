@@ -682,7 +682,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
   });
   const [isUploadingPartner, setIsUploadingPartner] = useState(false);
   const [partnerError, setPartnerError] = useState('');
-  const [cropTarget, setCropTarget] = useState(null); // { imageSrc: string }
+  const [partnerCropTarget, setPartnerCropTarget] = useState(null); // { imageSrc: string }
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [editingLinkIndex, setEditingLinkIndex] = useState(null);
@@ -819,18 +819,18 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        if (cropTarget && cropTarget.index !== undefined && cropTarget.index >= 0) {
-          setAdPartners(prev => prev.map((item, idx) => idx === cropTarget.index ? {
+        if (partnerCropTarget && partnerCropTarget.index !== undefined && partnerCropTarget.index >= 0) {
+          setAdPartners(prev => prev.map((item, idx) => idx === partnerCropTarget.index ? {
             ...item,
             imageUrl: data.url,
             fileId: data.fileId,
-            originalImageUrl: cropTarget.imageSrc, // Preserva a imagem original local em memória
+            originalImageUrl: partnerCropTarget.imageSrc, // Preserva a imagem original local em memória
           } : item));
         } else {
           setAdPartners(prev => [...prev, {
             imageUrl: data.url,
             fileId: data.fileId,
-            originalImageUrl: cropTarget.imageSrc, // Armazena a imagem original local em memória
+            originalImageUrl: partnerCropTarget.imageSrc, // Armazena a imagem original local em memória
             link: '',
           }]);
         }
@@ -842,7 +842,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
       setPartnerError('Erro de conexão ao enviar o parceiro.');
     } finally {
       setIsUploadingPartner(false);
-      setCropTarget(null);
+      setPartnerCropTarget(null);
     }
   };
 
@@ -853,7 +853,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
     input.onchange = (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      setCropTarget({
+      setPartnerCropTarget({
         imageSrc: URL.createObjectURL(file),
         index: undefined
       });
@@ -868,7 +868,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
     input.onchange = (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      setCropTarget({
+      setPartnerCropTarget({
         imageSrc: URL.createObjectURL(file),
         index: index
       });
@@ -1181,7 +1181,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
                     {adPartners[activeSlideIndex]?.originalImageUrl && (
                       <button
                         type="button"
-                        onClick={() => setCropTarget({ imageSrc: adPartners[activeSlideIndex].originalImageUrl, index: activeSlideIndex })}
+                        onClick={() => setPartnerCropTarget({ imageSrc: adPartners[activeSlideIndex].originalImageUrl, index: activeSlideIndex })}
                         className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold rounded-lg border border-white/25 flex items-center gap-1.5 w-36 justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm animate-in fade-in duration-300"
                       >
                         <Crop size={12} /> Reposicionar
@@ -1336,12 +1336,12 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
           )}
         </div>
 
-        {cropTarget && (
+        {partnerCropTarget && (
           <ImageCropperModal
-            imageSrc={cropTarget.imageSrc}
+            imageSrc={partnerCropTarget.imageSrc}
             aspect={3/4}
             cropShape="rect"
-            onClose={() => setCropTarget(null)}
+            onClose={() => setPartnerCropTarget(null)}
             onCropComplete={handleCroppedPartner}
           />
         )}

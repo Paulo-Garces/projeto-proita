@@ -26,6 +26,10 @@ export async function getCroppedImg(imageSrc, pixelCrop) {
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
 
+  // Preenche o fundo com branco sólido para evitar transparências inválidas em imagens JPEG (ex: logos)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
   ctx.drawImage(
     image,
     pixelCrop.x,
@@ -63,6 +67,10 @@ export async function getCroppedImgBlob(imageSrc, pixelCrop) {
 
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
+
+  // Preenche o fundo com branco sólido para evitar transparências inválidas em imagens JPEG (ex: logos)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.drawImage(
     image,
