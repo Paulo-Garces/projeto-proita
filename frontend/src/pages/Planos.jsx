@@ -1,57 +1,87 @@
 import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { CheckCircle, Sparkles, Check, X } from 'lucide-react';
+import { CheckCircle, Sparkles, Check, X, ArrowLeft } from 'lucide-react';
 import { API_URL } from '../config';
 import AdCard from '../components/AdCard';
+import PaymentCheckout from '../components/PaymentCheckout';
+
+// Mapeamento dos planos para labels amigáveis e preços
+const PLAN_CONFIG = {
+  basico_anual:       { name: 'Plano Básico Anual',        price: '35,90' },
+  basico_bienal:      { name: 'Plano Básico Bienal',       price: '59,90' },
+  patrocinador_anual: { name: 'Plano Patrocinador Anual',  price: '45,90' },
+  patrocinador_bienal:{ name: 'Plano Patrocinador Bienal', price: '79,90' },
+  trial:              { name: 'Degustação Gratuita',        price: '0,00'  },
+};
 
 export default function Planos() {
   const navigate = useNavigate();
   const { isAuthenticated, user, token, updateUser } = useContext(AuthContext);
   const [billingCycle, setBillingCycle] = useState('anual');
 
+  // Estado do checkout inline
+  const [checkoutPlan, setCheckoutPlan] = useState(null); // null = oculto, { planId, name, price } = visível
+
+  // Determina o userStatus para o checkout
+  const getUserStatus = () => {
+    if (!user) return 'first_subscription';
+    if (user.planStatus === 'DEGUSTACAO') return 'trial_ending';
+    if (user.planStatus === 'ATIVO' || user.planStatus === 'BASICO') return 'renewal';
+    return 'first_subscription';
+  };
+
   const handlePlanCta = async (planId, e) => {
     e?.preventDefault();
     if (planId) {
       localStorage.setItem('selected_plan', planId);
     }
-    
+
+    // Usuário não autenticado → redirecionar para registro
     if (!user) {
       navigate(`/auth?mode=register&plan=${planId}`);
       return;
     }
 
-    if (user.planStatus === 'ATIVO' || user.planStatus === 'BASICO' || user.planStatus === 'DEGUSTACAO') {
-      navigate('/dashboard/novo-anuncio');
+    // Plano trial → iniciar degustação diretamente (sem pagamento)
+    if (planId === 'trial') {
+      if (user.planStatus === 'ATIVO' || user.planStatus === 'BASICO' || user.planStatus === 'DEGUSTACAO') {
+        navigate('/dashboard/novo-anuncio');
+        return;
+      }
+      try {
+        const res = await fetch(`${API_URL}/api/subscriptions/trial`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ planId })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          updateUser(data.user);
+          navigate('/dashboard/novo-anuncio');
+        } else {
+          const message = data.message || 'Erro ao iniciar o período de testes.';
+          if (message === 'Você já possui um plano ativo ou em degustação.') {
+            updateUser({ planStatus: 'DEGUSTACAO' });
+            navigate('/dashboard/novo-anuncio');
+          } else {
+            alert(message);
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao iniciar trial:', err);
+        alert('Erro ao conectar com o servidor para iniciar período de degustação.');
+      }
       return;
     }
 
-    try {
-      const res = await fetch(`${API_URL}/api/subscriptions/trial`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ planId })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        updateUser(data.user);
-        navigate('/dashboard/novo-anuncio');
-      } else {
-        const message = data.message || 'Erro ao iniciar o período de testes.';
-        if (message === 'Você já possui um plano ativo ou em degustação.') {
-          updateUser({ planStatus: 'DEGUSTACAO' });
-          navigate('/dashboard/novo-anuncio');
-        } else {
-          alert(message);
-        }
-      }
-    } catch (err) {
-      console.error('Erro ao iniciar trial:', err);
-      alert('Erro ao conectar com o servidor para iniciar período de degustação.');
-    }
+    // Usuário já com plano ativo → exibir checkout para renovação/upgrade
+    // Usuário sem plano → exibir checkout para primeira assinatura
+    const config = PLAN_CONFIG[planId] || { name: planId, price: '?' };
+    setCheckoutPlan({ planId, name: config.name, price: config.price });
   };
 
   const mockProfessional = {
@@ -74,22 +104,56 @@ export default function Planos() {
     ]
   };
 
+  // ── Se o checkout estiver aberto, renderizá-lo com o plano selecionado ──
+  if (checkoutPlan) {
+    return (
+      <div className="bg-[#eae7e5] min-h-screen pt-28 pb-20 overflow-x-hidden font-sans">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header do checkout */}
+          <div className="mb-8 flex items-center gap-4">
+            <button
+              onClick={() => setCheckoutPlan(null)}
+              className="flex items-center gap-2 text-slate-600 hover:text-slate-900 font-medium text-sm transition-colors group"
+            >
+              <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+              Voltar aos Planos
+            </button>
+          </div>
+
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-black text-slate-800 tracking-tight">Finalize sua Assinatura</h1>
+            <p className="text-slate-500 mt-1 text-sm">Você está a um passo de divulgar seus serviços em Itapipoca!</p>
+          </div>
+
+          <PaymentCheckout
+            planId={checkoutPlan.planId}
+            planName={checkoutPlan.name}
+            planPrice={checkoutPlan.price}
+            userStatus={getUserStatus()}
+            onClose={() => setCheckoutPlan(null)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Tela normal de Planos ──
   return (
     <div className="bg-[#eae7e5] min-h-screen pt-28 pb-20 overflow-x-hidden font-sans">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* ========================================================================= */}
         {/* 1. TOP 'GRÁTIS' BANNER (THE HOOK)                                         */}
         {/* ========================================================================= */}
         <div className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-10 shadow-md mb-12 max-w-4xl mx-auto transition-all hover:shadow-lg duration-300">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-            
+
             {/* Esquerda: Titulo e Lista */}
             <div className="md:col-span-8 text-left space-y-4">
               <h2 className="text-4xl font-extrabold text-emerald-500 tracking-tight select-none">
                 Grátis
               </h2>
-              
+
               <ul className="space-y-2">
                 <li className="flex items-center gap-2.5 text-slate-800 font-extrabold text-base">
                   <CheckCircle className="text-emerald-500 shrink-0" size={20} />
@@ -104,13 +168,13 @@ export default function Planos() {
                   Sem cobrança automática
                 </li>
               </ul>
-              
+
               {/* Disclaimer Text refined to strictly: text-sm text-slate-500 font-normal tracking-wide mt-3 */}
               <p className="text-sm text-slate-500 font-normal tracking-wide mt-3 leading-relaxed max-w-xl">
                 Terminou o período seu anúncio simplesmente ficam aguardando você decidir ou não continuar.
               </p>
             </div>
-            
+
             {/* Direita: Botão de Chamada com Sol's Yellow e Header style */}
             <div className="md:col-span-4 flex justify-start md:justify-end items-center">
               <button
@@ -120,7 +184,7 @@ export default function Planos() {
                 Começar
               </button>
             </div>
-            
+
           </div>
         </div>
 
@@ -137,7 +201,7 @@ export default function Planos() {
         {/* ========================================================================= */}
         {/* 2. DYNAMIC BILLING TOGGLE AND COMPARISON CARDS                            */}
         {/* ========================================================================= */}
-        
+
         {/* Toggle de Ciclo de Faturamento */}
         <div className="flex justify-center mb-10 select-none">
           <div className="bg-slate-200/80 backdrop-blur-sm p-1 rounded-2xl flex items-center shadow-inner border border-slate-300/40">
@@ -168,7 +232,7 @@ export default function Planos() {
         </div>
 
         <div className="flex flex-col md:flex-row justify-center gap-8 items-stretch max-w-4xl mx-auto mb-16 px-4">
-          
+
           {/* CARD 1: Plano Básico */}
           <div className="bg-white rounded-3xl border border-slate-200/80 p-8 flex flex-col justify-between hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 relative w-full max-w-[340px] mx-auto md:mx-0 shadow-md">
             <div>
@@ -180,7 +244,7 @@ export default function Planos() {
                 <p className="text-xs text-slate-500 font-bold leading-relaxed">
                   Perfeito para divulgar seus serviços com extrema qualidade, avaliações reais e portfólio.
                 </p>
-                
+
                 <div className="pt-2 select-none">
                   {billingCycle === 'anual' ? (
                     <div className="space-y-1">
@@ -268,7 +332,7 @@ export default function Planos() {
                 <p className="text-xs text-slate-350 font-bold leading-relaxed">
                   Todos os benefícios inclusos + direito a revender espaço publicitário local diretamente no perfil!
                 </p>
-                
+
                 <div className="pt-2 select-none">
                   {billingCycle === 'anual' ? (
                     <div className="space-y-1">
@@ -399,9 +463,9 @@ export default function Planos() {
           <h4 className="text-2xl font-black text-slate-800 mb-10 tracking-tight">
             Seu anúncio aparece assim:
           </h4>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-            
+
             {/* Esquerda: Componente AdCard Real Mockado para Paulo Garces */}
             <div className="md:col-span-7 flex justify-center w-full">
               <div className="w-full relative transition-all duration-300 hover:scale-[1.01]">
@@ -415,17 +479,17 @@ export default function Planos() {
                 <span className="font-extrabold text-slate-800 text-sm block mb-0.5">Sua foto no perfil ou sua logo</span>
                 <span className="text-xs text-slate-500 font-bold">Imprime credibilidade imediata ao primeiro olhar.</span>
               </div>
-              
+
               <div className="bg-white/70 backdrop-blur-md p-4 rounded-2xl border border-slate-300/40 shadow-sm transition-all hover:-translate-x-1 duration-200">
                 <span className="font-extrabold text-slate-800 text-sm block mb-0.5">Atalho para suas redes sociais</span>
                 <span className="text-xs text-slate-500 font-bold">Direcione clientes para portfólios no Instagram, Facebook e YouTube.</span>
               </div>
-              
+
               <div className="bg-[#25d366]/10 backdrop-blur-md p-4 rounded-2xl border border-emerald-200 shadow-sm transition-all hover:-translate-x-1 duration-200">
                 <span className="font-extrabold text-emerald-800 text-sm block mb-0.5">Botão do Whatsapp</span>
                 <span className="text-xs text-emerald-600 font-bold">Contato direto sem taxas de intermediação, direto na sua mão.</span>
               </div>
-              
+
               <div className="bg-[#009ee2]/10 backdrop-blur-md p-4 rounded-2xl border border-blue-200 shadow-sm transition-all hover:-translate-x-1 duration-200">
                 <span className="font-extrabold text-blue-900 text-sm block mb-0.5">Pagina de perfil</span>
                 <span className="text-xs text-blue-600 font-bold">Seu catálogo completo de serviços e qualificações sempre online.</span>

@@ -1,0 +1,9 @@
+# Certificados mTLS do Banco Inter — NUNCA fazer commit destes arquivos!
+# Baixe-os no Portal Inter Developer e salve nesta pasta:
+#   backend/certs/inter_client.crt   ← Certificado do cliente
+#   backend/certs/inter_client.key   ← Chave privada do certificado
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx

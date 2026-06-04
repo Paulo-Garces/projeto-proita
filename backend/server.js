@@ -770,6 +770,15 @@ app.use('/api/upload', uploadRoutes);
 const serviceRoutes = require('./routes/serviceRoutes')(prisma);
 app.use('/api/services', serviceRoutes);
 
+// Rotas de Pagamentos (Banco Inter — PIX e Boleto)
+const paymentRoutes = require('./routes/paymentRoutes')(prisma);
+app.use('/api/payments', paymentRoutes);
+
+// Rotas de Webhooks (Banco Inter — Conciliação Automática)
+const webhookRoutes = require('./routes/webhookRoutes')(prisma);
+app.use('/api/webhooks', webhookRoutes);
+
+
 // Helper local de classificação caso o Gemini falhe (ex: API key expirada ou rede)
 function localKeywordClassifier(description) {
   const desc = (description || '').toLowerCase();

@@ -7,6 +7,7 @@ import imageCompression from 'browser-image-compression';
 import AdCard from '../components/AdCard';
 import ImageCropperModal from '../components/ImageCropperModal';
 import SponsorsTab from '../components/SponsorsTab';
+import PaymentCheckout from '../components/PaymentCheckout';
 import { API_URL } from '../config';
 import { getProfileDisplayName, getProfileAvatarNameParam } from '../utils/profileDisplayName';
 
@@ -1223,6 +1224,7 @@ export default function Dashboard() {
   const [myAds, setMyAds] = useState([]);
   const [adsLoading, setAdsLoading] = useState(false);
   const [editingAd, setEditingAd] = useState(null);
+  const [showDashboardCheckout, setShowDashboardCheckout] = useState(false);
 
   const [favoriteAds, setFavoriteAds] = useState([]);
   const [favoritesLoading, setFavoritesLoading] = useState(false);
@@ -2047,16 +2049,39 @@ export default function Dashboard() {
                         const status = user?.planStatus || 'DEGUSTACAO';
                         let statusBadgeColor = '';
                         let statusText = '';
+                        let planName = 'Plano Básico Anual';
+                        let planPrice = '35,90';
+                        let planId = 'basico_anual';
+
                         if (status === 'ATIVO') {
                           statusBadgeColor = 'bg-emerald-50 border-emerald-200 text-emerald-700';
                           statusText = 'Ativo';
+                          planName = 'Plano Patrocinador Anual';
+                          planPrice = '45,90';
+                          planId = 'patrocinador_anual';
+                        } else if (status === 'BASICO') {
+                          statusBadgeColor = 'bg-sky-50 border-sky-200 text-sky-700';
+                          statusText = 'Básico Ativo';
+                          planName = 'Plano Básico Anual';
+                          planPrice = '35,90';
+                          planId = 'basico_anual';
                         } else if (status === 'DEGUSTACAO') {
                           statusBadgeColor = 'bg-amber-50 border-amber-200 text-amber-700';
                           statusText = 'Degustação (30 dias grátis)';
+                          planName = 'Plano Básico Anual';
+                          planPrice = '35,90';
+                          planId = 'basico_anual';
                         } else {
                           statusBadgeColor = 'bg-red-50 border-red-200 text-red-700';
                           statusText = 'Expirado';
+                          planId = 'basico_anual';
                         }
+
+                        // Determina userStatus para o componente de checkout
+                        const checkoutUserStatus =
+                          status === 'DEGUSTACAO' ? 'trial_ending' :
+                          (status === 'ATIVO' || status === 'BASICO') ? 'renewal' :
+                          'first_subscription';
 
                         const handleSimulatePayment = async () => {
                           try {
@@ -2084,10 +2109,6 @@ export default function Dashboard() {
                           alert('Recibo estará disponível após o primeiro ciclo.');
                         };
 
-                        const handlePay = () => {
-                          alert('A integração real com gateway de pagamento estará disponível em breve!');
-                        };
-
                         const formatDateBR = (dateStr) => {
                           if (!dateStr) return 'Não cadastrada';
                           const d = new Date(dateStr);
@@ -2096,81 +2117,94 @@ export default function Dashboard() {
                         };
 
                         return (
-                          <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-                              <div>
-                                <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">
-                                  Plano Profissional proITA - {
-                                    status === 'ATIVO' ? 'Patrocinador' :
-                                    status === 'BASICO' ? 'Básico' :
-                                    status === 'DEGUSTACAO' ? 'Degustação' : 'Expirado'
-                                  }
-                                </h3>
-                                <p className="text-xs text-slate-500 mt-0.5">Assinatura vinculada à conta: {user?.email || user?.telefone}</p>
-                              </div>
-                              <span className={`px-4 py-1.5 rounded-full border text-xs font-bold ${statusBadgeColor} tracking-wider uppercase inline-block`}>
-                                {statusText}
-                              </span>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-2">
-                              <div className="space-y-1">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Início da Assinatura / Criação da Conta</span>
-                                <span className="font-semibold text-slate-800 text-sm md:text-base">
-                                  {formatDateBR(user?.createdAt)}
+                          <>
+                            {/* ── Cartão de Status do Plano ── */}
+                            <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                                <div>
+                                  <h3 className="font-extrabold text-slate-900 text-lg tracking-tight">
+                                    {planName}
+                                  </h3>
+                                  <p className="text-xs text-slate-500 mt-0.5">Assinatura vinculada à conta: {user?.email || user?.telefone}</p>
+                                </div>
+                                <span className={`px-4 py-1.5 rounded-full border text-xs font-bold ${statusBadgeColor} tracking-wider uppercase inline-block`}>
+                                  {statusText}
                                 </span>
                               </div>
-                              
-                              <div className="space-y-1">
-                                {status === 'DEGUSTACAO' ? (
-                                  <>
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Fim do Teste Grátis</span>
-                                    <span className="font-semibold text-slate-800 text-sm md:text-base text-amber-600">
-                                      {formatDateBR(user?.trialEndsAt)}
-                                    </span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Próxima Renovação</span>
-                                    <span className="font-semibold text-slate-800 text-sm md:text-base">
-                                      {formatDateBR(user?.subscriptionEndsAt)}
-                                    </span>
-                                  </>
-                                )}
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-2">
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Início da Assinatura / Criação da Conta</span>
+                                  <span className="font-semibold text-slate-800 text-sm md:text-base">
+                                    {formatDateBR(user?.createdAt)}
+                                  </span>
+                                </div>
+
+                                <div className="space-y-1">
+                                  {status === 'DEGUSTACAO' ? (
+                                    <>
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Fim do Teste Grátis</span>
+                                      <span className="font-semibold text-slate-800 text-sm md:text-base text-amber-600">
+                                        {formatDateBR(user?.trialEndsAt)}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Próxima Renovação</span>
+                                      <span className="font-semibold text-slate-800 text-sm md:text-base">
+                                        {formatDateBR(user?.subscriptionEndsAt)}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="bg-slate-50 border border-slate-200/50 rounded-2xl p-4 space-y-2">
+                                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Benefícios da Assinatura</h4>
+                                <ul className="text-xs text-slate-600 space-y-1.5">
+                                  <li className="flex items-center gap-2">
+                                    <span className="text-emerald-500 font-bold">✓</span> Limite de até 2 anúncios profissionais por conta (Atualmente cadastrados: {myAds.length}/2).
+                                  </li>
+                                  <li className="flex items-center gap-2">
+                                    <span className="text-emerald-500 font-bold">✓</span> {status === 'ATIVO' || status === 'BASICO' ? (
+                                      <span className="text-emerald-600 font-bold">Selos de Reputação ATIVOS e exibidos nos seus anúncios!</span>
+                                    ) : (
+                                      <span>Ative sua conta para exibir seus Selos de Reputação (Bronze, Prata e Ouro).</span>
+                                    )}
+                                  </li>
+                                </ul>
+                              </div>
+
+                              <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                                <button
+                                  onClick={() => setShowDashboardCheckout(prev => !prev)}
+                                  className="flex-1 flex justify-center items-center bg-primary hover:bg-primary-hover text-white py-3 px-6 rounded-2xl font-bold text-sm transition-all shadow-md shadow-primary/10 active:scale-95 cursor-pointer gap-2"
+                                >
+                                  <CreditCard size={16} />
+                                  {showDashboardCheckout ? 'Fechar Checkout' : 'Pagar / Antecipar Anuidade'}
+                                </button>
+                                <button
+                                  onClick={handleReceipt}
+                                  className="flex-1 flex justify-center items-center bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 px-6 rounded-2xl font-bold text-sm transition-all active:scale-95 cursor-pointer"
+                                >
+                                  Gerar Recibo
+                                </button>
                               </div>
                             </div>
 
-                            <div className="bg-slate-50 border border-slate-200/50 rounded-2xl p-4 space-y-2">
-                              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Benefícios da Assinatura</h4>
-                              <ul className="text-xs text-slate-600 space-y-1.5">
-                                <li className="flex items-center gap-2">
-                                  <span className="text-emerald-500 font-bold">✓</span> Limite de até 2 anúncios profissionais por conta (Atualmente cadastrados: {myAds.length}/2).
-                                </li>
-                                <li className="flex items-center gap-2">
-                                  <span className="text-emerald-500 font-bold">✓</span> {status === 'ATIVO' || status === 'BASICO' ? (
-                                    <span className="text-emerald-600 font-bold">Selos de Reputação ATIVOS e exibidos nos seus anúncios!</span>
-                                  ) : (
-                                    <span>Ative sua conta para exibir seus Selos de Reputação (Bronze, Prata e Ouro).</span>
-                                  )}
-                                </li>
-                              </ul>
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                              <button
-                                onClick={handlePay}
-                                className="flex-1 flex justify-center items-center bg-primary hover:bg-primary-hover text-white py-3 px-6 rounded-2xl font-bold text-sm transition-all shadow-md shadow-primary/10 active:scale-95 cursor-pointer"
-                              >
-                                Pagar / Antecipar Anuidade
-                              </button>
-                              <button
-                                onClick={handleReceipt}
-                                className="flex-1 flex justify-center items-center bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 px-6 rounded-2xl font-bold text-sm transition-all active:scale-95 cursor-pointer"
-                              >
-                                Gerar Recibo
-                              </button>
-                            </div>
-                          </div>
+                            {/* ── Checkout Inline ── */}
+                            {showDashboardCheckout && (
+                              <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+                                <PaymentCheckout
+                                  planId={planId}
+                                  planName={planName}
+                                  planPrice={planPrice}
+                                  userStatus={checkoutUserStatus}
+                                  onClose={() => setShowDashboardCheckout(false)}
+                                />
+                              </div>
+                            )}
+                          </>
                         );
                       })()}
                     </div>

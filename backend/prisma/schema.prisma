@@ -31,6 +31,12 @@ model User {
   trialEndsAt                DateTime?
   subscriptionEndsAt         DateTime?
 
+  // Controle de Transação Pendente do Banco Inter
+  cpfCnpj                    String?
+  pendingTxid                String?   @unique
+  pendingNossoNumero         String?   @unique
+  pendingPlanId              String?
+
   createdAt                  DateTime  @default(now())
   profiles                   Profile[] // 1:N — um usuário pode ter vários anúncios
   resetCode                  String?
