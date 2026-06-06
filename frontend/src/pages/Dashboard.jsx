@@ -2136,7 +2136,7 @@ export default function Dashboard() {
                                 <div className="space-y-1">
                                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Início da Assinatura / Criação da Conta</span>
                                   <span className="font-semibold text-slate-800 text-sm md:text-base">
-                                    {formatDateBR(user?.createdAt)}
+                                    {formatDateBR(user?.createdAt || user?.dataCriacao || user?.created_at)}
                                   </span>
                                 </div>
 
@@ -2175,13 +2175,30 @@ export default function Dashboard() {
                                 </ul>
                               </div>
 
+                              {(status === 'ATIVO' || status === 'BASICO') && (
+                                <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
+                                  <div className="flex items-center gap-2 text-indigo-800">
+                                    <Sparkles size={18} className="text-indigo-600 shrink-0" />
+                                    <span className="text-sm font-medium">Deseja fazer o upgrade para o Plano Patrocinador antes do vencimento?</span>
+                                  </div>
+                                  <button onClick={() => window.open('https://wa.me/5588999999999', '_blank')} className="bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-xl text-xs font-bold transition-colors shrink-0 cursor-pointer">
+                                    Fale com o Suporte
+                                  </button>
+                                </div>
+                              )}
+
                               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                                 <button
                                   onClick={() => setShowDashboardCheckout(prev => !prev)}
                                   className="flex-1 flex justify-center items-center bg-primary hover:bg-primary-hover text-white py-3 px-6 rounded-2xl font-bold text-sm transition-all shadow-md shadow-primary/10 active:scale-95 cursor-pointer gap-2"
                                 >
                                   <CreditCard size={16} />
-                                  {showDashboardCheckout ? 'Fechar Checkout' : 'Pagar / Antecipar Anuidade'}
+                                  {showDashboardCheckout 
+                                    ? 'Fechar Checkout' 
+                                    : (status === 'ATIVO' || status === 'BASICO'
+                                        ? 'Renovar ou Alterar Plano' 
+                                        : 'Assinar Agora')
+                                  }
                                 </button>
                                 <button
                                   onClick={handleReceipt}

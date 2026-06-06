@@ -228,6 +228,32 @@ const PaymentCheckout = ({
     }
   };
 
+  const handleCreditCardCheckout = async () => {
+    setLoading(true);
+    setErrorMsg('');
+    try {
+      const res = await fetch(`${API_URL}/api/payments/credit-card`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ planId: selectedPlanId })
+      });
+      const data = await res.json();
+      if (data.success && data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      } else {
+        setErrorMsg(data.message || 'Erro ao gerar link de pagamento do cartão.');
+      }
+    } catch (err) {
+      console.error('[CREDIT CARD CHECKOUT] Erro:', err);
+      setErrorMsg('Erro de conexão ao servidor. Tente novamente mais tarde.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSimulateActivation = async () => {
     setLoading(true);
     setErrorMsg('');
@@ -376,26 +402,39 @@ const PaymentCheckout = ({
                   : 'border-slate-200 text-slate-500 hover:bg-slate-50'
               }`}
             >
-              Boleto Bancário <span className="text-[10px] font-normal block mt-0.5">(1 dia útil para compensar)</span>
+              Boleto <span className="text-[10px] font-normal block mt-0.5">(1 dia útil)</span>
+            </button>
+            <button
+              onClick={() => handleMethodChange('credit-card')}
+              className={`flex-1 py-3 px-4 rounded-xl border font-bold text-xs transition-all duration-200 cursor-pointer ${
+                paymentMethod === 'credit-card'
+                  ? 'border-emerald-600 bg-emerald-50/40 text-emerald-700 ring-2 ring-emerald-600/5'
+                  : 'border-slate-200 text-slate-500 hover:bg-slate-50'
+              }`}
+            >
+              Cartão <span className="text-[10px] font-normal block mt-0.5">(Ambiente Seguro)</span>
             </button>
           </div>
 
           {/* Campo CPF/CNPJ do Titular */}
-          <div className="mb-5">
-            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
-              CPF / CNPJ do Titular <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={cpf}
-              onChange={handleCpfChange}
-              placeholder="000.000.000-00"
-              disabled={pixGenerated || boletoGenerated}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all disabled:bg-slate-50 disabled:text-slate-400 text-sm"
-            />
-          </div>
-
-          <hr className="border-slate-100 mb-6" />
+          {paymentMethod !== 'credit-card' && (
+            <>
+              <div className="mb-5">
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+                  CPF / CNPJ do Titular <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={cpf}
+                  onChange={handleCpfChange}
+                  placeholder="000.000.000-00"
+                  disabled={pixGenerated || boletoGenerated}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all disabled:bg-slate-50 disabled:text-slate-400 text-sm"
+                />
+              </div>
+              <hr className="border-slate-100 mb-6" />
+            </>
+          )}
 
           {/* Área: PIX */}
           {paymentMethod === 'pix' && (
@@ -460,25 +499,7 @@ const PaymentCheckout = ({
                     </button>
                   </div>
 
-                  {/* Banner de Ambiente de Teste */}
-                  {pixData?.mock && (
-                    <div className="mt-4 p-4 bg-amber-50/50 border border-amber-200/60 rounded-xl space-y-3">
-                      <div className="flex items-start gap-2.5">
-                        <Sparkles className="text-amber-500 animate-pulse mt-0.5 shrink-0" size={16} />
-                        <p className="text-[11px] text-amber-800 font-bold leading-normal">
-                          Você está em Ambiente de Teste. Clique no botão abaixo para simular o pagamento do PIX e ativar seu plano instantaneamente.
-                        </p>
-                      </div>
-                      <button
-                        onClick={handleSimulateActivation}
-                        disabled={loading}
-                        className="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-4 rounded-lg text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-                      >
-                        {loading && <Loader2 size={14} className="animate-spin" />}
-                        Confirmar Pagamento Simulado
-                      </button>
-                    </div>
-                  )}
+
                 </div>
               )}
             </div>
@@ -592,6 +613,32 @@ const PaymentCheckout = ({
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Área: CARTÃO DE CRÉDITO */}
+          {paymentMethod === 'credit-card' && (
+            <div className="text-center animate-in fade-in duration-300">
+              <div className="bg-slate-50 border border-slate-200 text-slate-600 p-6 rounded-2xl mb-6 text-sm leading-relaxed flex flex-col items-center gap-4">
+                <div className="bg-emerald-100/50 p-3 rounded-full">
+                  <ShieldCheck size={40} className="text-emerald-500" />
+                </div>
+                <div>
+                  <strong className="text-slate-800 text-base">Ambiente 100% Seguro</strong>
+                  <p className="mt-2 text-xs text-slate-500 max-w-sm mx-auto">
+                    Você será redirecionado para o ambiente seguro da <strong>InfinitePay</strong> para concluir seu pagamento. 
+                    Nenhum dado do seu cartão será armazenado em nossos servidores.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleCreditCardCheckout}
+                disabled={loading}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+              >
+                {loading && <Loader2 size={16} className="animate-spin" />}
+                {loading ? 'Redirecionando para pagamento...' : 'Pagar com Cartão (Seguro)'}
+              </button>
             </div>
           )}
         </div>

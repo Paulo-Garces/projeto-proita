@@ -338,5 +338,93 @@ module.exports = (prisma) => {
     }
   });
 
+  // ──────────────────────────────────────────────────────────────────────────────
+  // ROTA 5: POST /api/payments/credit-card
+  // ──────────────────────────────────────────────────────────────────────────────
+  router.post('/credit-card', authMiddleware, async (req, res) => {
+    try {
+      const { planId } = req.body;
+
+      if (!planId || !PLAN_PRICES[planId]) {
+        return res.status(400).json({
+          success: false,
+          message: `Plano inválido. Opções válidas: ${Object.keys(PLAN_PRICES).join(', ')}`,
+        });
+      }
+
+      const valorCentavos = Math.round(PLAN_PRICES[planId] * 100);
+      const descricao = PLAN_LABELS[planId];
+      const handle = process.env.INFINITEPAY_HANDLE;
+
+      if (!handle) {
+         console.error('[Credit Card] INFINITEPAY_HANDLE não configurado no .env');
+         return res.status(500).json({ success: false, message: 'Configuração de pagamento incompleta.' });
+      }
+
+      const order_nsu = `CC_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+      // Salva dados de transação pendente no usuário
+      try {
+        await prisma.user.update({
+          where: { id: req.user.id },
+          data: {
+            pendingTxid: order_nsu,
+            pendingPlanId: planId,
+          }
+        });
+      } catch (dbErr) {
+        console.error('[Credit Card DB] Erro ao salvar transação pendente no usuário:', dbErr.message);
+      }
+
+      const redirect_url = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard?payment=success`;
+
+      const payload = {
+        handle,
+        items: [
+          {
+            quantity: Number(1),
+            price: Number(valorCentavos),
+            description: String(descricao)
+          }
+        ],
+        order_nsu,
+        redirect_url
+      };
+
+      console.log(`[Credit Card] Solicitando link de pagamento para planId="${planId}", valor=${valorCentavos} centavos`);
+
+      const response = await fetch('https://api.checkout.infinitepay.io/links', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.url) {
+         return res.status(200).json({
+            success: true,
+            redirectUrl: data.url,
+            order_nsu: order_nsu
+         });
+      } else {
+         console.error('[Credit Card] Erro da InfinitePay:', data);
+         return res.status(400).json({
+            success: false,
+            message: 'Não foi possível gerar o link de pagamento. Tente novamente.',
+         });
+      }
+
+    } catch (err) {
+      console.error('[POST /api/payments/credit-card] Erro:', err.message);
+      return res.status(502).json({
+        success: false,
+        message: 'Erro ao processar pagamento com cartão.',
+      });
+    }
+  });
+
   return router;
 };
