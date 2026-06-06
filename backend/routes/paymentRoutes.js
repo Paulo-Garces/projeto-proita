@@ -232,7 +232,7 @@ module.exports = (prisma) => {
           linhaDigitavel: '00190.00009 02148.830001 83600.701103 7 00000000003590',
           valor,
           dataVencimento,
-          pdfBase64:      null,
+          pdfBase64:      'JVBERi0xLjQKMSAwIG9iagogIDw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+CmVuZG9iagoyIDAgb2JqCiAgPDwvVHlwZS9QYWdlcy9LaWRzWzMgMCBSXS9Db3VudCAxPj4KZW5kb2JqCjMgMCBvYmoKICA8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL01lZGlhQm94WzAgMCA1OTUgODQyXS9Db250ZW50cyA0IDAgUj4+CmVuZG9iago0IDAgb2JqCiAgPDwvTGVuZ3RoIDU5Pj4Kc3RyZWFtCkJUCi9GMSAxMiBUZgogNzAgNzAwIFRkCiAoQm9sZXRvIFByb0lUQSAtIFNpbXVsYWRvKSBUagogRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2MCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIGYgCjAwMDAwMDAyMDAgMDAwMDAgbiAKdHJhaWxlcgogIDw8L1NpemUgNS9Sb290IDEgMCBSPj4Kc3RhcnR4cmVmCiAyOTYKJSVFT0Y=',
           mensagem:       '⚠️ Modo de desenvolvimento — nenhum boleto real foi emitido.',
         });
       }
