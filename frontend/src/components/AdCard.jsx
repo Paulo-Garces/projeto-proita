@@ -55,7 +55,7 @@ const SocialIconBadge = ({ platform }) => {
   }
 };
 
-export default function AdCard({ professional, showEdit = false, onEdit, onDelete, style }) {
+export default function AdCard({ professional, showEdit = false, onEdit, onDelete, style, disableEdit = false }) {
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
@@ -223,22 +223,6 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                 {displayName?.[0]?.toUpperCase() || 'P'}
               </div>
             )}
-            
-            {/* Selo Reputação (Ativo ou Inativo) no bottom-0 right-0 da foto como condecoração */}
-            <div className="absolute bottom-0 right-0 translate-x-[2px] translate-y-[2px] bg-white rounded-full p-1 shadow-md z-10 flex items-center justify-center border border-slate-100 cursor-help" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-              {badge ? (
-                <span title={badge.title} className={`${badge.color} shrink-0`}>
-                  {badge.icon === 'ShieldCheck' ? <ShieldCheck size={20} className="stroke-[2.5]" /> : <Award size={20} className="stroke-[2.5]" />}
-                </span>
-              ) : (
-                <span 
-                  title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista." 
-                  className="text-gray-400 grayscale opacity-50 shrink-0" 
-                >
-                  <Award size={20} className="stroke-[2.5]" />
-                </span>
-              )}
-            </div>
           </Link>
         </div>
 
@@ -249,9 +233,6 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors truncate">
                 <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate flex items-center gap-1.5">
                   {displayName}
-                  {professional.verified && (
-                    <CheckCircle size={18} className="text-blue-500 fill-blue-50 shrink-0 inline-block align-middle" />
-                  )}
                 </h3>
               </Link>
             </div>
@@ -343,7 +324,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         </div>
 
         {/* LINHA 3 ESQUERDA: Redes sociais (sempre 3 espaços) + Selo de Titularidade */}
-        <div className="flex flex-col items-center gap-1.5 justify-center">
+        <div className="flex flex-col items-center justify-between h-full gap-1.5">
           <div className="flex items-center gap-1.5 justify-center">
             {displayedSocials.map((link, idx) => {
               const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
@@ -359,18 +340,38 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               </div>
             ))}
           </div>
-          {ownerName && (
-            <span className="text-[10px] md:text-xs text-slate-500 opacity-70 font-semibold truncate max-w-full select-none mt-0.5">
-              Por {ownerName}
-            </span>
-          )}
+          <div className="mt-auto flex flex-col items-center gap-1">
+            {ownerName && (
+              <span className="text-[10px] md:text-xs text-slate-500 opacity-70 font-semibold truncate max-w-full select-none">
+                Por {ownerName}
+              </span>
+            )}
+            {badge ? (
+              <span title={badge.title} className={`${badge.color} inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border cursor-help shadow-sm`}>
+                {badge.icon === 'ShieldCheck' ? <ShieldCheck size={12} className="stroke-[2.5]" /> : <Award size={12} className="stroke-[2.5]" />}
+                {badge.title}
+              </span>
+            ) : (
+              <span 
+                title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista." 
+                className="text-gray-400 bg-slate-50 border border-slate-100 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold grayscale opacity-60 cursor-help" 
+              >
+                <Award size={12} className="stroke-[2.5]" />
+                Verificação pendente
+              </span>
+            )}
+          </div>
         </div>
 
         {/* LINHA 3 DIREITA: Botões de Ação centralizados (Ligar, WhatsApp, Compartilhar) ou Editar/Excluir */}
         <div className="flex items-center justify-center w-full">
           {showEdit ? (
             <div className="flex w-full gap-2 items-center justify-center max-w-xs">
-              <button onClick={() => onEdit?.(professional)} className="flex-1 flex justify-center items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-3 rounded-full font-medium transition-colors text-xs md:text-sm">
+              <button 
+                onClick={() => onEdit?.(professional)} 
+                disabled={disableEdit}
+                className="flex-1 flex justify-center items-center gap-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 py-2 px-3 rounded-full font-medium transition-colors text-xs md:text-sm"
+              >
                 <Edit2 size={16} /> Editar
               </button>
               <button onClick={() => onDelete?.(professional.id)} className="flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-500 px-3 py-2 rounded-full font-medium transition-colors text-xs md:text-sm">

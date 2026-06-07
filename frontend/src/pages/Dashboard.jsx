@@ -1246,6 +1246,7 @@ export default function Dashboard() {
   const [novoTelefone, setNovoTelefone] = useState('');
   const [loadingLinkPhone, setLoadingLinkPhone] = useState(false);
   const [showUnlinkModal, setShowUnlinkModal] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
 
   const [showVerifyEmailModal, setShowVerifyEmailModal] = useState(false);
   const [codigoVerificacaoEmail, setCodigoVerificacaoEmail] = useState('');
@@ -1698,6 +1699,37 @@ export default function Dashboard() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!window.confirm('Tem certeza absoluta? Esta ação é irreversível.')) {
+      return;
+    }
+
+    setSecurityError('');
+    setSecuritySuccess('');
+    setLoadingDelete(true);
+
+    try {
+      const res = await fetch(`${API_URL}/api/users/me`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        logout();
+        navigate('/');
+      } else {
+        setSecurityError(data.message || 'Erro ao excluir conta.');
+      }
+    } catch (err) {
+      console.error(err);
+      setSecurityError('Erro de conexão ao excluir conta.');
+    } finally {
+      setLoadingDelete(false);
+    }
+  };
+
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setLoadingProfile(true);
@@ -1748,6 +1780,33 @@ export default function Dashboard() {
     { key: 'subscription', label: 'Assinatura e Anuidade', Icon: CreditCard },
     { key: 'security', label: 'Segurança', Icon: Settings },
   ];
+
+  const isSuspended = (() => {
+    const now = new Date();
+    const trialEnds = user?.trialEndsAt ? new Date(user.trialEndsAt) : null;
+    const subEnds = user?.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) : null;
+    const status = user?.planStatus || 'INATIVO';
+
+    const hasPaidPlan = status === 'ATIVO' || status === 'BASICO' || !!subEnds;
+
+    // Se estava no trial e expirou sem plano pago
+    if (trialEnds && now > trialEnds && !hasPaidPlan) {
+      return true;
+    }
+
+    // Se tem plano pago, mas a data atual é maior que 5 dias após o vencimento
+    if (hasPaidPlan && subEnds) {
+      const fiveDaysAfterSub = new Date(subEnds);
+      fiveDaysAfterSub.setDate(fiveDaysAfterSub.getDate() + 5);
+      if (now > fiveDaysAfterSub) {
+        return true;
+      }
+    }
+
+    return false;
+  })();
+
+  console.log('DADOS RECEBIDOS:', user);
 
   return (
     <div className="bg-slate-50 min-h-[calc(100vh-64px)] pt-24 pb-12">
@@ -1926,11 +1985,11 @@ export default function Dashboard() {
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-slate-900">Meus Anúncios</h2>
                       </div>
-                      {user?.planStatus === 'EXPIRADO' && (
+                      {isSuspended ? (
                         <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200/80 text-red-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-in slide-in-from-top-4 duration-300">
                           <div className="text-sm font-semibold flex items-start gap-2.5">
                             <span className="shrink-0 text-base leading-none">⚠️</span>
-                            <span>Seu plano expirou. Seus anúncios estão ocultos nas buscas. Renove sua assinatura para voltar a aparecer para os clientes.</span>
+                            <span>Seus anúncios estão suspensos temporariamente devido ao vencimento do plano. Renove sua assinatura para reativá-los.</span>
                           </div>
                           <button
                             onClick={() => setActiveTab('subscription')}
@@ -1939,6 +1998,21 @@ export default function Dashboard() {
                             Renovar Assinatura
                           </button>
                         </div>
+                      ) : (
+                        user?.planStatus === 'EXPIRADO' && (
+                          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200/80 text-red-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-in slide-in-from-top-4 duration-300">
+                            <div className="text-sm font-semibold flex items-start gap-2.5">
+                              <span className="shrink-0 text-base leading-none">⚠️</span>
+                              <span>Seu plano expirou. Seus anúncios estão ocultos nas buscas. Renove sua assinatura para voltar a aparecer para os clientes.</span>
+                            </div>
+                            <button
+                              onClick={() => setActiveTab('subscription')}
+                              className="sm:shrink-0 text-center text-xs font-bold bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all active:scale-95 shadow-sm shadow-red-600/10 cursor-pointer"
+                            >
+                              Renovar Assinatura
+                            </button>
+                          </div>
+                        )
                       )}
                       {adsLoading ? (
                         <div className="flex justify-center py-16"><Loader2 size={32} className="animate-spin text-primary" /></div>
@@ -1946,9 +2020,15 @@ export default function Dashboard() {
                         <div className="text-center py-16 text-slate-400">
                           <LayoutDashboard size={40} className="mx-auto mb-3 opacity-30" />
                           <p className="font-medium mb-4">Você ainda não tem nenhum anúncio.</p>
-                          <Link to="/dashboard/novo-anuncio" className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-xl font-medium hover:bg-primary-hover transition-colors">
-                            <Plus size={16} /> Criar meu primeiro anúncio
-                          </Link>
+                          {isSuspended ? (
+                             <button disabled className="inline-flex items-center gap-2 bg-slate-200 text-slate-400 px-6 py-2.5 rounded-xl font-medium cursor-not-allowed">
+                               <Plus size={16} /> Criar meu primeiro anúncio
+                             </button>
+                           ) : (
+                             <Link to="/dashboard/novo-anuncio" className="inline-flex items-center gap-2 bg-primary text-white px-6 py-2.5 rounded-xl font-medium hover:bg-primary-hover transition-colors">
+                               <Plus size={16} /> Criar meu primeiro anúncio
+                             </Link>
+                           )}
                         </div>
                       ) : (
                         <div className="space-y-6 animate-in fade-in duration-300">
@@ -1984,6 +2064,7 @@ export default function Dashboard() {
                                   key={ad.id}
                                   professional={cardPro}
                                   showEdit={true}
+                                  disableEdit={isSuspended}
                                   onEdit={() => setEditingAd(ad)}
                                   onDelete={() => handleDeleteAd(ad.id)}
                                 />
@@ -1992,9 +2073,15 @@ export default function Dashboard() {
                           </div>
                           {myAds.length === 1 && (
                             <div className="flex justify-center pt-4">
-                              <Link to="/dashboard/novo-anuncio" className="inline-flex items-center gap-2 text-primary border border-primary/20 bg-primary/5 hover:bg-primary/10 px-5 py-2.5 rounded-xl font-semibold transition-all text-sm shadow-sm hover:scale-[1.02] active:scale-95 duration-200">
-                                <Plus size={16} /> Adicionar outro anúncio (Máx 2)
-                              </Link>
+                               {isSuspended ? (
+                                 <button disabled className="inline-flex items-center gap-2 text-slate-400 border border-slate-200 bg-slate-50 px-5 py-2.5 rounded-xl font-semibold text-sm cursor-not-allowed">
+                                   <Plus size={16} /> Adicionar outro anúncio (Máx 2)
+                                 </button>
+                               ) : (
+                                 <Link to="/dashboard/novo-anuncio" className="inline-flex items-center gap-2 text-primary border border-primary/20 bg-primary/5 hover:bg-primary/10 px-5 py-2.5 rounded-xl font-semibold transition-all text-sm shadow-sm hover:scale-[1.02] active:scale-95 duration-200">
+                                   <Plus size={16} /> Adicionar outro anúncio (Máx 2)
+                                 </Link>
+                               )}
                             </div>
                           )}
                         </div>
@@ -2116,6 +2203,76 @@ export default function Dashboard() {
                           return d.toLocaleDateString('pt-BR');
                         };
 
+                        const getSubscriptionButtonProps = () => {
+                          if (showDashboardCheckout) {
+                            return {
+                              text: 'Fechar Checkout',
+                              bgClass: 'bg-primary hover:bg-primary-hover text-white shadow-primary/10'
+                            };
+                          }
+
+                          const now = new Date();
+                          const trialEnds = user?.trialEndsAt ? new Date(user.trialEndsAt) : null;
+                          const subEnds = user?.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) : null;
+
+                          const hasPaidPlan = status === 'ATIVO' || status === 'BASICO' || !!subEnds;
+
+                          // 1. Fim do Trial
+                          if (trialEnds && now > trialEnds && !hasPaidPlan) {
+                            return {
+                              text: 'Quero continuar no proITA, escolher meu plano',
+                              bgClass: 'bg-primary hover:bg-primary-hover text-white shadow-primary/10'
+                            };
+                          }
+
+                          // 2. Vencido Definitivo (Suspenso)
+                          if (hasPaidPlan && subEnds) {
+                            const fiveDaysAfterSub = new Date(subEnds);
+                            fiveDaysAfterSub.setDate(fiveDaysAfterSub.getDate() + 5);
+
+                            if (now > fiveDaysAfterSub) {
+                              return {
+                                text: 'Reativar meus anúncios',
+                                bgClass: 'bg-red-600 hover:bg-red-700 text-white shadow-red-600/10'
+                              };
+                            }
+                          }
+
+                          // 3. Janela de Renovação
+                          if (subEnds) {
+                            const sevenDaysBeforeSub = new Date(subEnds);
+                            sevenDaysBeforeSub.setDate(sevenDaysBeforeSub.getDate() - 7);
+
+                            const fiveDaysAfterSub = new Date(subEnds);
+                            fiveDaysAfterSub.setDate(fiveDaysAfterSub.getDate() + 5);
+
+                            if (now >= sevenDaysBeforeSub && now <= fiveDaysAfterSub) {
+                              return {
+                                text: 'Renovar Assinatura',
+                                bgClass: 'bg-orange-500 hover:bg-orange-600 text-white shadow-orange-500/10'
+                              };
+                            }
+                          }
+
+                          // 4. Ativo e Confortável
+                          if (hasPaidPlan && subEnds) {
+                            const sevenDaysBeforeSub = new Date(subEnds);
+                            sevenDaysBeforeSub.setDate(sevenDaysBeforeSub.getDate() - 7);
+
+                            if (now < sevenDaysBeforeSub) {
+                              return {
+                                text: 'Antecipar Anuidade',
+                                bgClass: 'bg-primary hover:bg-primary-hover text-white shadow-primary/10'
+                              };
+                            }
+                          }
+
+                          return {
+                            text: 'Assinar Agora',
+                            bgClass: 'bg-primary hover:bg-primary-hover text-white shadow-primary/10'
+                          };
+                        };
+
                         return (
                           <>
                             {/* ── Cartão de Status do Plano ── */}
@@ -2178,8 +2335,7 @@ export default function Dashboard() {
                               {(status === 'ATIVO' || status === 'BASICO') && (
                                 <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
                                   <div className="flex items-center gap-2 text-indigo-800">
-                                    <Sparkles size={18} className="text-indigo-600 shrink-0" />
-                                    <span className="text-sm font-medium">Deseja fazer o upgrade para o Plano Patrocinador antes do vencimento?</span>
+                                    <span className="text-sm font-medium">Deseja alterar seu plano? Entre em contato com o suporte.</span>
                                   </div>
                                   <button onClick={() => window.open('https://wa.me/5588999999999', '_blank')} className="bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-xl text-xs font-bold transition-colors shrink-0 cursor-pointer">
                                     Fale com o Suporte
@@ -2188,18 +2344,18 @@ export default function Dashboard() {
                               )}
 
                               <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                                <button
-                                  onClick={() => setShowDashboardCheckout(prev => !prev)}
-                                  className="flex-1 flex justify-center items-center bg-primary hover:bg-primary-hover text-white py-3 px-6 rounded-2xl font-bold text-sm transition-all shadow-md shadow-primary/10 active:scale-95 cursor-pointer gap-2"
-                                >
-                                  <CreditCard size={16} />
-                                  {showDashboardCheckout 
-                                    ? 'Fechar Checkout' 
-                                    : (status === 'ATIVO' || status === 'BASICO'
-                                        ? 'Renovar ou Alterar Plano' 
-                                        : 'Assinar Agora')
-                                  }
-                                </button>
+                                {(() => {
+                                  const btnProps = getSubscriptionButtonProps();
+                                  return (
+                                    <button
+                                      onClick={() => setShowDashboardCheckout(prev => !prev)}
+                                      className={`flex-1 flex justify-center items-center py-3 px-6 rounded-2xl font-bold text-sm transition-all shadow-md active:scale-95 cursor-pointer gap-2 ${btnProps.bgClass}`}
+                                    >
+                                      <CreditCard size={16} />
+                                      {btnProps.text}
+                                    </button>
+                                  );
+                                })()}
                                 <button
                                   onClick={handleReceipt}
                                   className="flex-1 flex justify-center items-center bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 px-6 rounded-2xl font-bold text-sm transition-all active:scale-95 cursor-pointer"
@@ -2487,6 +2643,26 @@ export default function Dashboard() {
                             <button type="button" onClick={() => setIsEditingEmail(true)} className="text-slate-600 hover:text-slate-800 text-sm font-medium transition-colors bg-transparent border-none p-0 cursor-pointer">Adicionar e-mail alternativo</button>
                           </div>
                         )}
+                      </div>
+
+                      {/* ── 4. Exclusão de Conta (LGPD) ── */}
+                      <div className="p-4 bg-red-50/20 border border-red-100 rounded-xl space-y-3">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle size={16} className="text-red-650 shrink-0" />
+                          <span className="text-sm font-semibold text-red-800">Excluir Conta</span>
+                        </div>
+                        <p className="text-xs text-red-700 leading-relaxed">
+                          Ao excluir sua conta, todos os seus dados, anúncios e histórico de assinaturas serão apagados permanentemente. Esta ação não pode ser desfeita.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleDeleteAccount}
+                          disabled={loadingDelete}
+                          className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-2.5 px-4 rounded-xl text-xs font-bold transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          {loadingDelete && <Loader2 size={14} className="animate-spin" />}
+                          Excluir minha conta permanentemente
+                        </button>
                       </div>
 
                     </div>

@@ -719,7 +719,27 @@ app.post('/api/subscriptions/trial', authMiddleware, async (req, res) => {
 app.get('/api/auth/me', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        nome: true,
+        sobrenome: true,
+        telefone: true,
+        email: true,
+        emailSecundario: true,
+        emailSecundarioVerificado: true,
+        googleId: true,
+        bairro: true,
+        role: true,
+        profileImageUrl: true,
+        senha: true,
+        planStatus: true,
+        trialEndsAt: true,
+        subscriptionEndsAt: true,
+        createdAt: true
+      }
+    });
     if (!user) {
       return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
     }
@@ -741,12 +761,60 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
         hasPassword: !!user.senha,
         planStatus: user.planStatus,
         trialEndsAt: user.trialEndsAt,
-        subscriptionEndsAt: user.subscriptionEndsAt
+        subscriptionEndsAt: user.subscriptionEndsAt,
+        createdAt: user.createdAt
       }
     });
   } catch (error) {
     console.error('[GET /api/auth/me] Erro:', error);
     res.status(500).json({ success: false, message: 'Erro interno do servidor.' });
+  }
+});
+
+// Rota para excluir a conta do usuário (LGPD)
+app.delete('/api/users/me', authMiddleware, async (req, res) => {
+  const userId = req.user.id;
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 1. Buscar todos os perfis (anúncios) do usuário
+      const profiles = await tx.profile.findMany({
+        where: { userId },
+        select: { id: true }
+      });
+      const profileIds = profiles.map(p => p.id);
+
+      if (profileIds.length > 0) {
+        // 2. Deletar os serviços associados aos perfis
+        await tx.service.deleteMany({
+          where: { profileId: { in: profileIds } }
+        });
+
+        // 3. Deletar as avaliações (reviews) associadas aos perfis
+        await tx.review.deleteMany({
+          where: { profileId: { in: profileIds } }
+        });
+      }
+
+      // 4. Deletar as avaliações escritas pelo próprio usuário (em perfis de terceiros)
+      await tx.review.deleteMany({
+        where: { authorId: userId }
+      });
+
+      // 5. Deletar os perfis (anúncios) do usuário
+      await tx.profile.deleteMany({
+        where: { userId }
+      });
+
+      // 6. Deletar o próprio usuário
+      await tx.user.delete({
+        where: { id: userId }
+      });
+    });
+
+    res.status(200).json({ success: true, message: 'Conta e todos os dados associados foram excluídos com sucesso.' });
+  } catch (error) {
+    console.error('[DELETE /api/users/me] Erro ao excluir conta:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao processar a exclusão da conta.' });
   }
 });
 
@@ -777,6 +845,10 @@ app.use('/api/payments', paymentRoutes);
 // Rotas de Webhooks (Banco Inter — Conciliação Automática)
 const webhookRoutes = require('./routes/webhookRoutes')(prisma);
 app.use('/api/webhooks', webhookRoutes);
+
+// Rotas de Contato (Nodemailer / Zoho SMTP)
+const contactRoutes = require('./routes/contactRoutes')(prisma);
+app.use('/api/contact', contactRoutes);
 
 
 // Helper local de classificação caso o Gemini falhe (ex: API key expirada ou rede)

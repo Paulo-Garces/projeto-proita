@@ -18,6 +18,9 @@ import Support from './pages/Support';
 import Admin from './pages/Admin';
 import Planos from './pages/Planos';
 import Dicas from './pages/Dicas';
+import Faq from './pages/Faq';
+import Denuncias from './pages/Denuncias';
+import TermsAndPrivacy from './pages/TermsAndPrivacy';
 import ScrollToTop from './components/ScrollToTop';
 
 function App() {
@@ -45,6 +48,9 @@ function App() {
               <Route path="/central-de-ajuda" element={<Support />} />
               <Route path="/planos" element={<Planos />} />
               <Route path="/dicas" element={<Dicas />} />
+              <Route path="/faq" element={<Faq />} />
+              <Route path="/denuncias" element={<Denuncias />} />
+              <Route path="/terms" element={<TermsAndPrivacy />} />
             </Routes>
           </main>
           <BottomNav />

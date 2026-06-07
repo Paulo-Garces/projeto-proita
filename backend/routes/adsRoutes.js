@@ -127,12 +127,23 @@ module.exports = (prisma) => {
   router.get('/', async (req, res) => {
     try {
       const userId = getOptionalUserId(req);
+      const now = new Date();
+      const fiveDaysAgo = new Date();
+      fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+
       const ads = await prisma.profile.findMany({
         where: {
           user: {
-            planStatus: {
-              in: ['ATIVO', 'DEGUSTACAO']
-            }
+            OR: [
+              {
+                planStatus: { in: ['ATIVO', 'BASICO'] },
+                subscriptionEndsAt: { gte: fiveDaysAgo }
+              },
+              {
+                planStatus: 'DEGUSTACAO',
+                trialEndsAt: { gte: now }
+              }
+            ]
           }
         },
         include: { 
