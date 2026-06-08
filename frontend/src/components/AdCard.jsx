@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useContext } from 'react';
-import { Star, Phone, Share2, CheckCircle, Edit2, Trash2, IdCard, Bookmark, Plus, MapPin, Award, ShieldCheck, Eye, MessageCircle, TrendingUp } from 'lucide-react';
+import { Star, Phone, Share2, CheckCircle, Edit2, Trash2, IdCard, Bookmark, Plus, MapPin, Award, ShieldCheck, Eye, MessageCircle, TrendingUp, Loader2, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 import { getProfileDisplayName } from '../utils/profileDisplayName';
@@ -54,6 +54,17 @@ const SocialIconBadge = ({ platform }) => {
     default: return <div className="p-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-full transition-colors">{WEB_SVG}</div>;
   }
 };
+
+function detectSocialNetwork(url) {
+  const lowercaseUrl = url.toLowerCase();
+  if (lowercaseUrl.includes('instagram.com')) return 'instagram';
+  if (lowercaseUrl.includes('facebook.com') || lowercaseUrl.includes('fb.com')) return 'facebook';
+  if (lowercaseUrl.includes('youtube.com') || lowercaseUrl.includes('youtu.be')) return 'youtube';
+  if (lowercaseUrl.includes('tiktok.com')) return 'tiktok';
+  if (lowercaseUrl.includes('linkedin.com')) return 'linkedin';
+  if (lowercaseUrl.includes('wa.me') || lowercaseUrl.includes('whatsapp.com')) return 'whatsapp';
+  return 'website';
+}
 
 export default function AdCard({ professional, showEdit = false, onEdit, onDelete, style, disableEdit = false }) {
   const { token } = useContext(AuthContext);
@@ -132,11 +143,82 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
     return { platform, url };
   };
 
-  const socialLinks = Array.isArray(professional.socialLinks)
-    ? professional.socialLinks.map(normalizeSocialEntry).filter(Boolean)
-    : [];
+  const [localSocialLinks, setLocalSocialLinks] = useState(() => {
+    return Array.isArray(professional.socialLinks)
+      ? professional.socialLinks.map(normalizeSocialEntry).filter(Boolean)
+      : [];
+  });
 
-  const displayedSocials = socialLinks.slice(0, 3);
+  useEffect(() => {
+    setLocalSocialLinks(
+      Array.isArray(professional.socialLinks)
+        ? professional.socialLinks.map(normalizeSocialEntry).filter(Boolean)
+        : []
+    );
+  }, [professional.socialLinks]);
+
+  const [isSocialModalOpen, setIsSocialModalOpen] = useState(false);
+  const [newSocialUrl, setNewSocialUrl] = useState('');
+  const [isSavingSocial, setIsSavingSocial] = useState(false);
+  const [socialError, setSocialError] = useState('');
+
+  const handleSaveSocial = async (e) => {
+    e.preventDefault();
+    if (!newSocialUrl.trim()) {
+      setSocialError('Por favor, insira uma URL.');
+      return;
+    }
+
+    setIsSavingSocial(true);
+    setSocialError('');
+
+    try {
+      const platform = detectSocialNetwork(newSocialUrl);
+      const urlNormalized = newSocialUrl.trim();
+
+      const existingIdx = localSocialLinks.findIndex(
+        (item) => item.platform === platform
+      );
+      
+      let updatedLinks = [...localSocialLinks];
+      if (existingIdx > -1) {
+        updatedLinks[existingIdx] = { platform, url: urlNormalized };
+      } else {
+        if (updatedLinks.length >= 3) {
+          setSocialError('Você já possui 3 redes sociais cadastradas. Remova ou edite uma existente pelo formulário de edição de anúncio.');
+          setIsSavingSocial(false);
+          return;
+        }
+        updatedLinks.push({ platform, url: urlNormalized });
+      }
+
+      const res = await fetch(`${API_URL}/api/ads/${professional.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ socialLinks: updatedLinks })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setLocalSocialLinks(updatedLinks);
+        setIsSocialModalOpen(false);
+        setNewSocialUrl('');
+      } else {
+        setSocialError(data.message || 'Erro ao salvar a rede social.');
+      }
+    } catch (err) {
+      console.error(err);
+      setSocialError('Erro de conexão ao salvar a rede social.');
+    } finally {
+      setIsSavingSocial(false);
+    }
+  };
+
+  const displayedSocials = localSocialLinks.slice(0, 3);
   const placeholdersCount = Math.max(0, 3 - displayedSocials.length);
 
   const openWhatsApp = async (e) => {
@@ -325,7 +407,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
 
         {/* LINHA 3 ESQUERDA: Redes sociais (sempre 3 espaços) + Selo de Titularidade */}
         <div className="flex flex-col items-center justify-between h-full gap-1.5">
-          <div className="flex items-center gap-1.5 justify-center">
+          <div className="flex items-center gap-1.5 justify-center flex-wrap">
             {displayedSocials.map((link, idx) => {
               const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
               return (
@@ -339,6 +421,20 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                 <Plus size={12} className="stroke-[2.5]" />
               </div>
             ))}
+            {showEdit && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsSocialModalOpen(true);
+                  setSocialError('');
+                }}
+                className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-slate-100 hover:bg-primary hover:text-white text-slate-500 flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs shrink-0"
+                title="Adicionar/Editar Rede Social"
+              >
+                <Edit2 size={14} />
+              </button>
+            )}
           </div>
           <div className="mt-auto flex flex-col items-center gap-1">
             {ownerName && (
@@ -465,6 +561,75 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                 <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.shares ?? 0}</span>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de In-Place Editing das Redes Sociais */}
+      {isSocialModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-105 animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="text-base font-bold">Adicionar Rede Social</h3>
+              <button 
+                onClick={() => {
+                  setIsSocialModalOpen(false);
+                  setNewSocialUrl('');
+                }}
+                type="button"
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer p-1 hover:bg-slate-800 rounded-lg"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveSocial} className="p-6 space-y-4">
+              {socialError && (
+                <div className="bg-red-50 text-red-600 p-3.5 rounded-xl text-xs font-semibold border border-red-100">
+                  {socialError}
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+                  URL do Perfil
+                </label>
+                <input
+                  type="url"
+                  value={newSocialUrl}
+                  onChange={(e) => setNewSocialUrl(e.target.value)}
+                  required
+                  placeholder="https://instagram.com/seu.perfil"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm bg-slate-50 focus:bg-white text-slate-800"
+                />
+                <p className="text-[10px] text-slate-450 mt-1.5 leading-relaxed">
+                  Insira o link completo do perfil. O sistema detectará automaticamente a rede social correspondente.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSocialModalOpen(false);
+                    setNewSocialUrl('');
+                  }}
+                  className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-bold transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingSocial}
+                  className="flex-1 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary/10"
+                >
+                  {isSavingSocial ? <Loader2 size={16} className="animate-spin" /> : null}
+                  Salvar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -1,5 +1,5 @@
 import { useParams, Link, useLocation } from 'react-router-dom';
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { 
   Star, 
@@ -20,7 +20,9 @@ import {
   Award,
   ShieldCheck,
   Users,
-  Sparkles
+  Sparkles,
+  Edit2,
+  Loader2
 } from 'lucide-react';
 import SponsorSlider from '../components/SponsorSlider';
 
@@ -81,9 +83,22 @@ import { API_URL } from '../config';
 import { getProfileDisplayName, getProfileAvatarNameParam } from '../utils/profileDisplayName';
 import { getReputationBadge } from '../utils/reputationBadge';
 
+function detectSocialNetwork(url) {
+  const lowercaseUrl = url.toLowerCase();
+  if (lowercaseUrl.includes('instagram.com')) return 'instagram';
+  if (lowercaseUrl.includes('facebook.com') || lowercaseUrl.includes('fb.com')) return 'facebook';
+  if (lowercaseUrl.includes('youtube.com') || lowercaseUrl.includes('youtu.be')) return 'youtube';
+  if (lowercaseUrl.includes('tiktok.com')) return 'tiktok';
+  if (lowercaseUrl.includes('linkedin.com')) return 'linkedin';
+  if (lowercaseUrl.includes('wa.me') || lowercaseUrl.includes('whatsapp.com')) return 'whatsapp';
+  return 'website';
+}
+
 export default function Profile() {
   const { id } = useParams();
   const { user, token } = useContext(AuthContext);
+  const avatarInputRef = useRef(null);
+  const capaInputRef = useRef(null);
   const [professional, setProfessional] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
@@ -117,6 +132,200 @@ export default function Profile() {
   // Estados para Serviços
   const [services, setServices] = useState([]);
   const [isFetchingServices, setIsFetchingServices] = useState(true);
+
+  // Estados para Edição In-Place de Redes Sociais
+  const [isSocialModalOpen, setIsSocialModalOpen] = useState(false);
+  const [newSocialUrl, setNewSocialUrl] = useState('');
+  const [isSavingSocial, setIsSavingSocial] = useState(false);
+  const [socialError, setSocialError] = useState('');
+
+  // Estados e manipuladores para Upload In-Place de Foto e Capa
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isUploadingCapa, setIsUploadingCapa] = useState(false);
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor, selecione uma imagem válida.');
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+
+    try {
+      const fd = new FormData();
+      fd.append('fotoAnuncio', file);
+
+      // 1. Upload do arquivo via backend
+      const uploadRes = await fetch(`${API_URL}/api/upload/foto-anuncio`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: fd,
+      });
+
+      const uploadData = await uploadRes.json();
+
+      if (!uploadRes.ok || !uploadData.success) {
+        throw new Error(uploadData.message || 'Erro ao enviar a imagem.');
+      }
+
+      // 2. Atualiza o perfil com nova fotoAnuncioUrl
+      const updateRes = await fetch(`${API_URL}/api/ads/${professional.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          fotoAnuncioUrl: uploadData.url,
+          fotoAnuncioFileId: uploadData.fileId,
+        })
+      });
+
+      const updateData = await updateRes.json();
+
+      if (!updateRes.ok || !updateData.success) {
+        throw new Error(updateData.message || 'Erro ao salvar o novo avatar.');
+      }
+
+      // 3. Atualiza estado local
+      setProfessional((prev) => ({
+        ...prev,
+        avatar: uploadData.url,
+      }));
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Erro ao fazer upload da foto de perfil.');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleCapaUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor, selecione uma imagem válida.');
+      return;
+    }
+
+    setIsUploadingCapa(true);
+
+    try {
+      const fd = new FormData();
+      fd.append('fotoAnuncio', file);
+
+      // 1. Upload do arquivo via backend
+      const uploadRes = await fetch(`${API_URL}/api/upload/foto-anuncio`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: fd,
+      });
+
+      const uploadData = await uploadRes.json();
+
+      if (!uploadRes.ok || !uploadData.success) {
+        throw new Error(uploadData.message || 'Erro ao enviar a imagem.');
+      }
+
+      // 2. Atualiza o perfil com a nova capaUrl
+      const updateRes = await fetch(`${API_URL}/api/ads/${professional.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          capaUrl: uploadData.url,
+          capaFileId: uploadData.fileId,
+        })
+      });
+
+      const updateData = await updateRes.json();
+
+      if (!updateRes.ok || !updateData.success) {
+        throw new Error(updateData.message || 'Erro ao salvar a nova capa.');
+      }
+
+      // 3. Atualiza estado local
+      setProfessional((prev) => ({
+        ...prev,
+        capaUrl: uploadData.url,
+      }));
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Erro ao fazer upload da capa.');
+    } finally {
+      setIsUploadingCapa(false);
+    }
+  };
+
+  const handleSaveSocial = async (e) => {
+    e.preventDefault();
+    if (!newSocialUrl.trim()) {
+      setSocialError('Por favor, insira uma URL.');
+      return;
+    }
+
+    setIsSavingSocial(true);
+    setSocialError('');
+
+    try {
+      const platform = detectSocialNetwork(newSocialUrl);
+      const urlNormalized = newSocialUrl.trim();
+
+      const existingLinks = professional.socialLinks || [];
+      const existingIdx = existingLinks.findIndex(
+        (item) => item.platform === platform
+      );
+      
+      let updatedLinks = [...existingLinks];
+      if (existingIdx > -1) {
+        updatedLinks[existingIdx] = { platform, url: urlNormalized };
+      } else {
+        if (updatedLinks.length >= 3) {
+          setSocialError('Você já possui 3 redes sociais cadastradas. Remova ou edite uma existente pelo formulário de edição de anúncio.');
+          setIsSavingSocial(false);
+          return;
+        }
+        updatedLinks.push({ platform, url: urlNormalized });
+      }
+
+      const res = await fetch(`${API_URL}/api/ads/${professional.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ socialLinks: updatedLinks })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        const instagramEntry = updatedLinks.find((s) => s.platform === 'instagram');
+        setProfessional(prev => ({
+          ...prev,
+          socialLinks: updatedLinks,
+          instagram: instagramEntry?.url || prev.instagram || ''
+        }));
+        setIsSocialModalOpen(false);
+        setNewSocialUrl('');
+      } else {
+        setSocialError(data.message || 'Erro ao salvar a rede social.');
+      }
+    } catch (err) {
+      console.error(err);
+      setSocialError('Erro de conexão ao salvar a rede social.');
+    } finally {
+      setIsSavingSocial(false);
+    }
+  };
 
   const fetchReviews = async () => {
     try {
@@ -260,6 +469,8 @@ export default function Profile() {
   const ownerName = professional.user 
     ? [professional.user.nome, professional.user.sobrenome].filter(Boolean).join(' ').trim()
     : '';
+
+  const isOwner = user?.id === professional?.userId;
 
   const handleWhatsApp = () => {
     if (professional.phone) {
@@ -501,8 +712,23 @@ export default function Profile() {
 
   return (
     <div className="bg-slate-50 min-h-screen pb-20 pt-20 md:pt-24">
+      <input 
+        ref={avatarInputRef} 
+        type="file" 
+        accept="image/*" 
+        className="hidden" 
+        onChange={handleAvatarUpload} 
+      />
+      <input 
+        ref={capaInputRef} 
+        type="file" 
+        accept="image/*" 
+        className="hidden" 
+        onChange={handleCapaUpload} 
+      />
+
       {/* 1. Foto de Capa (Facebook Inspired) - Altura estável e blindada contra achatamento */}
-      <div className="relative w-full h-48 sm:h-64 md:h-80 bg-slate-200 overflow-hidden">
+      <div className={`relative w-full h-48 sm:h-64 md:h-80 bg-slate-200 overflow-hidden transition-all duration-300 ${isUploadingCapa ? 'opacity-65' : ''}`}>
         {professional.capaUrl ? (
           <img 
             src={professional.capaUrl} 
@@ -526,6 +752,21 @@ export default function Profile() {
             </div>
           </div>
         )}
+        {isOwner && (
+          <button
+            onClick={() => capaInputRef.current?.click()}
+            type="button"
+            className="absolute top-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/85 text-white rounded-full transition-all duration-200 cursor-pointer shadow-md hover:scale-105 active:scale-95 flex items-center justify-center"
+            title="Editar Imagem de Capa"
+          >
+            <Camera size={18} />
+          </button>
+        )}
+        {isUploadingCapa && (
+          <div className="absolute inset-0 bg-slate-900/40 z-20 flex items-center justify-center">
+            <Loader2 className="animate-spin text-white w-10 h-10" />
+          </div>
+        )}
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 md:-mt-24 relative z-10">
@@ -540,11 +781,26 @@ export default function Profile() {
                 <img 
                   src={professional.avatar} 
                   alt={professional.name} 
-                  className="w-36 h-36 md:w-44 md:h-44 rounded-full object-cover border-[6px] border-white shadow-2xl bg-white"
+                  className={`w-36 h-36 md:w-44 md:h-44 rounded-full object-cover border-[6px] border-white shadow-2xl bg-white transition-all duration-300 ${isUploadingAvatar ? 'opacity-50' : ''}`}
                 />
-                {professional.verified && (
+                {professional.verified && !isOwner && (
                   <div className="absolute bottom-2 right-2 bg-white rounded-full p-1.5 shadow-md border border-slate-100" title="Profissional Verificado">
                     <CheckCircle size={24} className="text-emerald-500 fill-emerald-50" />
+                  </div>
+                )}
+                {isOwner && (
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    type="button"
+                    className="absolute bottom-1 right-1 z-10 p-2.5 bg-primary text-white rounded-full hover:bg-primary-hover transition-all duration-200 cursor-pointer shadow-lg hover:scale-105 active:scale-95 border-2 border-white flex items-center justify-center"
+                    title="Editar Foto de Perfil"
+                  >
+                    <Camera size={16} />
+                  </button>
+                )}
+                {isUploadingAvatar && (
+                  <div className="absolute inset-0 bg-slate-900/40 rounded-full flex items-center justify-center border-[6px] border-transparent z-20">
+                    <Loader2 className="animate-spin text-white w-8 h-8" />
                   </div>
                 )}
                 {badge ? (
@@ -627,7 +883,22 @@ export default function Profile() {
 
           {/* Redes Sociais */}
           <div className="flex items-center gap-3 py-4 border-b border-slate-100">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Redes Sociais:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Redes Sociais:</span>
+              {isOwner && (
+                <button
+                  onClick={() => {
+                    setIsSocialModalOpen(true);
+                    setSocialError('');
+                  }}
+                  type="button"
+                  className="p-1 bg-slate-100 hover:bg-primary hover:text-white text-slate-500 rounded-full transition-colors cursor-pointer flex items-center justify-center"
+                  title="Editar Redes Sociais"
+                >
+                  <Edit2 size={10} />
+                </button>
+              )}
+            </div>
             {renderSocialLinks()}
           </div>
 
@@ -1153,6 +1424,75 @@ export default function Profile() {
               <ChevronRight size={28} />
             </button>
           )}
+        </div>
+      )}
+
+      {/* Modal de In-Place Editing das Redes Sociais */}
+      {isSocialModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-105 animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="text-base font-bold">Adicionar Rede Social</h3>
+              <button 
+                onClick={() => {
+                  setIsSocialModalOpen(false);
+                  setNewSocialUrl('');
+                }}
+                type="button"
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer p-1 hover:bg-slate-800 rounded-lg"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveSocial} className="p-6 space-y-4">
+              {socialError && (
+                <div className="bg-red-550 text-red-600 p-3.5 rounded-xl text-xs font-semibold border border-red-100">
+                  {socialError}
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-650 uppercase tracking-wider mb-2">
+                  URL do Perfil
+                </label>
+                <input
+                  type="url"
+                  value={newSocialUrl}
+                  onChange={(e) => setNewSocialUrl(e.target.value)}
+                  required
+                  placeholder="https://instagram.com/seu.perfil"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm bg-slate-50 focus:bg-white text-slate-800"
+                />
+                <p className="text-[10px] text-slate-450 mt-1.5 leading-relaxed">
+                  Insira o link completo do perfil. O sistema detectará automaticamente a rede social correspondente.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSocialModalOpen(false);
+                    setNewSocialUrl('');
+                  }}
+                  className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-bold transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingSocial}
+                  className="flex-1 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary/10"
+                >
+                  {isSavingSocial ? <Loader2 size={16} className="animate-spin" /> : null}
+                  Salvar
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
