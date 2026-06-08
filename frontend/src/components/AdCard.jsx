@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useContext } from 'react';
-import { Star, Phone, Share2, CheckCircle, Edit2, Trash2, IdCard, Bookmark, Plus, MapPin, Award, ShieldCheck, Eye, MessageCircle, TrendingUp, Loader2, X } from 'lucide-react';
+import { Star, Phone, Share2, CheckCircle, Edit2, Trash2, IdCard, Bookmark, Plus, MapPin, Award, ShieldCheck, Eye, MessageCircle, TrendingUp, Loader2, X, BadgeCheck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 import { getProfileDisplayName } from '../utils/profileDisplayName';
@@ -305,6 +305,28 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                 {displayName?.[0]?.toUpperCase() || 'P'}
               </div>
             )}
+            {badge ? (
+              <div 
+                className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 bg-white rounded-full p-0.5 shadow-md flex items-center justify-center" 
+                title={badge.title}
+              >
+                <BadgeCheck 
+                  className={`w-6 h-6 md:w-7 md:h-7 ${
+                    badge.level === 'ouro' ? 'text-yellow-500 fill-yellow-500/10' :
+                    badge.level === 'prata' ? 'text-slate-400 fill-slate-400/10' :
+                    badge.level === 'bronze' ? 'text-amber-700 fill-amber-700/10' :
+                    'text-gray-400'
+                  }`} 
+                />
+              </div>
+            ) : (
+              <div 
+                className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 bg-white rounded-full p-0.5 shadow-md flex items-center justify-center text-gray-400 cursor-help" 
+                title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista."
+              >
+                <BadgeCheck className="w-6 h-6 md:w-7 md:h-7 text-gray-400" />
+              </div>
+            )}
           </Link>
         </div>
 
@@ -312,8 +334,8 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         <div className="flex items-center justify-between gap-4 w-full min-w-0">
           <div className="flex flex-col gap-1 min-w-0 justify-center items-start text-left flex-1">
             <div className="flex justify-between items-start w-full min-w-0 gap-1.5">
-              <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors truncate">
-                <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate flex items-center gap-1.5">
+              <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors truncate w-full min-w-0">
+                <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate w-full block" title={displayName}>
                   {displayName}
                 </h3>
               </Link>
@@ -322,7 +344,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             <Link 
               to={`/profile/${professional.id}?tab=avaliacoes`}
               onClick={handleProfileClick}
-              className="flex items-center gap-1 flex-wrap w-full hover:underline hover:text-primary transition-all cursor-pointer group/rating"
+              className="flex flex-col items-start gap-y-1 w-full hover:underline hover:text-primary transition-all cursor-pointer group/rating"
               title="Ver todas as avaliações deste profissional"
             >
               <div className="flex items-center gap-0.5">
@@ -330,10 +352,12 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                   <Star key={i} size={14} className={i <= rating ? "text-amber-400 fill-amber-400 group-hover/rating:scale-110 transition-transform duration-200" : "text-slate-200 fill-slate-200"} />
                 ))}
               </div>
-              <span className="text-xs font-bold text-slate-750 ml-1">{rating > 0 ? rating.toFixed(1) : 'Novo'}</span>
-              {reviewCount > 0 && (
-                <span className="text-[11px] text-slate-450 ml-1">({reviewCount} {reviewCount === 1 ? 'avaliação' : 'avaliações'})</span>
-              )}
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-bold text-slate-750">{rating > 0 ? rating.toFixed(1) : 'Novo'}</span>
+                {reviewCount > 0 && (
+                  <span className="text-[11px] text-slate-450">({reviewCount} {reviewCount === 1 ? 'avaliação' : 'avaliações'})</span>
+                )}
+              </div>
             </Link>
 
             <div className="text-slate-600 text-xs md:text-sm font-medium flex flex-col gap-1 mt-1 items-start w-full">
@@ -440,20 +464,6 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             {ownerName && (
               <span className="text-[10px] md:text-xs text-slate-500 opacity-70 font-semibold truncate max-w-full select-none">
                 Por {ownerName}
-              </span>
-            )}
-            {badge ? (
-              <span title={badge.title} className={`${badge.color} inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border cursor-help shadow-sm`}>
-                {badge.icon === 'ShieldCheck' ? <ShieldCheck size={12} className="stroke-[2.5]" /> : <Award size={12} className="stroke-[2.5]" />}
-                {badge.title}
-              </span>
-            ) : (
-              <span 
-                title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista." 
-                className="text-gray-400 bg-slate-50 border border-slate-100 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold grayscale opacity-60 cursor-help" 
-              >
-                <Award size={12} className="stroke-[2.5]" />
-                Verificação pendente
               </span>
             )}
           </div>

@@ -1,4 +1,4 @@
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useContext, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { 
@@ -22,7 +22,8 @@ import {
   Users,
   Sparkles,
   Edit2,
-  Loader2
+  Loader2,
+  Trash
 } from 'lucide-react';
 import SponsorSlider from '../components/SponsorSlider';
 
@@ -97,8 +98,10 @@ function detectSocialNetwork(url) {
 export default function Profile() {
   const { id } = useParams();
   const { user, token } = useContext(AuthContext);
+  const navigate = useNavigate();
   const avatarInputRef = useRef(null);
   const capaInputRef = useRef(null);
+  const portfolioInputRef = useRef(null);
   const [professional, setProfessional] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const location = useLocation();
@@ -142,6 +145,15 @@ export default function Profile() {
   // Estados e manipuladores para Upload In-Place de Foto e Capa
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isUploadingCapa, setIsUploadingCapa] = useState(false);
+
+  // Estados para Edição In-Place da Descrição (Sobre o Profissional)
+  const [isDescModalOpen, setIsDescModalOpen] = useState(false);
+  const [newDescText, setNewDescText] = useState('');
+  const [isSavingDesc, setIsSavingDesc] = useState(false);
+  const [descError, setDescError] = useState('');
+
+  // Estados para Edição In-Place do Portfólio
+  const [isUploadingPortfolio, setIsUploadingPortfolio] = useState(false);
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -324,6 +336,124 @@ export default function Profile() {
       setSocialError('Erro de conexão ao salvar a rede social.');
     } finally {
       setIsSavingSocial(false);
+    }
+  };
+
+  const handleSaveDescription = async (e) => {
+    e.preventDefault();
+    setIsSavingDesc(true);
+    setDescError('');
+
+    try {
+      const res = await fetch(`${API_URL}/api/ads/${professional.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ descricaoTrabalho: newDescText })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setProfessional(prev => ({
+          ...prev,
+          fullDescription: newDescText
+        }));
+        setIsDescModalOpen(false);
+      } else {
+        setDescError(data.message || 'Erro ao salvar a descrição.');
+      }
+    } catch (err) {
+      console.error(err);
+      setDescError('Erro de conexão ao salvar a descrição.');
+    } finally {
+      setIsSavingDesc(false);
+    }
+  };
+
+  const handlePortfolioUpload = async (e) => {
+    const files = e.target.files;
+    e.target.value = '';
+    if (!files || files.length === 0) return;
+
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) {
+      alert('Por favor, selecione apenas arquivos de imagem.');
+      return;
+    }
+
+    const currentCount = professional.portfolioUrls?.length || 0;
+    if (currentCount + imageFiles.length > 8) {
+      alert(`Você só pode ter no máximo 8 imagens no portfólio. (Atualmente possui ${currentCount}).`);
+      return;
+    }
+
+    setIsUploadingPortfolio(true);
+
+    try {
+      let updatedUrls = [...(professional.portfolioUrls || [])];
+
+      for (const file of imageFiles) {
+        const fd = new FormData();
+        fd.append('portfolioImage', file);
+
+        const res = await fetch(`${API_URL}/api/upload/portfolio/${professional.id}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: fd,
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          updatedUrls = data.portfolioUrls;
+        } else {
+          throw new Error(data.message || 'Erro ao enviar a imagem.');
+        }
+      }
+
+      setProfessional(prev => ({
+        ...prev,
+        portfolioUrls: updatedUrls,
+      }));
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Erro ao fazer upload da imagem.');
+    } finally {
+      setIsUploadingPortfolio(false);
+    }
+  };
+
+  const handlePortfolioDelete = async (url) => {
+    if (!window.confirm('Tem certeza de que deseja remover esta imagem do seu portfólio?')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/upload/portfolio/${professional.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ url })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setProfessional(prev => ({
+          ...prev,
+          portfolioUrls: data.portfolioUrls,
+        }));
+      } else {
+        alert(data.message || 'Erro ao remover imagem.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro de conexão ao remover imagem.');
     }
   };
 
@@ -783,11 +913,6 @@ export default function Profile() {
                   alt={professional.name} 
                   className={`w-36 h-36 md:w-44 md:h-44 rounded-full object-cover border-[6px] border-white shadow-2xl bg-white transition-all duration-300 ${isUploadingAvatar ? 'opacity-50' : ''}`}
                 />
-                {professional.verified && !isOwner && (
-                  <div className="absolute bottom-2 right-2 bg-white rounded-full p-1.5 shadow-md border border-slate-100" title="Profissional Verificado">
-                    <CheckCircle size={24} className="text-emerald-500 fill-emerald-50" />
-                  </div>
-                )}
                 {isOwner && (
                   <button
                     onClick={() => avatarInputRef.current?.click()}
@@ -803,18 +928,6 @@ export default function Profile() {
                     <Loader2 className="animate-spin text-white w-8 h-8" />
                   </div>
                 )}
-                {badge ? (
-                  <div className={`absolute -top-2 -right-2 bg-white rounded-full p-2.5 shadow-lg border border-slate-100 hover:scale-110 transition-transform duration-200 ${badge.color}`} title={badge.title}>
-                    {badge.icon === 'ShieldCheck' ? <ShieldCheck size={22} className="stroke-[2.5]" /> : <Award size={22} className="stroke-[2.5]" />}
-                  </div>
-                ) : (
-                  <div 
-                    className="absolute -top-2 -right-2 bg-white rounded-full p-2.5 shadow-lg border border-slate-100 hover:scale-110 transition-transform duration-200 text-gray-400 grayscale opacity-50 cursor-help" 
-                    title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista."
-                  >
-                    <Award size={22} className="stroke-[2.5]" />
-                  </div>
-                )}
               </div>
 
               {/* Informações do Bloco */}
@@ -822,17 +935,15 @@ export default function Profile() {
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
                   <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{professional.name}</h1>
                   {badge ? (
-                    <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border shadow-sm ${badge.color}`} title={badge.title}>
+                    <span className={`inline-flex items-center justify-center p-1.5 rounded-full border shadow-sm ${badge.color}`} title={`Selo ${badge.name}: ${badge.title}`}>
                       {badge.icon === 'ShieldCheck' ? <ShieldCheck size={14} className="stroke-[2.5]" /> : <Award size={14} className="stroke-[2.5]" />}
-                      Selo {badge.name}
                     </span>
                   ) : (
                     <span 
-                      className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border border-gray-200 bg-gray-50 text-gray-400 grayscale opacity-50 shadow-sm cursor-help select-none" 
+                      className="inline-flex items-center justify-center p-1.5 rounded-full border border-gray-200 bg-gray-50 text-gray-400 grayscale opacity-50 shadow-sm cursor-help select-none" 
                       title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista."
                     >
                       <Award size={14} className="stroke-[2.5]" />
-                      Selo Inativo
                     </span>
                   )}
                 </div>
@@ -946,6 +1057,20 @@ export default function Profile() {
                     <h2 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
                       <Briefcase className="text-indigo-600" size={20} />
                       Sobre o Profissional
+                      {isOwner && (
+                        <button
+                          onClick={() => {
+                            setNewDescText(professional.fullDescription || '');
+                            setIsDescModalOpen(true);
+                            setDescError('');
+                          }}
+                          type="button"
+                          className="p-1 bg-slate-100 hover:bg-primary hover:text-white text-slate-500 rounded-full transition-colors cursor-pointer flex items-center justify-center animate-fadeIn"
+                          title="Editar Sobre o Profissional"
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                      )}
                     </h2>
                     <p className="text-slate-600 leading-relaxed text-[15px] whitespace-pre-line">
                       {professional.fullDescription || 'Nenhuma descrição detalhada fornecida.'}
@@ -966,6 +1091,23 @@ export default function Profile() {
                     <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
                       <Clock className="text-indigo-600" size={18} />
                       Horário de Atendimento
+                      {isOwner && (
+                        <button
+                          onClick={() => {
+                            navigate('/dashboard', {
+                              state: {
+                                editAdId: professional.id,
+                                scrollTo: 'horarios'
+                              }
+                            });
+                          }}
+                          type="button"
+                          className="p-1 bg-slate-100 hover:bg-primary hover:text-white text-slate-500 rounded-full transition-colors cursor-pointer flex items-center justify-center animate-fadeIn"
+                          title="Editar Horários de Atendimento"
+                        >
+                          <Edit2 size={12} />
+                        </button>
+                      )}
                     </h3>
                     {professional.horariosFuncionamento ? (
                       renderHorarios(professional.horariosFuncionamento)
@@ -1060,8 +1202,39 @@ export default function Profile() {
             {/* Aba 'Portfólio' */}
             {activeTab === 'portfolio' && (
               <div>
-                {professional.portfolioUrls && professional.portfolioUrls.length > 0 ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <input
+                  ref={portfolioInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handlePortfolioUpload}
+                />
+
+                {(professional.portfolioUrls && professional.portfolioUrls.length > 0) || isOwner ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 animate-fadeIn">
+                    {isOwner && (
+                      <div 
+                        onClick={() => {
+                          if (!isUploadingPortfolio) {
+                            portfolioInputRef.current?.click();
+                          }
+                        }}
+                        className="relative overflow-hidden rounded-2xl bg-slate-50 aspect-square shadow-sm border-2 border-dashed border-slate-200 transition-all duration-300 hover:shadow-md hover:bg-slate-100/50 cursor-pointer flex flex-col items-center justify-center group"
+                      >
+                        {isUploadingPortfolio ? (
+                          <div className="flex flex-col items-center justify-center">
+                            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                            <span className="text-[10px] text-slate-400 font-semibold mt-2">Enviando...</span>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="text-3xl text-slate-400 group-hover:scale-110 group-hover:text-primary transition-all font-light">+</span>
+                            <span className="text-xs text-slate-400 font-semibold mt-1.5 group-hover:text-primary transition-colors">Adicionar Foto</span>
+                          </>
+                        )}
+                      </div>
+                    )}
                     {professional.portfolioUrls.map((url, idx) => (
                       <div 
                         key={idx} 
@@ -1069,18 +1242,31 @@ export default function Profile() {
                           setCurrentImageIndex(idx);
                           setIsLightboxOpen(true);
                         }}
-                        className="group relative overflow-hidden rounded-2xl bg-slate-100 aspect-square shadow-sm border border-slate-100/50 transition-all duration-300 hover:shadow-md hover:scale-[1.02] cursor-pointer"
+                        className="group relative overflow-hidden rounded-2xl bg-slate-100 aspect-square shadow-sm border border-slate-100/50 transition-all duration-300 hover:shadow-md hover:scale-[1.02] cursor-pointer animate-fadeIn"
                       >
                         <img 
                           src={url} 
                           alt={`Portfólio ${idx + 1}`} 
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
+                        {isOwner && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePortfolioDelete(url);
+                            }}
+                            type="button"
+                            className="absolute top-2.5 right-2.5 z-10 p-2 bg-black/50 hover:bg-red-600 text-white rounded-full transition-all duration-200 cursor-pointer shadow-md hover:scale-105 active:scale-95 flex items-center justify-center opacity-0 group-hover:opacity-100 md:opacity-100"
+                            title="Remover Imagem"
+                          >
+                            <Trash size={14} />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-slate-50/50 rounded-3xl p-10 border border-slate-100 text-center">
+                  <div className="bg-slate-50/50 rounded-3xl p-10 border border-slate-100 text-center animate-fadeIn">
                     <ImageIcon className="text-slate-300 mx-auto mb-4" size={48} />
                     <h3 className="text-lg font-bold text-slate-900 mb-2">Sem Imagens</h3>
                     <p className="text-slate-500 text-sm max-w-md mx-auto italic">
@@ -1488,6 +1674,72 @@ export default function Profile() {
                   className="flex-1 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary/10"
                 >
                   {isSavingSocial ? <Loader2 size={16} className="animate-spin" /> : null}
+                  Salvar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de In-Place Editing de Sobre o Profissional */}
+      {isDescModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden border border-slate-105 animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="text-base font-bold">Editar Sobre o Profissional</h3>
+              <button 
+                onClick={() => {
+                  setIsDescModalOpen(false);
+                  setNewDescText('');
+                }}
+                type="button"
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer p-1 hover:bg-slate-800 rounded-lg"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveDescription} className="p-6 space-y-4">
+              {descError && (
+                <div className="bg-red-50 text-red-600 p-3.5 rounded-xl text-xs font-semibold border border-red-100">
+                  {descError}
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+                  Descrição Profissional
+                </label>
+                <textarea
+                  value={newDescText}
+                  onChange={(e) => setNewDescText(e.target.value)}
+                  required
+                  rows="8"
+                  placeholder="Descreva sua experiência, serviços prestados, diferenciais..."
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm bg-slate-50 focus:bg-white text-slate-850 resize-y"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsDescModalOpen(false);
+                    setNewDescText('');
+                  }}
+                  className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-sm font-bold transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingDesc}
+                  className="flex-1 py-2.5 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary/10"
+                >
+                  {isSavingDesc ? <Loader2 size={16} className="animate-spin" /> : null}
                   Salvar
                 </button>
               </div>

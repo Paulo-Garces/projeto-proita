@@ -1,5 +1,5 @@
 import { useState, useContext, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard, Sparkles, Clock, Copy, ChevronLeft, ChevronRight, Check, X, Link2, Crop, RefreshCw } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
@@ -220,6 +220,39 @@ function ServiceCatalogSection({ ad, token }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isSavingCatalog, setIsSavingCatalog] = useState(false);
+  const [catalogSuccess, setCatalogSuccess] = useState('');
+  const [catalogError, setCatalogError] = useState('');
+
+  const handleSaveCatalog = async () => {
+    setIsSavingCatalog(true);
+    setCatalogSuccess('');
+    setCatalogError('');
+    try {
+      const res = await fetch(`${API_URL}/api/ads/${ad.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setCatalogSuccess('Alterações do catálogo salvas com sucesso!');
+        setTimeout(() => setCatalogSuccess(''), 3000);
+      } else {
+        setCatalogError(data.message || 'Erro ao salvar catálogo.');
+        setTimeout(() => setCatalogError(''), 4000);
+      }
+    } catch (err) {
+      console.error(err);
+      setCatalogError('Erro de conexão ao salvar catálogo.');
+      setTimeout(() => setCatalogError(''), 4000);
+    } finally {
+      setIsSavingCatalog(false);
+    }
+  };
   
   // Estados do formulário
   const [name, setName] = useState('');
@@ -480,6 +513,30 @@ function ServiceCatalogSection({ ad, token }) {
             </div>
           </div>
         )}
+        {/* New Save Catalog Block */}
+        <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex-1 text-left">
+            {catalogSuccess && (
+              <p className="text-xs font-bold text-emerald-650 flex items-center gap-1.5 animate-fadeIn">
+                <Check size={14} className="stroke-[2.5]" /> {catalogSuccess}
+              </p>
+            )}
+            {catalogError && (
+              <p className="text-xs font-bold text-red-650 flex items-center gap-1.5 animate-fadeIn">
+                <AlertCircle size={14} /> {catalogError}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleSaveCatalog}
+            disabled={isSavingCatalog}
+            className="px-4 py-2 bg-white border border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 text-indigo-700 text-xs font-bold rounded-xl transition-all duration-200 hover:shadow-sm active:scale-95 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSavingCatalog ? <Loader2 size={14} className="animate-spin text-indigo-700" /> : <Check size={14} className="stroke-[2.5]" />}
+            Salvar Catálogo
+          </button>
+        </div>
       </div>
     </section>
   );
@@ -661,6 +718,41 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [weeklyHours, setWeeklyHours] = useState(() => parseStoredHorarios(ad.horariosFuncionamento));
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+  const [scheduleSuccess, setScheduleSuccess] = useState('');
+  const [scheduleError, setScheduleError] = useState('');
+
+  const handleSaveSchedule = async () => {
+    setIsSavingSchedule(true);
+    setScheduleSuccess('');
+    setScheduleError('');
+    try {
+      const res = await fetch(`${API_URL}/api/ads/${ad.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          horariosFuncionamento: serializeWeeklyHours(weeklyHours)
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setScheduleSuccess('Horários salvos com sucesso!');
+        setTimeout(() => setScheduleSuccess(''), 3000);
+      } else {
+        setScheduleError(data.message || 'Erro ao salvar horários.');
+        setTimeout(() => setScheduleError(''), 4000);
+      }
+    } catch (err) {
+      console.error(err);
+      setScheduleError('Erro de conexão ao salvar horários.');
+      setTimeout(() => setScheduleError(''), 4000);
+    } finally {
+      setIsSavingSchedule(false);
+    }
+  };
 
   const replicateMondayHours = () => {
     const monday = weeklyHours.segunda || { isOpen: true, start: '08:00', end: '18:00' };
@@ -1013,7 +1105,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
         </div>
       </section>
 
-      <section className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border-0 shadow-sm space-y-6">
+      <section id="horarios" className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border-0 shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-primary/10 text-primary rounded-xl"><Clock size={20} /></div>
@@ -1089,6 +1181,31 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
               </div>
             );
           })}
+        </div>
+
+        {/* New Save Schedule Block */}
+        <div className="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex-1 text-left">
+            {scheduleSuccess && (
+              <p className="text-sm font-semibold text-emerald-600 flex items-center gap-1.5 animate-fadeIn">
+                <CheckCircle size={16} /> {scheduleSuccess}
+              </p>
+            )}
+            {scheduleError && (
+              <p className="text-sm font-semibold text-red-650 flex items-center gap-1.5 animate-fadeIn">
+                <AlertCircle size={16} /> {scheduleError}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleSaveSchedule}
+            disabled={isSavingSchedule}
+            className="px-5 py-2.5 bg-white border border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 text-indigo-700 text-sm font-bold rounded-xl transition-all duration-200 hover:shadow-sm active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSavingSchedule ? <Loader2 size={16} className="animate-spin text-indigo-700" /> : <Clock size={16} />}
+            Salvar Horários
+          </button>
         </div>
       </section>
 
@@ -1212,6 +1329,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
 export default function Dashboard() {
   const { user, token, logout, updateUser } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('profile');
 
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -1309,6 +1427,29 @@ export default function Dashboard() {
       .catch(console.error)
       .finally(() => setAdsLoading(false));
   }, [token, activeTab]);
+
+  useEffect(() => {
+    if (location.state?.editAdId && myAds.length > 0) {
+      const adToEdit = myAds.find(a => a.id === location.state.editAdId);
+      if (adToEdit) {
+        const scrollTo = location.state.scrollTo;
+        setActiveTab('professional');
+        setEditingAd(adToEdit);
+        
+        // Reset navigation state to prevent re-triggering
+        navigate(location.pathname, { replace: true, state: null });
+
+        if (scrollTo === 'horarios') {
+          setTimeout(() => {
+            const el = document.getElementById('horarios');
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 300);
+        }
+      }
+    }
+  }, [location.state, myAds, navigate, location.pathname]);
 
   useEffect(() => {
     if (!token || activeTab !== 'favorites') return;

@@ -228,7 +228,7 @@ const Support = () => {
                         type="text"
                         value={nome}
                         onChange={(e) => setNome(e.target.value)}
-                        readOnly={!!user}
+                        readOnly={!!(user?.nome || user?.name)}
                         required
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm read-only:bg-slate-50 read-only:text-slate-500 read-only:cursor-not-allowed"
                         placeholder="Nome completo"
@@ -240,7 +240,7 @@ const Support = () => {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        readOnly={!!user}
+                        readOnly={!!user?.email}
                         required
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-sm read-only:bg-slate-50 read-only:text-slate-500 read-only:cursor-not-allowed"
                         placeholder="seu@email.com"
