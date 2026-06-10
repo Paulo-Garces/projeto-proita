@@ -98,6 +98,8 @@ model Profile {
   phoneClicks           Int      @default(0)
   shares                Int      @default(0)
 
+  referenceCode         String?  @unique // Ex: PRO-001, PRO-002...
+
   createdAt             DateTime @default(now())
   lastNamePhoneUpdate   DateTime? @map("last_name_phone_update")
   rating                Float?   @default(0)
@@ -105,6 +107,7 @@ model Profile {
   reviews               Review[]
   services              Service[]
   favoritedBy           User[]   @relation("UserFavorites")
+  reports               Report[]
 }
 
 // Tabelas fixas para alimentar os Menus de Busca/Filtro do Frontend
@@ -152,3 +155,16 @@ model Service {
   profileId   String
   profile     Profile  @relation(fields: [profileId], references: [id])
 }
+
+// Central de Moderação — Tabela de Denúncias
+model Report {
+  id             String   @id @default(uuid())
+  adId           String
+  ad             Profile  @relation(fields: [adId], references: [id], onDelete: Cascade)
+  reason         String   // Categoria selecionada (ex: "Suspeita de golpe ou fraude")
+  details        String?  // Texto livre opcional (obrigatório se reason = "Outros")
+  reporterUserId String?  // ID do usuário logado que fez a denúncia (nullable para visitantes)
+  status         String   @default("pendente") // 'pendente', 'resolvido', 'ignorado'
+  createdAt      DateTime @default(now())
+}
+

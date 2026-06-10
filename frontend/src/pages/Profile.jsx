@@ -26,6 +26,7 @@ import {
   Trash
 } from 'lucide-react';
 import SponsorSlider from '../components/SponsorSlider';
+import ReportModal from '../components/ReportModal';
 
 const InstagramIcon = ({ size = 24, className }) => (
   <svg
@@ -154,6 +155,9 @@ export default function Profile() {
 
   // Estados para Edição In-Place do Portfólio
   const [isUploadingPortfolio, setIsUploadingPortfolio] = useState(false);
+
+  // Estado para o Modal de Denúncia
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -554,7 +558,8 @@ export default function Profile() {
             trialEndsAt: profile.user?.trialEndsAt || profile.trialEndsAt || null,
             subscriptionEndsAt: profile.user?.subscriptionEndsAt || profile.subscriptionEndsAt || null,
             verified: true,
-            user: profile.user
+            user: profile.user,
+            referenceCode: profile.referenceCode || null,
           });
 
           // Dispara tracking silencioso de visualização
@@ -1529,16 +1534,31 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Botão de Denúncia sutil */}
-      <div className="mt-8 mb-4 text-center">
-        <a 
-          href={`mailto:suporte@proita.com.br?subject=${encodeURIComponent(`Denúncia de Perfil: ${professional.name}`)}`}
-          className="text-red-500 hover:text-red-600 hover:underline text-sm font-semibold transition-colors inline-flex items-center gap-1.5"
+      {/* Código de Referência + Botão de Denúncia */}
+      <div className="mt-8 mb-4 text-center space-y-2">
+        {professional.referenceCode && (
+          <p className="text-xs text-slate-400 font-mono tracking-widest select-all" title="Use este código ao contatar o suporte">
+            Código de Referência: <span className="font-semibold">{professional.referenceCode}</span>
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={() => setIsReportModalOpen(true)}
+          className="text-red-500 hover:text-red-600 text-sm font-semibold transition-colors inline-flex items-center gap-1.5 group"
         >
-          <span>🚩 Encontrou algo errado? Denunciar este perfil.</span>
-        </a>
+          <span className="group-hover:underline">🚩 Encontrou algo errado? Denunciar este perfil.</span>
+        </button>
       </div>
       
+      {/* Modal de Denúncia */}
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        adId={professional?.id}
+        adName={professional?.name}
+        referenceCode={professional?.referenceCode}
+      />
+
       {/* Botão de Ação Flutuante para Dispositivos Móveis */}
       <div className="fixed bottom-6 right-6 md:hidden z-50">
         <button 

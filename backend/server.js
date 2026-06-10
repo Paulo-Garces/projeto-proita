@@ -937,7 +937,47 @@ function localKeywordClassifier(description) {
 // Configuração do Gemini (Chave inicializada dinamicamente por requisição)
 const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '');
 
+// ─────────────────────────────────────────────────────────────
+// POST /api/reports — Central de Moderação: Registrar Denúncia
+// ─────────────────────────────────────────────────────────────
+app.post('/api/reports', async (req, res) => {
+  try {
+    const { adId, reason, details, reporterUserId } = req.body;
+
+    if (!adId || !reason?.trim()) {
+      return res.status(400).json({ success: false, message: 'O ID do anúncio e o motivo da denúncia são obrigatórios.' });
+    }
+
+    // Se motivo = 'Outros', o campo details é obrigatório
+    if (reason.trim() === 'Outros' && !details?.trim()) {
+      return res.status(400).json({ success: false, message: 'Por favor, descreva o motivo nos detalhes ao selecionar "Outros".' });
+    }
+
+    // Verifica se o anúncio existe
+    const ad = await prisma.profile.findUnique({ where: { id: adId } });
+    if (!ad) {
+      return res.status(404).json({ success: false, message: 'Anúncio não encontrado.' });
+    }
+
+    const report = await prisma.report.create({
+      data: {
+        adId,
+        reason: reason.trim(),
+        details: details?.trim() || null,
+        reporterUserId: reporterUserId || null,
+        status: 'pendente',
+      },
+    });
+
+    res.status(201).json({ success: true, message: 'Denúncia registrada. Nossa equipe irá analisar em breve.', report });
+  } catch (error) {
+    console.error('[POST /api/reports] Erro:', error.message);
+    res.status(500).json({ success: false, message: 'Erro interno ao registrar denúncia.' });
+  }
+});
+
 // Rota de Análise de Descrição com IA
+
 app.post('/api/analyze-description', async (req, res) => {
   try {
     const { description } = req.body;

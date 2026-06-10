@@ -311,6 +311,19 @@ module.exports = (prisma) => {
       const profileWhatsapp =
         pickFirstNonEmptyString(whatsapp, servicePhone, telefone) ?? null;
 
+      // ── Gera o próximo Código de Referência sequencial (PRO-001, PRO-002...) ──
+      const lastProfile = await prisma.profile.findFirst({
+        where: { referenceCode: { not: null } },
+        orderBy: { referenceCode: 'desc' },
+        select: { referenceCode: true },
+      });
+
+      let nextReferenceCode = 'PRO-001';
+      if (lastProfile?.referenceCode) {
+        const lastNum = parseInt(lastProfile.referenceCode.replace('PRO-', ''), 10);
+        nextReferenceCode = `PRO-${String(lastNum + 1).padStart(3, '0')}`;
+      }
+
       const profile = await prisma.profile.create({
         data: {
           userId,
@@ -340,6 +353,7 @@ module.exports = (prisma) => {
           enderecoComercial: pickOptionalProfileString(enderecoComercial),
           horariosFuncionamento: horariosFuncionamento !== undefined ? horariosFuncionamento : null,
           partners: partners !== undefined ? partners : null,
+          referenceCode: nextReferenceCode,
         },
       });
 

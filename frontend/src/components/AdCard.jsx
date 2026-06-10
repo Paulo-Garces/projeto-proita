@@ -47,11 +47,11 @@ const formatPhone = (phone) => {
 // Componente auxiliar blindado
 const SocialIconBadge = ({ platform }) => {
   switch (platform) {
-    case 'instagram': return <div className="p-2 bg-pink-50 text-pink-500 hover:bg-pink-100 rounded-full transition-colors">{INSTAGRAM_SVG}</div>;
-    case 'facebook': return <div className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-full transition-colors">{FB_SVG}</div>;
-    case 'youtube': return <div className="p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-full transition-colors">{YT_SVG}</div>;
-    case 'tiktok': return <div className="p-2 bg-slate-100 text-slate-800 hover:bg-slate-200 rounded-full transition-colors">{TIKTOK_SVG}</div>;
-    default: return <div className="p-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-full transition-colors">{WEB_SVG}</div>;
+    case 'instagram': return <div className="p-2 bg-pink-50 text-pink-500 hover:bg-pink-100 rounded-full transition-colors shrink-0">{INSTAGRAM_SVG}</div>;
+    case 'facebook': return <div className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-full transition-colors shrink-0">{FB_SVG}</div>;
+    case 'youtube': return <div className="p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-full transition-colors shrink-0">{YT_SVG}</div>;
+    case 'tiktok': return <div className="p-2 bg-slate-100 text-slate-800 hover:bg-slate-200 rounded-full transition-colors shrink-0">{TIKTOK_SVG}</div>;
+    default: return <div className="p-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-full transition-colors shrink-0">{WEB_SVG}</div>;
   }
 };
 
@@ -431,17 +431,17 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
 
         {/* LINHA 3 ESQUERDA: Redes sociais (sempre 3 espaços) + Selo de Titularidade */}
         <div className="flex flex-col items-center justify-between h-full gap-1.5">
-          <div className="flex items-center gap-1.5 justify-center flex-wrap">
+          <div className="flex flex-row flex-nowrap items-center gap-1.5 justify-center">
             {displayedSocials.map((link, idx) => {
               const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
               return (
-                <a key={idx} href={url} target="_blank" rel="noopener noreferrer" title={link.platform} onClick={(e) => e.stopPropagation()} className="hover:scale-110 transition-transform">
+                <a key={idx} href={url} target="_blank" rel="noopener noreferrer" title={link.platform} onClick={(e) => e.stopPropagation()} className="hover:scale-110 transition-transform shrink-0">
                   <SocialIconBadge platform={link.platform} />
                 </a>
               );
             })}
             {[...Array(placeholdersCount)].map((_, idx) => (
-              <div key={`placeholder-${idx}`} className="w-9 h-9 md:w-10 md:h-10 rounded-full border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center text-slate-300" title="Rede não cadastrada">
+              <div key={`placeholder-${idx}`} className="w-9 h-9 md:w-10 md:h-10 rounded-full border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center text-slate-300 shrink-0" title="Rede não cadastrada">
                 <Plus size={12} className="stroke-[2.5]" />
               </div>
             ))}
