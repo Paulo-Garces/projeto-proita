@@ -42,6 +42,7 @@ function App() {
               <Route path="/dashboard/novo-anuncio" element={<Advertise />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/termos" element={<Terms />} />
               <Route path="/termos-de-uso" element={<Terms />} />
               <Route path="/privacidade" element={<Privacy />} />
               <Route path="/sobre" element={<About />} />

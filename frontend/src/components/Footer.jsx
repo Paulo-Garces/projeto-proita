@@ -70,7 +70,7 @@ export default function Footer() {
             <ul className="space-y-3">
               <li><Link to="/central-de-ajuda" className="text-slate-400 hover:text-primary transition-colors text-sm flex items-center gap-2"><Mail size={16}/> contato@proita.com.br</Link></li>
               <li><Link to="/central-de-ajuda" className="text-slate-400 hover:text-primary transition-colors text-sm">Central de Ajuda</Link></li>
-              <li><Link to="/termos-de-uso" className="text-slate-400 hover:text-primary transition-colors text-sm">Termos de Uso</Link></li>
+              <li><Link to="/termos" className="text-slate-400 hover:text-primary transition-colors text-sm">Termos de Uso</Link></li>
               <li><Link to="/privacidade" className="text-slate-400 hover:text-primary transition-colors text-sm">Privacidade</Link></li>
             </ul>
           </div>

@@ -1,0 +1,324 @@
+proITA
+Plataforma Digital de Serviços Locais
+TERMOS DE USO
+Versão 2.0  —  Vigente a partir de 17/06/2026
+
+
+proITA Serviços Digitais Ltda
+CNPJ: 67.140.810/0001-14
+contato@proita.com.br  |  www.proita.com.br
+Itapipoca — CE  |  Brasil
+
+
+ 
+1. IDENTIFICAÇÃO DAS PARTES E ACEITAÇÃO DOS TERMOS
+1.1 Identificação da Operadora
+Campo	Informação
+Razão Social	proITA Serviços Digitais Ltda
+CNPJ	67.140.810/0001-14
+E-mail principal	contato@proita.com.br
+Endereço eletrônico	www.proita.com.br
+Natureza	Plataforma digital — atendimento exclusivamente online
+Foro	Comarca de Itapipoca — CE
+
+O proITA opera exclusivamente de forma digital e não dispõe de endereço físico para atendimento presencial ou visitação. Todo o suporte é prestado pelos canais digitais oficiais descritos nestes Termos.
+
+1.2 Natureza Jurídica da Plataforma
+O proITA é uma plataforma digital de intermediação de visibilidade que disponibiliza espaço virtual para que prestadores de serviços locais divulguem suas atividades a potenciais clientes. A Operadora atua exclusivamente como intermediária tecnológica, não sendo parte, mandatária, representante, empregadora ou corresponsável em qualquer relação contratual estabelecida entre Anunciantes e Usuários.
+A plataforma não presta, intermedia, garante, supervisa ou responde pela qualidade, legalidade, segurança ou resultado dos serviços anunciados por terceiros em seu ambiente digital.
+1.3 Aceitação
+O acesso, navegação ou utilização da plataforma, ainda que sem cadastro, constitui aceitação integral e irrevogável destes Termos de Uso, da Política de Privacidade e das Diretrizes de Conduta vigentes. O Usuário ou Anunciante que não concordar com qualquer disposição deve abster-se imediatamente de utilizar os serviços.
+Para cadastro de Usuários e contratação de planos por Anunciantes, a aceitação é formalizada por marcação de checkbox específico ("Li e aceito os Termos de Uso e a Política de Privacidade"), com registro automático de data, horário e endereço IP, nos termos do art. 7º, I, da LGPD e do art. 10, §2º, do Marco Civil da Internet.
+ 
+2. DEFINIÇÕES E GLOSSÁRIO
+Para os fins destes Termos, aplicam-se as seguintes definições:
+
+Plataforma: o sistema proITA, acessível via navegador ou aplicativo, incluindo todos os seus recursos, funcionalidades e conteúdos.
+Operadora: proITA Serviços Digitais Ltda, pessoa jurídica responsável pela gestão e operação da plataforma.
+Visitante: pessoa que acessa e navega na plataforma sem realizar cadastro.
+Usuário Cadastrado: pessoa física que realizou cadastro gratuito na plataforma com nome, sobrenome, telefone e senha.
+Anunciante: pessoa física, MEI, autônomo ou microempresa que contrata plano pago ou gratuito para exibir perfil e anúncios de prestação de serviços.
+Perfil: página pública do Anunciante contendo dados cadastrais, descrição, portfólio, horários e estatísticas.
+Anúncio: publicação individual de serviço vinculada ao perfil do Anunciante.
+Plano Pro Anual: contratação por 12 meses ao valor de R$ 35,90, após período de avaliação gratuita.
+Plano Pro Bienal: contratação por 24 meses ao valor de R$ 59,90, após período de avaliação gratuita.
+Plano Patrocinador Anual: contratação por 12 meses ao valor de R$ 45,90, com todos os recursos do Plano Pro acrescidos do espaço de banner patrocinado.
+Plano Patrocinador Bienal: contratação por 24 meses ao valor de R$ 79,90, com todos os recursos do Plano Patrocinador Anual e desconto bienal.
+Período de Avaliação Gratuita: 30 dias corridos de acesso ao Plano Patrocinador completo, sem custo e sem cobrança automática, contados da criação do perfil.
+Banner Patrocinado: espaço visual exclusivo disponível nos Planos Patrocinador, dentro do card e micropágina do Anunciante, para veiculação de até 3 imagens de terceiros ou do próprio Anunciante, cujo conteúdo é de responsabilidade exclusiva do Anunciante.
+Micropágina: página individual do Anunciante com descrição completa, portfólio de até 8 fotos, foto de perfil, capa, horários, redes sociais e catálogo de serviços.
+Selo de Reputação: indicador automático de níveis Bronze, Prata e Ouro, atribuído por algoritmo com base em critérios objetivos da plataforma e da comunidade, sem constituir verificação, certificação ou garantia da Operadora.
+Conteúdo do Usuário: toda informação, texto, imagem ou dado inserido por Visitantes, Usuários ou Anunciantes na plataforma.
+Patrocinador do Anunciante: empresa ou pessoa física que negocia diretamente com o Anunciante a veiculação de imagem no Banner Patrocinado, sem qualquer vínculo com a Operadora.
+ 
+3. PERFIS DE ACESSO, CADASTRO E REQUISITOS
+3.1 Visitante
+O Visitante acessa e navega gratuitamente na plataforma sem cadastro, podendo consultar perfis e anúncios públicos dos Anunciantes e visualizar os dados de contato disponibilizados voluntariamente por estes.
+Responsabilidade pelo uso de dados de contato públicos: os dados de contato exibidos no perfil do Anunciante (ex.: número de WhatsApp) são disponibilizados voluntariamente pelo próprio Anunciante. O Visitante que utilizar esses dados para envio de mensagens abusivas, ofensivas, ameaçadoras, criminosas ou para fins de spam responde civil e penalmente por seus próprios atos, independentemente de o contato ter sido iniciado a partir desta plataforma. A Operadora não monitora, controla nem se responsabiliza por comunicações realizadas fora de seu ambiente digital (art. 19 do Marco Civil da Internet — Lei 12.965/2014).
+
+3.2 Usuário Cadastrado
+O cadastro gratuito requer fornecimento de nome, sobrenome, telefone e senha. O Usuário Cadastrado pode:
+•	Salvar listas de favoritos;
+•	Avaliar e comentar perfis de Anunciantes;
+•	Utilizar recurso de busca por proximidade geográfica (quando disponível);
+•	Realizar denúncias de conteúdo ou perfis inadequados.
+
+Requisitos de idade para cadastro de Usuário:
+•	Maiores de 18 anos: sem restrições adicionais;
+•	16 a 17 anos: autorização expressa dos pais ou responsável legal, formalizada no ato do cadastro;
+•	14 a 15 anos: autorização e assistência dos pais ou responsável legal;
+•	É vedado o cadastro de menores de 14 anos, conforme art. 14 da LGPD.
+
+3.3 Anunciante — Requisitos e Faixas Etárias
+Podem ser Anunciantes:
+•	Pessoas físicas maiores de 18 anos;
+•	Adolescentes entre 16 e 17 anos não emancipados, mediante autorização expressa e assinatura conjunta do responsável legal, que assume solidariedade pelas obrigações contratuais;
+•	Adolescentes emancipados a partir de 16 anos, mediante comprovação de emancipação legal (art. 5º, parágrafo único, Código Civil);
+•	MEIs, MEs e profissionais autônomos legalmente constituídos.
+
+Adolescentes Anunciantes — ECA e CLT: em conformidade com a Lei 8.069/1990 (ECA) e o art. 403 da CLT, é vedado o cadastro de Anunciantes menores de 16 anos. Adolescentes entre 16 e 17 anos podem anunciar exclusivamente serviços compatíveis com sua faixa etária, tais como serviços digitais, artísticos, criativos, artesanato, passeio com animais domésticos e similares. São expressamente vedados anúncios de atividades que impliquem trabalho noturno, perigoso, insalubre ou moralmente prejudicial ao desenvolvimento do adolescente, nos termos dos arts. 67 e 69 do ECA. O responsável legal co-signatário responde solidariamente pelo cumprimento destas obrigações.
+
+ 
+4. PLANOS, PERÍODO DE AVALIAÇÃO E CONTRATAÇÃO
+4.1 Período de Avaliação Gratuita
+Todo novo Anunciante tem direito a 30 (trinta) dias corridos de uso gratuito do Plano Patrocinador completo, contados da data de criação do perfil. Durante esse período:
+•	Não há qualquer cobrança, débito automático ou vinculação a plano pago;
+•	O perfil fica ativo e visível publicamente com todos os recursos do Plano Patrocinador;
+•	Ao término, os anúncios são automaticamente suspensos e deixam de aparecer nas buscas;
+•	O cadastro e os dados permanecem armazenados;
+•	A reativação ocorre exclusivamente mediante contratação voluntária de plano pago e pagamento confirmado.
+
+4.2 Planos Disponíveis
+
+Recurso	Pro Anual	Pro Bienal	Patrocin. Anual	Patrocin. Bienal
+Valor	R$ 35,90	R$ 59,90	R$ 45,90	R$ 79,90
+Vigência	12 meses	24 meses	12 meses	24 meses
+Anúncios simultâneos	2	2	2	2
+Fotos portfólio/anúncio	8	8	8	8
+Micropágina completa	Sim	Sim	Sim	Sim
+Estatísticas e funil	Sim	Sim	Sim	Sim
+Banner patrocinado (3 img)	Não	Não	Sim	Sim
+Período grátis (30 dias)	Sim	Sim	Sim	Sim
+
+4.3 Downgrade de Plano
+Se o Anunciante retornar após suspensão optando pelo Plano Pro (sem banner), mantendo anúncios criados durante o Plano Patrocinador, os banners serão automaticamente removidos dos anúncios. Demais conteúdos do perfil são preservados. Não há reembolso pela diferença de planos.
+4.4 Rebaixamento para Usuário Comum
+Caso o Anunciante decida não renovar o plano após o encerramento da vigência, seu cadastro migra automaticamente para o perfil de Usuário Cadastrado, com manutenção dos dados básicos mas sem visibilidade pública do perfil de Anunciante.
+ 
+5. PAGAMENTO, NOTA FISCAL E CANCELAMENTO
+5.1 Meios de Pagamento
+Os pagamentos são realizados exclusivamente de forma digital pelos meios disponíveis na plataforma: PIX, cartão de crédito/débito ou boleto bancário. O proITA não dispõe de atendimento presencial nem recebe pagamentos em espécie.
+5.2 Confirmação e Nota Fiscal
+Após confirmação do pagamento, a Operadora emitirá Nota Fiscal de Serviços Eletrônica (NFS-e) em conformidade com a legislação tributária municipal de Itapipoca/CE. O perfil é ativado ou reativado em até 24 horas úteis após a confirmação.
+5.3 Direito de Arrependimento — 7 Dias
+Nos termos do art. 49 do Código de Defesa do Consumidor (Lei 8.078/1990), o Anunciante que contratar plano pago tem direito ao reembolso integral mediante solicitação realizada em até 7 (sete) dias corridos após a data de contratação, por se tratar de serviço contratado por meio eletrônico, fora do estabelecimento comercial da Operadora.
+A solicitação deve ser feita pelo e-mail contato@proita.com.br. O reembolso será processado em até 10 dias úteis pelo meio de pagamento original.
+5.4 Cancelamento pelo Anunciante após 7 Dias
+Após o prazo de 7 dias, o cancelamento pelo Anunciante pode ser solicitado a qualquer tempo. Não há reembolso proporcional ao período não utilizado, salvo em caso de descontinuidade da plataforma pela Operadora (cláusula 14).
+5.5 Cancelamento por Violação — Sem Reembolso
+Em caso de suspensão ou banimento do perfil do Anunciante por violação destes Termos, não haverá reembolso de qualquer valor pago, independentemente do tempo restante do plano.
+Base legal: art. 49 do CDC (7 dias de arrependimento em contratos à distância). Após esse prazo, a não renovação e o cancelamento por violação não geram direito a reembolso, conforme disposições contratuais expressamente aceitas no ato da contratação.
+
+5.6 Intransferibilidade da Assinatura
+A assinatura de plano é estritamente pessoal e intransferível. O Anunciante não pode ceder, compartilhar, sublicenciar ou transferir sua conta ou plano a terceiros, a qualquer título. O perfil deve refletir a identidade real de quem efetivamente prestará o serviço ao cliente.
+É expressamente vedado anunciar em nome próprio e enviar outra pessoa para prestar o serviço sem prévia e expressa comunicação ao cliente. A violação desta cláusula sujeita o Anunciante à suspensão ou banimento imediato, sem reembolso.
+ 
+6. FUNCIONALIDADES DA PLATAFORMA
+6.1 Perfil e Anúncios
+Cada assinatura ativa confere direito a até 2 (dois) anúncios simultâneos. Cada anúncio inclui:
+•	Nome e telefone de contato exibidos publicamente (conforme escolha do Anunciante);
+•	Opção de exibir endereço completo ou apenas o bairro;
+•	Descrição do serviço (com sugestão automática por Inteligência Artificial);
+•	Identificação de categoria e atividade;
+•	Micropágina com portfólio de até 8 fotos, foto de perfil, capa, horários de atendimento, redes sociais e catálogo de serviços.
+
+6.2 Banner Patrocinado — Planos Patrocinador
+O Banner Patrocinado é um espaço visual exclusivo disponível nos Planos Patrocinador, dentro do card de exibição e da micropágina do Anunciante. O Anunciante pode veicular até 3 imagens, que podem ser:
+•	Sua própria publicidade pessoal ou de seu negócio;
+•	Publicidade de empresas locais ou terceiros com os quais o Anunciante negocie diretamente;
+•	Combinação das hipóteses acima.
+
+O Banner Patrocinado é de propriedade e responsabilidade exclusiva do Anunciante. A Operadora não participa, intermedia, regulamenta, aprova ou se responsabiliza pelos acordos comerciais firmados entre o Anunciante e eventuais patrocinadores, nem pelo conteúdo veiculado no banner. Toda relação entre o Anunciante e seus patrocinadores é regida por contrato autônomo entre as partes, sem qualquer vínculo com o proITA.
+
+6.3 Denúncia por Patrocinador do Anunciante
+Empresas ou pessoas que veiculem publicidade no Banner Patrocinado de determinado Anunciante não têm vínculo contratual com a Operadora. Eventual insatisfação com a relação comercial firmada com o Anunciante deve ser resolvida diretamente entre as partes.
+Caso o patrocinador deseje comunicar à plataforma o uso indevido de sua imagem no banner, poderá fazê-lo pelo canal de denúncias. A Operadora avaliará a denúncia e poderá notificar o Anunciante para remoção do conteúdo, mas não assume qualquer responsabilidade pela relação comercial subjacente.
+6.4 Selos de Reputação
+O Selo de Reputação é atribuído automaticamente por algoritmo da plataforma, sem intervenção humana, em três níveis:
+•	Bronze: critérios básicos de completude de perfil e verificação de e-mail;
+•	Prata: critérios intermediários, incluindo tempo de plataforma e avaliações da comunidade;
+•	Ouro: critérios avançados de reputação consolidada, tempo e volume de avaliações.
+
+O Selo de Reputação NÃO constitui verificação, certificação, endosso ou garantia da Operadora quanto à idoneidade, qualificação, regularidade profissional ou qualidade dos serviços do Anunciante. As informações declaradas no perfil (diplomas, certificados, registros de classe, especialidades) são de responsabilidade exclusiva do Anunciante.
+6.5 Destaque e Posicionamento
+O proITA não adota, a princípio, sistema de impulsionamento pago que privilegie a visibilidade de determinado anúncio em detrimento de outros pelo simples pagamento. O posicionamento dos perfis nas páginas iniciais e resultados de busca é determinado por critérios algorítmicos baseados em avaliações da comunidade, relevância das buscas e completude do perfil, sem favorecimento por categoria ou valor pago.
+6.6 Estatísticas e Funil de Conversão
+O Anunciante tem acesso a painel individual com estatísticas de: impressões do anúncio, visitas ao perfil, cliques no WhatsApp, adições a listas de favoritos e demais métricas disponíveis. Essas informações são de uso exclusivo do Anunciante e são tratadas conforme a Política de Privacidade.
+ 
+7. CONTEÚDO PERMITIDO, PROIBIDO E MODERAÇÃO
+7.1 Princípio da Autorresponsabilidade
+O proITA não realiza triagem prévia ou aprovação manual dos anúncios publicados. Ao criar ou editar um anúncio, o Anunciante declara, sob pena das sanções previstas nestes Termos e na legislação aplicável, que o conteúdo publicado é lícito e que possui as habilitações legais exigidas para a atividade anunciada.
+7.2 Conteúdo Expressamente Vedado
+É absolutamente proibida a publicação, nos perfis, anúncios ou banners, de:
+1.	Conteúdo pornográfico, sexual explícito ou erótico de qualquer natureza, inclusive no banner patrocinado (Lei 11.340/2006, arts. 234 e ss. do Código Penal);
+2.	Anúncios de prostituição, acompanhantes ou serviços sexuais pagos: embora a prostituição em si não seja tipificada como crime, sua intermediação via plataforma digital pode configurar favorecimento à prostituição (arts. 228 a 231-A do Código Penal), razão pela qual estes anúncios são expressamente vedados;
+3.	Anúncios de segurança privada armada sem comprovação de registro ativo na Polícia Federal e habilitação legal nos termos da Lei 7.102/1983 e Decreto 9.847/2019 — MEIs e autônomos não podem prestar este serviço individualmente;
+4.	Oferta, venda, troca ou divulgação de substâncias entorpecentes, drogas ilícitas ou controladas, armas de fogo, munições ou explosivos;
+5.	Conteúdo que configure crime de preconceito de raça, cor, etnia, religião, procedência nacional, gênero, orientação sexual ou deficiência (Lei 7.716/1989, art. 5º, CF/88);
+6.	Propaganda político-eleitoral durante os períodos vedados pela legislação eleitoral (Lei 9.504/1997 e Resoluções do TSE), especialmente nos banners patrocinados — a veiculação de propaganda eleitoral irregular sujeita o Anunciante às sanções da legislação eleitoral, sem qualquer responsabilidade da Operadora;
+7.	Conteúdo que explore sexualmente ou expresse qualquer forma de abuso de crianças e adolescentes (arts. 240 e 241 do ECA — Lei 8.069/1990);
+8.	Serviços de profissões legalmente regulamentadas (medicina, advocacia, engenharia, arquitetura, psicologia, nutrição etc.) sem registro ativo no respectivo Conselho de Classe — o Anunciante declara possuí-lo ao publicar;
+9.	Conteúdo que configure golpe, fraude, estelionato ou qualquer crime contra o patrimônio (art. 171 e ss. do Código Penal).
+
+7.3 Canal de Denúncia
+Qualquer pessoa pode denunciar conteúdo ou perfil que viole estes Termos pelo canal de denúncias disponível na plataforma. Após recebimento, a Operadora analisará a denúncia e poderá:
+•	Notificar o Anunciante para adequação do conteúdo em prazo determinado;
+•	Remover o conteúdo específico;
+•	Suspender o perfil temporariamente;
+•	Banir o perfil definitivamente, sem reembolso.
+
+7.4 Denúncias Falsas ou de Má-Fé
+O Usuário que realizar denúncias sabidamente infundadas, com propósito de prejudicar concorrente, vingar-se de Anunciante por motivos pessoais ou de qualquer outra forma de má-fé, responde civil e penalmente por seus atos. A Operadora reserva-se o direito de suspender ou banir o Usuário que abusar do mecanismo de denúncia, e poderá fornecer os dados de identificação do denunciante a autoridades competentes ou ao Anunciante prejudicado, nos termos da lei.
+Base legal: arts. 186 e 187 do Código Civil (ato ilícito e abuso de direito); art. 139 e 140 do Código Penal (difamação e injúria); art. 19, §1º, do Marco Civil da Internet (responsabilidade por conteúdo de terceiros).
+
+ 
+8. RESPONSABILIDADE DA OPERADORA E LIMITAÇÕES
+8.1 Intermediária de Visibilidade
+O proITA atua exclusivamente como plataforma de intermediação tecnológica de visibilidade. Nos termos do art. 19 da Lei 12.965/2014 (Marco Civil da Internet), a Operadora não é responsável por danos decorrentes de Conteúdo do Usuário, salvo quando, após notificação judicial específica, deixar de tomar as providências necessárias para tornar o conteúdo indisponível.
+8.2 Isenções Específicas
+A Operadora NÃO se responsabiliza por:
+10.	A qualidade, pontualidade, legalidade, segurança ou resultado dos serviços prestados por Anunciantes a seus clientes;
+11.	Danos materiais, morais, físicos ou de qualquer natureza sofridos por clientes decorrentes de serviços contratados com Anunciantes;
+12.	Conteúdo falso, enganoso, ofensivo ou ilícito publicado por Anunciantes ou Usuários;
+13.	Comunicações realizadas fora da plataforma, inclusive mensagens enviadas via WhatsApp, telefone ou outros meios a partir de dados de contato públicos do perfil;
+14.	Crimes ou ilícitos praticados por Anunciantes nas residências, estabelecimentos ou em qualquer local de atendimento a clientes;
+15.	Acordos comerciais firmados entre Anunciantes e seus patrocinadores de banner;
+16.	Indisponibilidade temporária por manutenção, falhas técnicas, ataques cibernéticos ou causas de força maior;
+17.	Informações profissionais falsas (diplomas, certificados, registros) declaradas pelo Anunciante em seu perfil.
+
+8.3 Responsabilidade do Anunciante perante o Consumidor
+O Anunciante, ao prestar serviço a cliente captado pela plataforma, é o único e exclusivo fornecedor para fins do Código de Defesa do Consumidor (Lei 8.078/1990) e do Código Civil, respondendo integralmente pelos vícios, defeitos, danos, descumprimentos e eventuais crimes decorrentes da relação estabelecida.
+8.4 Responsabilidade dos Usuários por Avaliações
+Avaliações, comentários e denúncias publicados por Usuários são de responsabilidade exclusiva de seus autores. Avaliações com conteúdo sabidamente falso podem configurar difamação (art. 139 do CP) e dar ensejo a indenização cível, devendo o Usuário responder individualmente perante o Anunciante prejudicado.
+ 
+9. CANAIS DE SUPORTE E ATENDIMENTO
+9.1 Canais Disponíveis
+O proITA opera exclusivamente de forma digital. Os canais de suporte disponíveis são:
+•	E-mail principal: contato@proita.com.br (respostas em até 3 dias úteis);
+•	Canal de suporte interno da plataforma (formulário/chat disponível na área logada);
+•	WhatsApp automatizado: quando disponível, conforme comunicado na plataforma.
+
+9.2 Recuperação de Senha
+A recuperação de senha é realizada por e-mail cadastrado. Usuários que não cadastrarem e-mail deverão entrar em contato pelo canal de suporte para verificação de identidade e redefinição manual. A Operadora recomenda fortemente o cadastro de e-mail para facilitar a recuperação de acesso.
+9.3 Notificações Judiciais e Extrajudiciais
+Notificações, intimações judiciais e comunicações extrajudiciais formais devem ser encaminhadas exclusivamente ao e-mail contato@proita.com.br ou pelo endereço de sede conforme dados do CNPJ. Comunicações enviadas por outros canais não constituem notificação formal para fins legais.
+
+Conforme art. 10, §3º, e art. 15 do Marco Civil da Internet, a Operadora manterá registros de conexão e acesso à plataforma pelo prazo mínimo legalmente exigido, podendo fornecê-los mediante ordem judicial.
+
+ 
+10. PROTEÇÃO DE DADOS PESSOAIS — LGPD
+O tratamento de dados pessoais realizado pelo proITA obedece às disposições da Lei Geral de Proteção de Dados (Lei 13.709/2018 — LGPD), ao Marco Civil da Internet (Lei 12.965/2014) e às diretrizes da Autoridade Nacional de Proteção de Dados (ANPD).
+As bases legais aplicáveis ao tratamento são: execução de contrato (art. 7º, V), cumprimento de obrigação legal (art. 7º, II), legítimo interesse (art. 7º, IX) e consentimento (art. 7º, I), conforme especificado na Política de Privacidade disponível na plataforma.
+10.1 Dados Coletados por Perfil
+
+Perfil	Dados Coletados	Base Legal LGPD
+Visitante	IP, dados de navegação	Legítimo interesse (art. 7º, IX)
+Usuário Cadastrado	Nome, telefone, senha (hash), foto (opt.), localização (futura)	Execução de contrato / Consentimento
+Anunciante	Nome/Razão Social, CPF/CNPJ, telefone, endereço/bairro, e-mail, fotos, dados de pagamento	Execução de contrato / Obrigação legal
+
+10.2 Direitos dos Titulares
+Nos termos do art. 18 da LGPD, os titulares podem solicitar: confirmação de tratamento, acesso, correção, anonimização, portabilidade, eliminação, informação sobre compartilhamento e revogação do consentimento, pelo e-mail contato@proita.com.br. Resposta em até 15 dias úteis.
+10.3 Dados de Menores
+Em conformidade com o art. 14 da LGPD e o ECA, o proITA não coleta dados de menores de 14 anos. Para adolescentes de 14 a 17 anos, exige-se consentimento do responsável legal, conforme descrito na cláusula 3.
+ 
+11. DISPONIBILIDADE, MANUTENÇÃO E SLA
+A Operadora compromete-se a envidar esforços razoáveis para manter a plataforma disponível 24 (vinte e quatro) horas por dia, 7 (sete) dias por semana, em todos os dias do ano.
+Não constitui inadimplemento contratual a indisponibilidade decorrente de:
+•	Manutenções programadas, comunicadas com antecedência mínima de 12 horas;
+•	Falhas em serviços de terceiros (servidores, CDN, provedores de internet);
+•	Ataques cibernéticos (DDoS, ransomware ou similares);
+•	Casos fortuitos ou de força maior (art. 393 do Código Civil);
+•	Determinações judiciais ou administrativas.
+
+Interrupções não programadas serão comunicadas pelos canais da plataforma assim que possível, com previsão de restabelecimento.
+ 
+12. PROPRIEDADE INTELECTUAL
+A marca "proITA", o logotipo, o design, o código-fonte, o layout, os textos institucionais e demais elementos da plataforma são de titularidade da Operadora, protegidos pela Lei 9.279/1996 (Lei de Propriedade Industrial), Lei 9.609/1998 (Lei de Software) e Lei 9.610/1998 (Lei de Direitos Autorais).
+O Conteúdo do Usuário (fotos, textos, descrições) postado pelos Anunciantes permanece de titularidade do respectivo Anunciante. Ao publicar, o Anunciante concede à Operadora licença não exclusiva, gratuita e revogável para exibir, reproduzir e distribuir o conteúdo na plataforma e em materiais promocionais, enquanto o perfil estiver ativo.
+É vedada a reprodução, cópia, extração automatizada (scraping), engenharia reversa ou redistribuição de qualquer conteúdo ou funcionalidade da plataforma sem autorização prévia e expressa da Operadora.
+ 
+13. PENALIDADES E SANÇÕES
+A violação de qualquer disposição destes Termos sujeita o infrator, conforme a gravidade da conduta e a critério da Operadora:
+
+Sanção	Situações Aplicáveis	Reembolso
+Advertência	Primeira infração leve, conteúdo inadequado pontual	N/A
+Remoção de conteúdo	Conteúdo vedado isolado	Não
+Suspensão temporária	Reincidência, infração moderada, denúncia em análise	Não
+Banimento definitivo	Infração grave, crime, reincidência grave, golpe confirmado	Não
+
+Em infrações que configurem crime (aplicáveis tipificações do Código Penal, ECA, Lei de Drogas, Lei de Armas, entre outras), a Operadora reserva-se o direito de comunicar as autoridades competentes (Polícia Civil, Ministério Público) e fornecer os dados cadastrais e registros de acesso disponíveis, mediante requisição legal ou por iniciativa própria quando a gravidade exigir.
+
+Boletim de Ocorrência como elemento de denúncia: em casos de crimes praticados por Anunciante nas dependências do cliente (furto, lesão corporal, etc.), a apresentação de Boletim de Ocorrência pelo cliente ao canal de denúncias da plataforma será considerada como elemento de prova para análise de suspensão ou banimento do perfil.
+
+ 
+14. ENCERRAMENTO E DESCONTINUIDADE DA PLATAFORMA
+A Operadora reserva-se o direito de encerrar, suspender ou descontinuar a plataforma a qualquer tempo, por decisão empresarial, determinação legal ou força maior, observando as seguintes condições:
+18.	Os Anunciantes com planos pagos e vigentes serão notificados com antecedência mínima de 30 (trinta) dias corridos por e-mail cadastrado;
+19.	Será concedido reembolso proporcional ao período não utilizado do plano vigente, calculado pro rata die a partir da data de comunicação do encerramento;
+20.	Os dados pessoais dos usuários serão tratados conforme a Política de Privacidade, com prazo para portabilidade ou exclusão;
+21.	A Operadora não responde por danos indiretos, lucros cessantes ou perdas de oportunidade decorrentes do encerramento da plataforma.
+
+Base legal: arts. 473 e 474 do Código Civil (resilição unilateral com pré-aviso); art. 51, IV, do CDC (vedação de cláusula que resulte em ônus excessivo ao consumidor); princípio da boa-fé objetiva (art. 422 do CC).
+
+ 
+15. CONDUTAS VEDADAS E REGRAS DE COMUNIDADE
+É vedado a qualquer pessoa que utilize a plataforma, independentemente de perfil:
+22.	Praticar qualquer forma de assédio, bullying, discriminação ou discurso de ódio contra outros usuários, Anunciantes ou a Operadora;
+23.	Utilizar a plataforma para fins fraudulentos, incluindo falsidade ideológica, clonagem de perfis ou representação enganosa de qualificações profissionais;
+24.	Tentar acessar áreas restritas, manipular funcionalidades ou realizar ataques ao sistema;
+25.	Coletar sistematicamente dados de outros usuários ou Anunciantes sem autorização;
+26.	Publicar spam, correntes ou conteúdo publicitário não autorizado nos campos de comentário ou avaliação;
+27.	Usar a plataforma para cometer ou facilitar crimes de qualquer natureza.
+ 
+16. PROTEÇÃO DA CRIANÇA E DO ADOLESCENTE
+Em conformidade com a Lei 8.069/1990 (Estatuto da Criança e do Adolescente — ECA) e a Lei 13.709/2018 (LGPD, art. 14):
+28.	É expressamente vedado o acesso ou cadastro de crianças (menores de 12 anos) em qualquer perfil da plataforma;
+29.	O cadastro de adolescentes entre 12 e 13 anos é vedado;
+30.	Adolescentes entre 14 e 15 anos podem cadastrar-se como Usuários com autorização e assistência do responsável legal;
+31.	Adolescentes entre 16 e 17 anos podem cadastrar-se como Usuários com autorização do responsável;
+32.	Para perfis de Anunciante, aplica-se a cláusula 3.3 com restrições de atividades por faixa etária;
+33.	Todo e qualquer conteúdo sexualizado, violento, discriminatório ou inadequado para menores é absolutamente vedado na plataforma;
+34.	A Operadora colaborará integralmente com autoridades competentes em casos de suspeita de exploração ou abuso de crianças e adolescentes identificados na plataforma.
+
+A plataforma se compromete a remover imediatamente qualquer conteúdo que configure exploração sexual de criança ou adolescente (arts. 240 e 241 do ECA), independentemente de ordem judicial, e a comunicar o fato à autoridade policial competente.
+
+ 
+17. DISPOSIÇÕES FINAIS
+17.1 Vigência e Alterações
+Estes Termos entram em vigor na data indicada na capa e vigoram por prazo indeterminado. A Operadora reserva-se o direito de alterá-los a qualquer tempo, com notificação aos usuários com antecedência mínima de 15 dias por e-mail ou notificação na plataforma. O uso continuado após a notificação implica aceitação das novas condições.
+17.2 Legislação Aplicável
+Estes Termos são regidos pelas leis da República Federativa do Brasil, em especial:
+•	Constituição Federal de 1988 (arts. 1º, 5º e 170);
+•	Código Civil (Lei 10.406/2002);
+•	Código de Defesa do Consumidor (Lei 8.078/1990);
+•	Marco Civil da Internet (Lei 12.965/2014);
+•	Lei Geral de Proteção de Dados — LGPD (Lei 13.709/2018);
+•	Estatuto da Criança e do Adolescente — ECA (Lei 8.069/1990);
+•	Código Penal (Decreto-Lei 2.848/1940) e legislação penal especial;
+•	Lei de Propriedade Industrial (Lei 9.279/1996);
+•	Lei Eleitoral (Lei 9.504/1997) e Resoluções TSE pertinentes;
+•	Consolidação das Leis do Trabalho — CLT (arts. 403 e ss.);
+•	Código de Processo Civil (Lei 13.105/2015).
+
+17.3 Foro
+Para dirimir quaisquer controvérsias decorrentes destes Termos, fica eleito o Foro da Comarca de Itapipoca, Estado do Ceará, com renúncia a qualquer outro, por mais privilegiado que seja (art. 63 do CPC).
+17.4 Nulidade Parcial
+A eventual invalidade ou inaplicabilidade de qualquer disposição destes Termos não afeta a validade das demais cláusulas, que permanecerão em pleno vigor.
+17.5 Contato
+Dúvidas, solicitações ou notificações: contato@proita.com.br
+CNPJ: 67.140.810/0001-14 — Itapipoca/CE — Brasil
+
+
+
+proITA Serviços Digitais Ltda — Conectando Itapipoca
+Versão 2.0 | 17/06/2026 | www.proita.com.br

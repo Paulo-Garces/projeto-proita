@@ -519,7 +519,7 @@ export default function Auth() {
                     required
                   />
                   <label htmlFor="acceptedTerms" className="text-sm text-slate-600">
-                    Li e concordo com os <a href="/termos-de-uso" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Termos de Uso</a> e <a href="/privacidade" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Políticas de Privacidade</a>.
+                    Li e concordo com os <a href="/termos" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Termos de Uso</a> e <a href="/privacidade" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Políticas de Privacidade</a>.
                   </label>
                 </div>
               )}
