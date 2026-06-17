@@ -360,7 +360,7 @@ export default function Search() {
         ) : (
           <div className="mb-6">
             <form onSubmit={handleSearch} className="relative" ref={suggestionsRef}>
-              <div className="flex items-center bg-white rounded-2xl shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all overflow-hidden">
+              <div className="flex w-full items-center bg-white rounded-2xl shadow-sm border border-slate-200 focus-within:ring-2 focus-within:ring-primary/30 focus-within:border-primary/50 transition-all overflow-hidden">
                 <div className="pl-5 text-slate-400">
                   <SearchIcon size={20} />
                 </div>
@@ -372,10 +372,10 @@ export default function Search() {
                   onKeyDown={handleKeyDown}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                   placeholder="Buscar por atividade, ex: Encanador, Eletricista..."
-                  className="flex-1 py-3.5 px-4 text-slate-800 text-base focus:outline-none bg-transparent placeholder:text-slate-400"
+                  className="flex-1 w-full py-3.5 px-4 text-slate-800 text-base focus:outline-none bg-transparent placeholder:text-slate-400"
                   autoComplete="off"
                 />
-                <button type="submit" className="bg-primary hover:bg-primary-hover text-white px-6 py-3.5 font-medium transition-colors text-sm shrink-0">
+                <button type="submit" className="bg-primary hover:bg-primary-hover text-white px-4 md:px-6 py-3.5 font-medium transition-colors text-sm shrink-0 w-auto">
                   Buscar
                 </button>
               </div>

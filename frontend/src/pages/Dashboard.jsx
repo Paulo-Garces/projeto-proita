@@ -1335,6 +1335,18 @@ export default function Dashboard() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState('');
   const fileInputRef = useRef(null);
+  const contentRef = useRef(null);
+
+  useEffect(() => {
+    if (window.innerWidth < 768 && contentRef.current) {
+      const elementPosition = contentRef.current.getBoundingClientRect().top + window.scrollY;
+      const offsetPosition = elementPosition - 80;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  }, [activeTab]);
 
   // Crop de Foto de Perfil Pessoal
   const [cropTarget, setCropTarget] = useState(null); // { type: string, imageSrc: string }
@@ -1988,7 +2000,7 @@ export default function Dashboard() {
 
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
 
-          <main className="flex-1">
+          <main ref={contentRef} className="flex-1">
             <div className={(activeTab === 'professional' && editingAd) ? "space-y-6 animate-in fade-in duration-300" : "bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-10"}>
 
               {activeTab === 'profile' && (

@@ -221,7 +221,7 @@ export default function Home() {
               ref={inputRef}
               type="text" 
               placeholder="Ex: Encanador, Eletricista, Pintor..."
-              className="w-full py-2.5 px-2 md:px-4 text-slate-800 text-base md:text-lg focus:outline-none bg-transparent placeholder:text-slate-400"
+              className="flex-1 w-full py-2.5 px-2 md:px-4 text-slate-800 text-base md:text-lg focus:outline-none bg-transparent placeholder:text-slate-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -245,7 +245,7 @@ export default function Home() {
               </div>
             )}
           </div>
-          <button type="submit" className="bg-primary hover:bg-primary-hover text-white px-6 md:px-10 py-3 md:py-4 rounded-full font-bold text-sm md:text-base transition-all flex items-center justify-center shrink-0 shadow-md shadow-primary/10 hover:scale-105 active:scale-95">
+          <button type="submit" className="bg-primary hover:bg-primary-hover text-white px-4 md:px-10 py-3 md:py-4 rounded-full font-bold text-sm md:text-base transition-all flex items-center justify-center shrink-0 w-auto shadow-md shadow-primary/10 hover:scale-105 active:scale-95">
             Buscar
           </button>
         </form>
