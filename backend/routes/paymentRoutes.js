@@ -16,6 +16,7 @@
 const express        = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
 const interService   = require('../services/interService');
+const sendEmail      = require('../utils/sendEmail');
 
 module.exports = (prisma) => {
   const router = express.Router();
@@ -343,7 +344,7 @@ module.exports = (prisma) => {
   // ──────────────────────────────────────────────────────────────────────────────
   router.post('/credit-card', authMiddleware, async (req, res) => {
     try {
-      const { planId } = req.body;
+      const { planId, cpfCnpj } = req.body;
 
       if (!planId || !PLAN_PRICES[planId]) {
         return res.status(400).json({
@@ -352,6 +353,14 @@ module.exports = (prisma) => {
         });
       }
 
+      if (!cpfCnpj || !validarCpfCnpj(cpfCnpj)) {
+        return res.status(400).json({
+          success: false,
+          message: 'CPF ou CNPJ inválido. Informe somente os números (11 para CPF, 14 para CNPJ).',
+        });
+      }
+
+      const cleanCpfCnpj = cpfCnpj.replace(/\D/g, '');
       const valorCentavos = Math.round(PLAN_PRICES[planId] * 100);
       const descricao = PLAN_LABELS[planId];
       const handle = process.env.INFINITEPAY_HANDLE;
@@ -368,6 +377,7 @@ module.exports = (prisma) => {
         await prisma.user.update({
           where: { id: req.user.id },
           data: {
+            cpfCnpj: cleanCpfCnpj,
             pendingTxid: order_nsu,
             pendingPlanId: planId,
           }
@@ -422,6 +432,156 @@ module.exports = (prisma) => {
       return res.status(502).json({
         success: false,
         message: 'Erro ao processar pagamento com cartão.',
+      });
+    }
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // ROTA: POST /api/payments/nfe-request
+  // ──────────────────────────────────────────────────────────────────────────────
+  router.post('/nfe-request', authMiddleware, async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: 'O e-mail para envio é obrigatório.'
+        });
+      }
+
+      // Validação básica de e-mail
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Formato de e-mail inválido.'
+        });
+      }
+
+      // Cria a solicitação no banco
+      const nfeRequest = await prisma.nfeRequest.create({
+        data: {
+          userId: req.user.id,
+          email: email,
+          status: 'PENDENTE'
+        }
+      });
+
+      // Busca dados completos do usuário e do anúncio para o e-mail de alerta
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: req.user.id },
+          include: {
+            profiles: {
+              take: 1
+            }
+          }
+        });
+
+        if (user) {
+          const userName = `${user.nome} ${user.sobrenome || ''}`.trim();
+          const userCpfCnpj = user.cpfCnpj || 'Não informado / Não cadastrado';
+          const userEmail = user.email || user.telefone || 'Sem e-mail';
+          const referenceCode = user.profiles[0]?.referenceCode || `PRO-${user.id.substring(0, 6).toUpperCase()}`;
+
+          const emailSubject = `[NFS-e] Nova solicitacao de Nota Fiscal Eletronica - proITA (${referenceCode})`;
+          const emailText = `
+Olá equipe proITA,
+
+Uma nova solicitação de Nota Fiscal Eletrônica (NFS-e) foi gerada pelo Anunciante.
+
+Dados da Conta proITA:
+- Nome: ${userName}
+- E-mail/Contato da Conta: ${userEmail}
+- CPF/CNPJ: ${userCpfCnpj}
+- Código do Anúncio (Referência): ${referenceCode}
+
+Dados para Envio da Nota:
+- E-mail de Destino solicitado: ${email}
+
+Por favor, faça a emissão no portal municipal de Itapipoca e envie o arquivo para o e-mail de destino em até 5 dias úteis.
+
+Atenciosamente,
+Plataforma proITA
+          `.trim();
+
+          const emailHtml = `
+            <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #eee; border-radius: 8px;">
+              <h2 style="color: #2563eb; margin-top: 0; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">Solicitação de NFS-e Recebida</h2>
+              <p style="margin: 10px 0;"><strong>Nome do Usuário:</strong> ${userName}</p>
+              <p style="margin: 10px 0;"><strong>CPF/CNPJ:</strong> ${userCpfCnpj}</p>
+              <p style="margin: 10px 0;"><strong>E-mail de Cadastro:</strong> ${userEmail}</p>
+              <p style="margin: 10px 0;"><strong>Código de Referência:</strong> ${referenceCode}</p>
+              <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+              <p style="margin: 10px 0; font-size: 15px;"><strong>E-mail de destino preenchido no modal:</strong> <a href="mailto:${email}" style="color: #2563eb; font-weight: bold;">${email}</a></p>
+              <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+              <p style="font-size: 12px; color: #64748b; line-height: 1.5; margin-top: 15px;">
+                Por favor, efetue a emissão da Nota Fiscal Eletrônica de Serviços de Itapipoca/CE para o anunciante em até 5 dias úteis.
+              </p>
+            </div>
+          `.trim();
+
+          // Envia o e-mail de alerta para o suporte
+          const supportResult = await sendEmail('suporte@proita.com.br', emailSubject, emailText, emailHtml);
+          console.log('[NFS-e Email Support] Resultado do envio para suporte:', supportResult);
+
+          // Envia uma confirmação para o anunciante no e-mail informado por ele
+          const userSubject = `[proITA] Solicitação de Nota Fiscal Eletrônica (NFS-e) Recebida`;
+          const userText = `
+Olá ${userName},
+
+Recebemos a sua solicitação de Nota Fiscal Eletrônica (NFS-e) referente à sua assinatura no portal proITA.
+
+A Nota Fiscal de Serviços Eletrônica (NFS-e) será emitida pela prefeitura municipal de Itapipoca/CE e enviada para este endereço de e-mail (${email}) em até 5 dias úteis.
+
+Dados da solicitação:
+- Nome: ${userName}
+- Código do Anúncio (Referência): ${referenceCode}
+- E-mail para envio da Nota: ${email}
+
+Atenciosamente,
+Suporte proITA
+          `.trim();
+
+          const userHtml = `
+            <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #eee; border-radius: 8px;">
+              <h2 style="color: #2563eb; margin-top: 0; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">Solicitação de NFS-e Recebida</h2>
+              <p>Olá <strong>${userName}</strong>,</p>
+              <p>Confirmamos que recebemos a sua solicitação de Nota Fiscal de Serviços Eletrônica (NFS-e) para a sua assinatura no portal <strong>proITA</strong>.</p>
+              <p>A NFS-e será emitida pela prefeitura municipal de Itapipoca/CE e enviada para o endereço de e-mail informado (<strong>${email}</strong>) no prazo de até <strong>5 dias úteis</strong>.</p>
+              
+              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                <h3 style="margin-top: 0; font-size: 14px; color: #1e3a8a; text-transform: uppercase;">Dados do Pedido</h3>
+                <p style="margin: 5px 0; font-size: 14px;"><strong>Referência do Anúncio:</strong> ${referenceCode}</p>
+                <p style="margin: 5px 0; font-size: 14px;"><strong>E-mail de Destino:</strong> ${email}</p>
+              </div>
+
+              <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+              <p style="font-size: 12px; color: #64748b; line-height: 1.5; margin-top: 15px;">
+                Esta é uma mensagem de confirmação automática. Em caso de dúvidas, entre em contato pelo e-mail <a href="mailto:suporte@proita.com.br" style="color: #2563eb;">suporte@proita.com.br</a>.
+              </p>
+            </div>
+          `.trim();
+
+          const userResult = await sendEmail(email, userSubject, userText, userHtml);
+          console.log('[NFS-e Email User] Resultado do envio de confirmação para o usuário:', userResult);
+        }
+      } catch (errEmail) {
+        console.error('[NFS-e Email Error] Não foi possível enviar e-mail de alerta:', errEmail);
+      }
+
+      return res.status(201).json({
+        success: true,
+        message: 'Solicitação de Nota Fiscal Eletrônica (NFS-e) enviada com sucesso! Ela será processada e enviada para o seu e-mail em até 5 dias úteis.',
+        data: nfeRequest
+      });
+
+    } catch (err) {
+      console.error('[POST /api/payments/nfe-request] Erro:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Erro interno ao processar a solicitação da Nota Fiscal.'
       });
     }
   });

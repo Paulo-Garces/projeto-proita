@@ -18,6 +18,7 @@ export default function Auth() {
   const [senha, setSenha] = useState('');
   const [isWhatsapp, setIsWhatsapp] = useState(true);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [declaredAge, setDeclaredAge] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const [authView, setAuthView] = useState('default');
@@ -250,9 +251,15 @@ export default function Auth() {
       return;
     }
 
-    if (!isLogin && !acceptedTerms) {
-      setErrorMsg("Você precisa aceitar os Termos de Uso e Políticas de Privacidade.");
-      return;
+    if (!isLogin) {
+      if (!acceptedTerms) {
+        setErrorMsg("Você precisa aceitar os Termos de Uso e Políticas de Privacidade.");
+        return;
+      }
+      if (!declaredAge) {
+        setErrorMsg("Você precisa declarar que é maior de 18 anos, ou possui mais de 16 anos e autorização dos responsáveis.");
+        return;
+      }
     }
 
     if (isLogin) {
@@ -307,6 +314,7 @@ export default function Auth() {
           setSenha('');
           setIsWhatsapp(true);
           setAcceptedTerms(false);
+          setDeclaredAge(false);
         } else {
           setErrorMsg(data.message || "Erro ao cadastrar.");
         }
@@ -509,18 +517,34 @@ export default function Auth() {
               </div>
 
               {!isLogin && (
-                <div className="flex items-start gap-2 mt-4">
-                  <input
-                    type="checkbox"
-                    id="acceptedTerms"
-                    checked={acceptedTerms}
-                    onChange={(e) => setAcceptedTerms(e.target.checked)}
-                    className="mt-1 w-4 h-4 text-primary bg-slate-50 border-slate-300 rounded focus:ring-primary shrink-0"
-                    required
-                  />
-                  <label htmlFor="acceptedTerms" className="text-sm text-slate-600">
-                    Li e concordo com os <a href="/termos" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Termos de Uso</a> e <a href="/privacidade" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">Políticas de Privacidade</a>.
-                  </label>
+                <div className="space-y-4 mt-4">
+                  <div className="flex items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      id="acceptedTerms"
+                      checked={acceptedTerms}
+                      onChange={(e) => setAcceptedTerms(e.target.checked)}
+                      className="mt-1 w-4 h-4 text-primary bg-slate-50 border-slate-300 rounded focus:ring-primary shrink-0 cursor-pointer transition-colors"
+                      required
+                    />
+                    <label htmlFor="acceptedTerms" className="text-sm text-slate-650 cursor-pointer select-none leading-relaxed">
+                      Li e concordo com os <Link to="/termos" className="text-primary hover:underline font-semibold" target="_blank" rel="noopener noreferrer">Termos de Uso</Link> e a <Link to="/privacidade" className="text-primary hover:underline font-semibold" target="_blank" rel="noopener noreferrer">Política de Privacidade</Link>.
+                    </label>
+                  </div>
+
+                  <div className="flex items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      id="declaredAge"
+                      checked={declaredAge}
+                      onChange={(e) => setDeclaredAge(e.target.checked)}
+                      className="mt-1 w-4 h-4 text-primary bg-slate-50 border-slate-300 rounded focus:ring-primary shrink-0 cursor-pointer transition-colors"
+                      required
+                    />
+                    <label htmlFor="declaredAge" className="text-sm text-slate-650 cursor-pointer select-none leading-relaxed">
+                      Declaro sob as penas da lei que sou maior de 18 anos, ou possuo mais de 16 anos e expressa autorização dos meus responsáveis legais.
+                    </label>
+                  </div>
                 </div>
               )}
 

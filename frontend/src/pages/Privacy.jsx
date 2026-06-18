@@ -42,11 +42,60 @@ export default function Privacy() {
             Política de Privacidade Completa
           </h2>
           
-          <div className="bg-slate-50 border border-slate-200 border-dashed rounded-2xl p-8 text-center">
-            <Info className="mx-auto text-slate-400 mb-3 animate-pulse" size={36} />
-            <h3 className="font-semibold text-slate-700 mb-2">Aguardando Política Completa</h3>
-            <p className="text-sm text-slate-550 max-w-md mx-auto mb-4">
-              Por favor, insira o texto completo da Política de Privacidade no arquivo <code className="bg-slate-200 px-1.5 py-0.5 rounded font-mono text-xs text-slate-800">privacidade-completa.txt</code> localizado na raiz do projeto, ou envie-o no chat para que eu o formate aqui.
+          <div className="space-y-6 text-slate-650 leading-relaxed text-sm">
+            <p>
+              O proITA Serviços Digitais Ltda (CNPJ: 67.140.810/0001-14) valoriza a sua privacidade e está comprometido em proteger os seus dados pessoais. Esta Política de Privacidade explica como coletamos, usamos, compartilhamos e protegemos as informações de Visitantes, Usuários Cadastrados e Anunciantes, em total conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018) e o Marco Civil da Internet (Lei nº 12.965/2014).
+            </p>
+
+            <h3 className="font-bold text-base text-slate-900 mt-6 mb-2">1. DADOS QUE COLETAMOS</h3>
+            <ul className="list-disc pl-5 space-y-2">
+              <li><strong>1.1. Visitantes (Navegação sem cadastro):</strong> Coletamos dados básicos de navegação (endereço IP, tipo de navegador, páginas visitadas e tempo de permanência) através de cookies, essenciais para o funcionamento do site e métricas de acesso (base legal: legítimo interesse).</li>
+              <li><strong>1.2. Usuários Cadastrados:</strong> Coletamos Nome, Sobrenome, Telefone e Senha (armazenada de forma criptografada/hash). (base legal: execução de contrato e consentimento).</li>
+              <li><strong>1.3. Profissionais Anunciantes:</strong> Além dos dados acima, coletamos CPF ou CNPJ, endereço comercial, fotos para portfólio, links de redes sociais e dados de faturamento. (base legal: execução de contrato e obrigação legal).</li>
+            </ul>
+
+            <h3 className="font-bold text-base text-slate-900 mt-6 mb-2">2. COMO UTILIZAMOS SEUS DADOS</h3>
+            <p>Utilizamos os dados exclusivamente para:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>Criar e gerenciar sua conta e seus anúncios na plataforma.</li>
+              <li>Facilitar o contato entre clientes e profissionais (exibição pública dos dados de contato do Anunciante).</li>
+              <li>Processar pagamentos de assinaturas e emitir Notas Fiscais.</li>
+              <li>Melhorar os algoritmos de busca e recomendação do sistema.</li>
+              <li>Cumprir obrigações legais, como a guarda de registros de acesso exigida pelo Marco Civil da Internet (6 meses).</li>
+            </ul>
+
+            <h3 className="font-bold text-base text-slate-900 mt-6 mb-2">3. COMPARTILHAMENTO DE DADOS (COM QUEM COMPARTILHAMOS)</h3>
+            <p>
+              O proITA NÃO vende, aluga ou comercializa seus dados pessoais para terceiros. O compartilhamento ocorre estritamente com parceiros operacionais necessários para manter o sistema no ar:
+            </p>
+            <ul className="list-disc pl-5 space-y-2">
+              <li><strong>Gateways de Pagamento (Inter, InfinitePay):</strong> Para processar Pix, Boletos e Cartões de Crédito de forma segura. O proITA não armazena os dados sensíveis do seu cartão.</li>
+              <li><strong>Infraestrutura em Nuvem (Supabase, Vercel):</strong> Para hospedagem segura do banco de dados e arquivos (fotos).</li>
+              <li><strong>Autoridades Judiciais:</strong> Mediante ordem judicial válida ou obrigação legal.</li>
+            </ul>
+
+            <h3 className="font-bold text-base text-slate-900 mt-6 mb-2">4. VISIBILIDADE PÚBLICA (ANUNCIANTES)</h3>
+            <p>
+              Ao criar um perfil de Anunciante, o Profissional compreende que as informações inseridas na sua Micropágina e Card (como telefone, bairro/endereço, fotos, catálogo) são de natureza pública. Elas ficarão visíveis para qualquer visitante da plataforma e poderão ser indexadas por mecanismos de busca como o Google.
+            </p>
+
+            <h3 className="font-bold text-base text-slate-900 mt-6 mb-2">5. USO DE COOKIES</h3>
+            <p>
+              Utilizamos "Cookies" (pequenos arquivos de texto salvos no seu dispositivo) para manter a sua sessão activa (não precisar logar toda hora) e entender como você usa o proITA. Você pode desativar os cookies nas configurações do seu navegador, mas isso pode limitar algumas funcionalidades do site.
+            </p>
+
+            <h3 className="font-bold text-base text-slate-900 mt-6 mb-2">6. SEUS DIREITOS (LGPD)</h3>
+            <p>Você tem o controle total sobre seus dados. A qualquer momento, você pode solicitar:</p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>A confirmação de que tratamos seus dados e o acesso a eles.</li>
+              <li>A correção de dados incompletos ou desatualizados (feito diretamente no seu Painel).</li>
+              <li>A exclusão da sua conta e de todos os dados pessoais associados, ressalvados aqueles que a lei nos obrigue a guardar (como notas fiscais e logs de acesso).</li>
+              <li>A portabilidade dos dados ou a revogação do consentimento.</li>
+            </ul>
+
+            <h3 className="font-bold text-base text-slate-900 mt-6 mb-2">7. CONTATO E ENCARREGADO DE DADOS (DPO)</h3>
+            <p>
+              Para exercer seus direitos ou tirar dúvidas sobre esta Política, entre em contato conosco pelo e-mail: <a href="mailto:contato@proita.com.br" className="text-primary hover:underline font-medium">contato@proita.com.br</a>. Responderemos no prazo máximo de 15 dias.
             </p>
           </div>
         </div>

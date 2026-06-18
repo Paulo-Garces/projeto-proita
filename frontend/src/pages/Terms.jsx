@@ -341,6 +341,11 @@ export default function Terms() {
             <p className="text-slate-600 text-sm mb-4">
               Caso o Anunciante decida não renovar o plano após o encerramento da vigência, seu cadastro migra automaticamente para o perfil de Usuário Cadastrado, com manutenção dos dados básicos mas sem visibilidade pública do perfil de Anunciante.
             </p>
+
+            <h3 className="text-base font-bold text-slate-800 mt-4 mb-2">4.5 Renovação</h3>
+            <p className="text-slate-600 text-sm mb-4">
+              O proITA poderá enviar lembretes amigáveis de vencimento, porém, a responsabilidade de acompanhar os prazos e efetuar a renovação do plano para evitar a suspensão dos anúncios é inteiramente do Anunciante.
+            </p>
           </section>
 
           {/* SEÇÃO 5 */}
@@ -354,9 +359,9 @@ export default function Terms() {
               Os pagamentos são realizados exclusivamente de forma digital pelos meios disponíveis na plataforma: PIX, cartão de crédito/débito ou boleto bancário. O proITA não dispõe de atendimento presencial nem recebe pagamentos em espécie.
             </p>
 
-            <h3 className="text-base font-bold text-slate-800 mt-4 mb-2">5.2 Confirmação e Nota Fiscal</h3>
+            <h3 className="text-base font-bold text-slate-800 mt-4 mb-2">5.2 Emissão de Nota Fiscal</h3>
             <p className="text-slate-600 text-sm mb-4">
-              Após confirmação do pagamento, a Operadora emitirá Nota Fiscal de Serviços Eletrônica (NFS-e) em conformidade com a legislação tributária municipal de Itapipoca/CE. O perfil é ativado ou reativado em até 24 horas úteis após a confirmação.
+              O proITA emitirá a Nota Fiscal de Serviços Eletrônica (NFS-e) mediante solicitação expressa do Anunciante através do painel, informando um e-mail válido para envio em até 5 dias úteis.
             </p>
 
             <h3 className="text-base font-bold text-slate-800 mt-4 mb-2">5.3 Direito de Arrependimento — 7 Dias</h3>
@@ -723,6 +728,9 @@ export default function Terms() {
               <li>Os dados pessoais dos usuários serão tratados conforme a Política de Privacidade, com prazo para portabilidade ou exclusão;</li>
               <li>A Operadora não responde por danos indiretos, lucros cessantes ou perdas de oportunidade decorrentes do encerramento da plataforma.</li>
             </ol>
+            <p className="text-slate-600 text-sm mb-4 font-semibold">
+              Em caso de encerramento da plataforma, os dados pessoais e arquivos de portfólio serão excluídos. É responsabilidade do Anunciante manter cópias de segurança (backup) de suas fotos e textos.
+            </p>
             <p className="text-slate-500 text-xs mb-4">
               Base legal: arts. 473 e 474 do Código Civil (resilição unilateral com pré-aviso); art. 51, IV, do CDC (vedação de cláusula que resulte em ônus excessivo ao consumidor); princípio da boa-fé objetiva (art. 422 do CC).
             </p>

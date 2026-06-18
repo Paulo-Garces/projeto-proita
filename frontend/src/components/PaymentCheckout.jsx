@@ -229,6 +229,10 @@ const PaymentCheckout = ({
   };
 
   const handleCreditCardCheckout = async () => {
+    if (!cpf.trim()) {
+      setErrorMsg('Por favor, informe seu CPF ou CNPJ antes de prosseguir com o pagamento por Cartão.');
+      return;
+    }
     setLoading(true);
     setErrorMsg('');
     try {
@@ -238,7 +242,10 @@ const PaymentCheckout = ({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ planId: selectedPlanId })
+        body: JSON.stringify({
+          planId: selectedPlanId,
+          cpfCnpj: cpf.replace(/\D/g, '')
+        })
       });
       const data = await res.json();
       if (data.success && data.redirectUrl) {
@@ -417,24 +424,20 @@ const PaymentCheckout = ({
           </div>
 
           {/* Campo CPF/CNPJ do Titular */}
-          {paymentMethod !== 'credit-card' && (
-            <>
-              <div className="mb-5">
-                <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
-                  CPF / CNPJ do Titular <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={cpf}
-                  onChange={handleCpfChange}
-                  placeholder="000.000.000-00"
-                  disabled={pixGenerated || boletoGenerated}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all disabled:bg-slate-50 disabled:text-slate-400 text-sm"
-                />
-              </div>
-              <hr className="border-slate-100 mb-6" />
-            </>
-          )}
+          <div className="mb-5">
+            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+              CPF / CNPJ do Titular <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={cpf}
+              onChange={handleCpfChange}
+              placeholder="000.000.000-00 ou 00.000.000/0000-00"
+              disabled={pixGenerated || boletoGenerated}
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all disabled:bg-slate-50 disabled:text-slate-400 text-sm"
+            />
+          </div>
+          <hr className="border-slate-100 mb-6" />
 
           {/* Área: PIX */}
           {paymentMethod === 'pix' && (

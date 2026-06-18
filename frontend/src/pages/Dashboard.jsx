@@ -1356,6 +1356,20 @@ export default function Dashboard() {
   const [editingAd, setEditingAd] = useState(null);
   const [showDashboardCheckout, setShowDashboardCheckout] = useState(false);
 
+  // Estados para Solicitação de NFS-e
+  const [showNfeModal, setShowNfeModal] = useState(false);
+  const [nfeEmail, setNfeEmail] = useState('');
+  const [nfeConfirmEmail, setNfeConfirmEmail] = useState('');
+  const [nfeLoading, setNfeLoading] = useState(false);
+  const [nfeError, setNfeError] = useState('');
+  const [nfeSuccess, setNfeSuccess] = useState('');
+
+  useEffect(() => {
+    if (showNfeModal && user?.email) {
+      setNfeEmail(user.email);
+    }
+  }, [showNfeModal, user]);
+
   const [favoriteAds, setFavoriteAds] = useState([]);
   const [favoritesLoading, setFavoritesLoading] = useState(false);
 
@@ -1823,6 +1837,43 @@ export default function Dashboard() {
       setSecurityError('Erro de conexão ao confirmar código de verificação.');
     } finally {
       setLoadingVerificacaoEmail(false);
+    }
+  };
+
+  const handleNfeSubmit = async (e) => {
+    e.preventDefault();
+    setNfeError('');
+    setNfeSuccess('');
+    setNfeLoading(true);
+
+    if (nfeEmail !== nfeConfirmEmail) {
+      setNfeError('Os e-mails informados não coincidem.');
+      setNfeLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/payments/nfe-request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ email: nfeEmail })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNfeSuccess(data.message || 'Solicitação enviada com sucesso!');
+        setNfeConfirmEmail('');
+      } else {
+        setNfeError(data.message || 'Erro ao processar solicitação de NFS-e.');
+      }
+    } catch (err) {
+      console.error('Erro ao enviar solicitação de NFS-e:', err);
+      setNfeError('Erro de conexão ao enviar solicitação.');
+    } finally {
+      setNfeLoading(false);
     }
   };
 
@@ -2346,7 +2397,303 @@ export default function Dashboard() {
                         };
 
                         const handleReceipt = () => {
-                          alert('Recibo estará disponível após o primeiro ciclo.');
+                          const printWindow = window.open('', '_blank', 'width=800,height=600');
+                          if (!printWindow) {
+                            alert('Por favor, ative a permissão de pop-ups para gerar o recibo.');
+                            return;
+                          }
+
+                          const reference = myAds[0]?.referenceCode || `PRO-${user?.id?.substring(0, 6).toUpperCase() || '001'}`;
+                          const doc = user?.cpfCnpj || 'Não cadastrado';
+                          const name = `${user?.nome} ${user?.sobrenome || ''}`.trim();
+                          const dateStr = new Date().toLocaleDateString('pt-BR');
+
+                          const htmlContent = `
+                            <!DOCTYPE html>
+                            <html lang="pt-BR">
+                            <head>
+                              <meta charset="UTF-8">
+                              <title>Recibo_Assinatura_proITA_${reference}</title>
+                              <style>
+                                body {
+                                  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                                  color: #334155;
+                                  margin: 0;
+                                  padding: 0 0 40px 0;
+                                  background-color: #f8fafc;
+                                }
+                                .action-banner {
+                                  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                                  color: white;
+                                  padding: 12px 20px;
+                                  position: sticky;
+                                  top: 0;
+                                  left: 0;
+                                  right: 0;
+                                  display: flex;
+                                  justify-content: center;
+                                  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                                  margin-bottom: 20px;
+                                  border-bottom: 1px solid #2563eb;
+                                  z-index: 9999;
+                                }
+                                .action-banner-content {
+                                  max-width: 650px;
+                                  width: 100%;
+                                  display: flex;
+                                  justify-content: space-between;
+                                  align-items: center;
+                                }
+                                .banner-title {
+                                  font-size: 14px;
+                                  font-weight: 600;
+                                  letter-spacing: 0.5px;
+                                }
+                                .banner-btn {
+                                  background-color: white;
+                                  color: #1e3a8a;
+                                  border: none;
+                                  padding: 8px 16px;
+                                  border-radius: 8px;
+                                  font-size: 13px;
+                                  font-weight: 700;
+                                  cursor: pointer;
+                                  display: inline-flex;
+                                  align-items: center;
+                                  transition: all 0.2s ease;
+                                  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                }
+                                .banner-btn:hover {
+                                  background-color: #f8fafc;
+                                  transform: translateY(-1px);
+                                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+                                }
+                                .banner-btn:active {
+                                  transform: translateY(0);
+                                }
+                                .no-print {
+                                  display: block;
+                                }
+                                .receipt-card {
+                                  max-width: 650px;
+                                  margin: 20px auto;
+                                  border: 1px solid #e2e8f0;
+                                  border-radius: 16px;
+                                  padding: 40px;
+                                  background-color: #ffffff;
+                                  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+                                }
+                                .header {
+                                  display: flex;
+                                  justify-content: space-between;
+                                  align-items: flex-start;
+                                  border-bottom: 2px solid #3b82f6;
+                                  padding-bottom: 24px;
+                                  margin-bottom: 30px;
+                                }
+                                .logo-area .logo {
+                                  font-size: 28px;
+                                  font-weight: 800;
+                                  color: #1e3a8a;
+                                  letter-spacing: -0.05em;
+                                }
+                                .logo-area .cnpj {
+                                  font-size: 12px;
+                                  color: #64748b;
+                                  margin-top: 4px;
+                                }
+                                .title-area {
+                                  text-align: right;
+                                }
+                                .title-area h1 {
+                                  font-size: 18px;
+                                  font-weight: 700;
+                                  color: #0f172a;
+                                  margin: 0;
+                                  text-transform: uppercase;
+                                }
+                                .title-area .ref {
+                                  font-size: 13px;
+                                  color: #3b82f6;
+                                  font-weight: 600;
+                                  margin-top: 4px;
+                                }
+                                .details-grid {
+                                  display: grid;
+                                  grid-template-columns: 1fr;
+                                  gap: 16px;
+                                  margin-bottom: 30px;
+                                }
+                                @media (min-width: 480px) {
+                                  .details-grid {
+                                    grid-template-columns: 1fr 1fr;
+                                  }
+                                }
+                                .detail-item {
+                                  display: flex;
+                                  flex-direction: column;
+                                }
+                                .detail-item span.label {
+                                  font-size: 10px;
+                                  font-weight: 700;
+                                  color: #94a3b8;
+                                  text-transform: uppercase;
+                                  letter-spacing: 0.05em;
+                                  margin-bottom: 4px;
+                                }
+                                .detail-item span.value {
+                                  font-size: 14px;
+                                  font-weight: 600;
+                                  color: #334155;
+                                }
+                                .description-box {
+                                  background-color: #f8fafc;
+                                  border: 1px solid #f1f5f9;
+                                  border-radius: 12px;
+                                  padding: 20px;
+                                  margin-bottom: 30px;
+                                }
+                                .description-box h2 {
+                                  font-size: 12px;
+                                  font-weight: 700;
+                                  color: #475569;
+                                  margin-top: 0;
+                                  margin-bottom: 8px;
+                                  text-transform: uppercase;
+                                }
+                                .description-box p {
+                                  font-size: 14px;
+                                  color: #64748b;
+                                  margin: 0;
+                                  line-height: 1.5;
+                                }
+                                .price-section {
+                                  display: flex;
+                                  justify-content: flex-end;
+                                  align-items: center;
+                                  border-top: 1px solid #f1f5f9;
+                                  padding-top: 24px;
+                                }
+                                .price-box {
+                                  text-align: right;
+                                }
+                                .price-box .label {
+                                  font-size: 11px;
+                                  font-weight: 700;
+                                  color: #94a3b8;
+                                  text-transform: uppercase;
+                                }
+                                .price-box .value {
+                                  font-size: 28px;
+                                  font-weight: 800;
+                                  color: #1e3a8a;
+                                  margin-top: 4px;
+                                }
+                                .footer-note {
+                                  text-align: center;
+                                  font-size: 11px;
+                                  color: #94a3b8;
+                                  margin-top: 40px;
+                                  border-top: 1px dashed #e2e8f0;
+                                  padding-top: 20px;
+                                }
+                                @media print {
+                                  .no-print {
+                                    display: none !important;
+                                  }
+                                  body {
+                                    margin: 0;
+                                    padding: 0;
+                                    background-color: #ffffff;
+                                  }
+                                  .receipt-card {
+                                    border: none !important;
+                                    box-shadow: none !important;
+                                    margin: 0 auto !important;
+                                    padding: 20px !important;
+                                  }
+                                }
+                              </style>
+                            </head>
+                            <body>
+                              <div class="no-print action-banner">
+                                <div class="action-banner-content">
+                                  <span class="banner-title">Recibo Digital Oficial proITA</span>
+                                  <button class="banner-btn" onclick="window.print()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                                    Imprimir / Salvar PDF
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div class="receipt-card">
+                                <div class="header">
+                                  <div class="logo-area">
+                                    <img src="${window.location.origin}/logo-proita.png" alt="proITA" style="height: 40px; display: block; margin-bottom: 6px;" />
+                                    <div class="cnpj">CNPJ: 67.140.810/0001-14</div>
+                                  </div>
+                                  <div class="title-area">
+                                    <h1>Recibo de Pagamento</h1>
+                                    <div class="ref">Ref: ${reference}</div>
+                                  </div>
+                                </div>
+                                
+                                <div class="details-grid">
+                                  <div class="detail-item">
+                                    <span class="label">Assinante</span>
+                                    <span class="value">${name}</span>
+                                  </div>
+                                  <div class="detail-item">
+                                    <span class="label">CPF/CNPJ</span>
+                                    <span class="value">${doc}</span>
+                                  </div>
+                                  <div class="detail-item">
+                                    <span class="label">Data de Emissão</span>
+                                    <span class="value">${dateStr}</span>
+                                  </div>
+                                  <div class="detail-item">
+                                    <span class="label">Plano</span>
+                                    <span class="value">${planName}</span>
+                                  </div>
+                                </div>
+                                
+                                <div class="description-box">
+                                  <h2>Descrição do Serviço</h2>
+                                  <p>Assinatura anual de veiculação e destaque de serviços profissionais no portal proITA - Guia dos Três Climas (Região de Itapipoca/CE).</p>
+                                </div>
+                                
+                                <div class="price-section">
+                                  <div class="price-box">
+                                    <span class="label">Valor Total Pago</span>
+                                    <div class="value">R$ ${planPrice}</div>
+                                  </div>
+                                </div>
+                                
+                                <div class="footer-note">
+                                  Obrigado por sua parceria com o proITA. Este documento serve como recibo oficial de pagamento eletrônico.
+                                </div>
+                              </div>
+                              
+                              <script>
+                                document.title = "Recibo_Assinatura_proITA_${reference}";
+                                
+                                const originalPrint = window.print;
+                                window.print = function() {
+                                  document.title = "Recibo_Assinatura_proITA_${reference}";
+                                  originalPrint.apply(window);
+                                };
+
+                                setTimeout(function() {
+                                  window.print();
+                                }, 500);
+                              </script>
+                            </body>
+                            </html>
+                          `;
+
+                          printWindow.document.write(htmlContent);
+                          printWindow.document.title = `Recibo_Assinatura_proITA_${reference}`;
+                          printWindow.document.close();
                         };
 
                         const formatDateBR = (dateStr) => {
@@ -2490,7 +2837,7 @@ export default function Dashboard() {
                                   <div className="flex items-center gap-2 text-indigo-800">
                                     <span className="text-sm font-medium">Deseja alterar seu plano? Entre em contato com o suporte.</span>
                                   </div>
-                                  <button onClick={() => window.open('https://wa.me/5588999999999', '_blank')} className="bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-xl text-xs font-bold transition-colors shrink-0 cursor-pointer">
+                                  <button onClick={() => navigate('/central-de-ajuda')} className="bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-xl text-xs font-bold transition-colors shrink-0 cursor-pointer">
                                     Fale com o Suporte
                                   </button>
                                 </div>
@@ -2514,6 +2861,16 @@ export default function Dashboard() {
                                   className="flex-1 flex justify-center items-center bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 px-6 rounded-2xl font-bold text-sm transition-all active:scale-95 cursor-pointer"
                                 >
                                   Gerar Recibo
+                                </button>
+                              </div>
+
+                              <div className="text-center pt-2.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowNfeModal(true)}
+                                  className="text-xs font-semibold text-primary hover:text-primary-hover hover:underline transition-all cursor-pointer bg-transparent border-none outline-none"
+                                >
+                                  Solicitar Nota Fiscal Eletrônica
                                 </button>
                               </div>
                             </div>
@@ -2894,6 +3251,122 @@ export default function Dashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showNfeModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 md:p-8 animate-in zoom-in-95 duration-300 space-y-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-extrabold text-slate-900">Solicitar NFS-e</h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Nota Fiscal de Serviços Eletrônica de Itapipoca/CE
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNfeModal(false);
+                  setNfeError('');
+                  setNfeSuccess('');
+                }}
+                className="text-slate-400 hover:text-slate-600 p-1 transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {nfeError && (
+              <div className="bg-red-50 text-red-650 p-3 rounded-xl flex items-start gap-2.5 border border-red-100 text-sm animate-in fade-in">
+                <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                <span>{nfeError}</span>
+              </div>
+            )}
+
+            {nfeSuccess ? (
+              <div className="text-center py-4 space-y-4">
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto">
+                  <Check size={32} />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-slate-900 text-base">Solicitação Enviada!</h4>
+                  <p className="text-sm text-slate-500 leading-relaxed">
+                    {nfeSuccess}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNfeModal(false);
+                    setNfeSuccess('');
+                  }}
+                  className="w-full py-3 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold transition-all text-sm shadow-md cursor-pointer"
+                >
+                  Fechar
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleNfeSubmit} className="space-y-4">
+                <div className="space-y-1">
+                  <label htmlFor="nfeEmail" className="block text-sm font-bold text-slate-700">
+                    E-mail para envio
+                  </label>
+                  <input
+                    type="email"
+                    id="nfeEmail"
+                    value={nfeEmail}
+                    onChange={(e) => setNfeEmail(e.target.value)}
+                    required
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-sm transition-all text-slate-800"
+                    placeholder="seu@email.com"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label htmlFor="nfeConfirmEmail" className="block text-sm font-bold text-slate-700">
+                    Confirme o E-mail
+                  </label>
+                  <input
+                    type="email"
+                    id="nfeConfirmEmail"
+                    value={nfeConfirmEmail}
+                    onChange={(e) => setNfeConfirmEmail(e.target.value)}
+                    required
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-sm transition-all text-slate-800"
+                    placeholder="Confirme seu e-mail"
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNfeModal(false);
+                      setNfeError('');
+                    }}
+                    className="flex-1 py-3 border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-all text-sm cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={nfeLoading || !nfeEmail || !nfeConfirmEmail || nfeEmail !== nfeConfirmEmail}
+                    className="flex-1 py-3 bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all text-sm shadow-md cursor-pointer flex justify-center items-center gap-1.5"
+                  >
+                    {nfeLoading ? (
+                      <>
+                        <Loader2 className="animate-spin" size={16} />
+                        Enviando...
+                      </>
+                    ) : (
+                      'Solicitar'
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
