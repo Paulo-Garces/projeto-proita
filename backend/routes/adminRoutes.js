@@ -498,5 +498,88 @@ module.exports = (prisma) => {
     }
   });
 
+  // Rota 11: Disparo de notificações pelo admin (com opção de e-mail)
+  router.post('/notifications', checkAdmin, async (req, res) => {
+    const { userId, title, message, type, sendEmail } = req.body;
+
+    if (!userId || !title || !message || !type) {
+      return res.status(400).json({ success: false, message: 'Os campos userId, title, message e type são obrigatórios.' });
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, nome: true, sobrenome: true }
+      });
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+      }
+
+      // Salva no banco de dados a notificação
+      const notification = await prisma.notification.create({
+        data: {
+          userId,
+          title,
+          message,
+          type
+        }
+      });
+
+      let emailSent = false;
+      let emailError = null;
+
+      if (sendEmail === true || sendEmail === 'true') {
+        if (!user.email) {
+          return res.status(400).json({
+            success: false,
+            message: 'O usuário não possui um e-mail cadastrado para envio.',
+            notification
+          });
+        }
+
+        const sendEmailUtil = require('../utils/sendEmail');
+        
+        const htmlBody = `
+          <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h2 style="color: #0284c7; margin: 0;">Portal proITA</h2>
+              <p style="font-size: 14px; color: #64748b; margin-top: 5px;">Guia de Profissionais e Serviços</p>
+            </div>
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px;">
+              <h3 style="color: #0f172a; margin-top: 0; font-size: 18px;">${title}</h3>
+              <p style="font-size: 16px; color: #334155; line-height: 1.6;">Olá, ${user.nome} ${user.sobrenome || ''}!</p>
+              <p style="font-size: 15px; color: #334155; line-height: 1.6; white-space: pre-line;">${message}</p>
+            </div>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+            <p style="font-size: 11px; color: #94a3b8; text-align: center;">Esta é uma mensagem automática enviada pelo portal proITA. Por favor, não responda a este e-mail.</p>
+          </div>
+        `;
+
+        const emailResult = await sendEmailUtil(user.email, title, message, htmlBody);
+        
+        if (emailResult.success) {
+          emailSent = true;
+        } else {
+          emailError = emailResult.error?.message || 'Falha no envio de e-mail';
+        }
+      }
+
+      res.status(201).json({
+        success: true,
+        message: emailSent 
+          ? 'Notificação criada e e-mail transacional enviado com sucesso!' 
+          : (sendEmail ? `Notificação criada, mas erro no envio do e-mail: ${emailError}` : 'Notificação criada com sucesso no sistema!'),
+        data: notification,
+        emailSent,
+        emailError
+      });
+
+    } catch (error) {
+      console.error('[POST /admin/notifications] Erro:', error);
+      res.status(500).json({ success: false, message: 'Erro interno ao processar a notificação.' });
+    }
+  });
+
   return router;
 };

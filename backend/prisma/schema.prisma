@@ -8,109 +8,90 @@ datasource db {
 }
 
 model User {
-  id                         String    @id @default(uuid())
+  id                         String       @id @default(uuid())
   nome                       String
-  sobrenome                  String? // Opcional para evitar falhas se o Google não enviar
-  telefone                   String?   @unique // Opcional, pois o login Google não o possui inicialmente
-  email                      String?   @unique // Essencial para capturar e vincular a conta do Google
-  emailSecundario            String? // E-mail alternativo para recuperação de conta
-  emailSecundarioVerificado  Boolean   @default(false)
-  emailSecundarioCode        String?
-  emailSecundarioCodeExpires DateTime?
-  senha                      String? // Opcional, usuários do Google não usam senha
-  googleId                   String?   @unique // Identificador seguro de quem veio pelo Google
+  sobrenome                  String?
+  telefone                   String?      @unique
+  senha                      String?
   bairro                     String?
-  cep                        String?
-  isWhatsapp                 Boolean   @default(false)
-  role                       String    @default("USER")
-  profileImageUrl            String?
+  role                       String       @default("USER")
+  createdAt                  DateTime     @default(now())
   profileImageFileId         String?
-
-  // Controle de Assinatura e Monetização
-  planStatus                 String    @default("INATIVO") // 'INATIVO', 'DEGUSTACAO', 'ATIVO', 'EXPIRADO'
-  trialEndsAt                DateTime?
-  subscriptionEndsAt         DateTime?
-
-  // Controle de Transação Pendente do Banco Inter
-  cpfCnpj                    String?
-  pendingTxid                String?   @unique
-  pendingNossoNumero         String?   @unique
-  pendingPlanId              String?
-
-  createdAt                  DateTime  @default(now())
-  profiles                   Profile[] // 1:N — um usuário pode ter vários anúncios
+  profileImageUrl            String?
+  cep                        String?
+  isWhatsapp                 Boolean      @default(false)
+  email                      String?      @unique
+  googleId                   String?      @unique
   resetCode                  String?
   resetCodeExpires           DateTime?
+  emailSecundario            String?
+  emailSecundarioCode        String?
+  emailSecundarioCodeExpires DateTime?
+  emailSecundarioVerificado  Boolean      @default(false)
+  planStatus                 String       @default("INATIVO")
+  subscriptionEndsAt         DateTime?
+  trialEndsAt                DateTime?
+  cpfCnpj                    String?
+  pendingNossoNumero         String?      @unique
+  pendingPlanId              String?
+  pendingTxid                String?      @unique
+  NfeRequest                 NfeRequest[]
+  profiles                   Profile[]
   reviews                    Review[]
-  favoriteProfiles           Profile[] @relation("UserFavorites")
+  favoriteProfiles           Profile[]    @relation("UserFavorites")
+  notifications              Notification[]
 }
 
 model Profile {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  // Nomenclatura oficial do MEI e IA
-  atividadePrincipal    String // Ex: Encanador, Vaqueiro, Digital Maker
-  categoriaGeral        String? // Ex: "Construção e Reformas" (Nova Trava)
-  atividadesSecundarias String[]
-
-  descricaoTrabalho String
-  descricaoCurta    String? // Max 90 chars.
-
-  // Nome público do anúncio (independente do cadastro em User)
-  nomeExibicao      String?
-  sobrenomeExibicao String?
-
-  // Contato e Redes Sociais (por anúncio — não espelham User.telefone)
+  id                          String    @id @default(uuid())
+  userId                      String
+  atividadePrincipal          String
+  atividadesSecundarias       String[]
+  descricaoTrabalho           String
+  redesSociais                Json?
+  createdAt                   DateTime  @default(now())
+  avatarFileId                String?
+  avatarUrl                   String?
+  endereco                    String?
   instagram                   String?
+  portfolioUrls               String[]
   whatsapp                    String?
-  servicePhone                String? // Telefone profissional / do anúncio
+  serviceBairro               String?
+  servicePhone                String?
+  socialLinks                 Json?
+  cliquesWhatsapp             Int       @default(0)
+  visitasPerfil               Int       @default(0)
+  bairroEndereco              String?
+  categoriaGeral              String?
+  descricaoCurta              String?
+  exibirEnderecoCompleto      Boolean   @default(true)
+  nomeExibicao                String?
+  sobrenomeExibicao           String?
+  rating                      Float?    @default(0)
+  reviewCount                 Int       @default(0)
+  fotoAnuncioFileId           String?
+  fotoAnuncioUrl              String?
   telefoneComercial           String?
-  telefoneComercialVerificado Boolean @default(false)
-
-  // Localização
-  endereco               String?
-  enderecoComercial      String? // Endereço comercial opcional do anúncio
-  serviceBairro          String? // Bairro de atuação / exibição do anúncio
-  bairroEndereco         String? // NOVO: Usado para o Bairro exato retornado pelo CEP
-  exibirEnderecoCompleto Boolean @default(true) // false = mostra apenas o bairro
-
-  // Portfólio e Imagens
-  portfolioUrls     String[]
-  avatarUrl         String?
-  avatarFileId      String?
-  fotoAnuncioUrl    String?
-  fotoAnuncioFileId String?
-  capaUrl           String?
-  capaFileId        String?
-  partners          Json?    // Array of up to 3 objects [{ imageUrl: string, fileId: string, link: string }]
-
-  // Campos Legado e Métricas
-  redesSociais          Json?
-  horariosFuncionamento Json?
-  socialLinks           Json?
-  cliquesWhatsapp       Int      @default(0)
-  visitasPerfil         Int      @default(0)
-  impressions           Int      @default(0)
-  profileViews          Int      @default(0)
-  whatsappClicks        Int      @default(0)
-  phoneClicks           Int      @default(0)
-  shares                Int      @default(0)
-
-  referenceCode         String?  @unique // Ex: PRO-001, PRO-002...
-
-  createdAt             DateTime @default(now())
-  lastNamePhoneUpdate   DateTime? @map("last_name_phone_update")
-  rating                Float?   @default(0)
-  reviewCount           Int      @default(0)
-  reviews               Review[]
-  services              Service[]
-  favoritedBy           User[]   @relation("UserFavorites")
-  reports               Report[]
+  telefoneComercialVerificado Boolean   @default(false)
+  capaFileId                  String?
+  capaUrl                     String?
+  enderecoComercial           String?
+  horariosFuncionamento       Json?
+  impressions                 Int       @default(0)
+  phoneClicks                 Int       @default(0)
+  profileViews                Int       @default(0)
+  shares                      Int       @default(0)
+  whatsappClicks              Int       @default(0)
+  partners                    Json?
+  lastNamePhoneUpdate         DateTime? @map("last_name_phone_update")
+  referenceCode               String?   @unique
+  user                        User      @relation(fields: [userId], references: [id])
+  reports                     Report[]
+  reviews                     Review[]
+  services                    Service[]
+  favoritedBy                 User[]    @relation("UserFavorites")
 }
 
-// Tabelas fixas para alimentar os Menus de Busca/Filtro do Frontend
 model Category {
   id            String        @id @default(uuid())
   name          String        @unique
@@ -134,20 +115,20 @@ model SearchHistory {
 
 model Review {
   id        String   @id @default(uuid())
+  profileId String
   rating    Int
   comment   String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  profileId String
-  profile   Profile  @relation(fields: [profileId], references: [id])
   authorId  String
+  updatedAt DateTime @updatedAt
   author    User     @relation(fields: [authorId], references: [id])
+  profile   Profile  @relation(fields: [profileId], references: [id])
 }
 
 model Service {
   id          String   @id @default(uuid())
   name        String
-  priceType   String   // FIXO, A_PARTIR, SOB_CONSULTA
+  priceType   String
   price       Float?
   description String?
   createdAt   DateTime @default(now())
@@ -156,15 +137,34 @@ model Service {
   profile     Profile  @relation(fields: [profileId], references: [id])
 }
 
-// Central de Moderação — Tabela de Denúncias
 model Report {
   id             String   @id @default(uuid())
   adId           String
-  ad             Profile  @relation(fields: [adId], references: [id], onDelete: Cascade)
-  reason         String   // Categoria selecionada (ex: "Suspeita de golpe ou fraude")
-  details        String?  // Texto livre opcional (obrigatório se reason = "Outros")
-  reporterUserId String?  // ID do usuário logado que fez a denúncia (nullable para visitantes)
-  status         String   @default("pendente") // 'pendente', 'resolvido', 'ignorado'
+  reason         String
+  details        String?
+  reporterUserId String?
+  status         String   @default("pendente")
   createdAt      DateTime @default(now())
+  ad             Profile  @relation(fields: [adId], references: [id], onDelete: Cascade)
+}
+
+model NfeRequest {
+  id        String   @id
+  userId    String
+  email     String
+  status    String   @default("PENDENTE")
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 

@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, User, Search, Home, PlusCircle, HelpCircle, Info, LogOut, Shield, Heart } from 'lucide-react';
 import { useState, useRef, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import NotificationBell from './NotificationBell';
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -128,6 +129,7 @@ export default function Header() {
               {/* Auth e Conta */}
               {isAuthenticated ? (
                 <div className="flex items-center gap-6">
+                  <NotificationBell />
                   <div className="relative" ref={dropdownRef}>
                     <button
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -191,8 +193,14 @@ export default function Header() {
               )}
             </div>
 
-            {/* Mobile right side - Empty space to balance */}
-            <div className="md:hidden w-7"></div>
+            {/* Mobile right side - Sininho de Notificação se Autenticado */}
+            <div className="md:hidden flex items-center">
+              {isAuthenticated ? (
+                <NotificationBell />
+              ) : (
+                <div className="w-7"></div>
+              )}
+            </div>
           </div>
         </div>
       </header>

@@ -822,6 +822,10 @@ app.delete('/api/users/me', authMiddleware, async (req, res) => {
 const adminRoutes = require('./routes/adminRoutes')(prisma);
 app.use('/api/admin', authMiddleware, adminRoutes);
 
+// Rotas de Notificações
+const notificationRoutes = require('./routes/notificationRoutes')(prisma);
+app.use('/api/notifications', authMiddleware, notificationRoutes);
+
 // Rotas de Anúncios (Profile)
 const adsRoutes = require('./routes/adsRoutes')(prisma);
 app.use('/api/ads', adsRoutes);

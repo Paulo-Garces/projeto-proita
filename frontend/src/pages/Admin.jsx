@@ -33,6 +33,8 @@ import {
   ShieldOff,
   Plus,
   TrendingDown,
+  Bell,
+  MessageCircle,
 } from 'lucide-react';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -868,6 +870,167 @@ function ConfirmModal({ action, user, token, onSuccess, onClose }) {
   );
 }
 
+// ─── Modal de Disparo de Notificação ────────────────────────────────────────
+
+function NotifyModal({ user, token, onSuccess, onClose }) {
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [type, setType] = useState('SYSTEM');
+  const [sendEmail, setSendEmail] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [localError, setLocalError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!title.trim() || !message.trim()) {
+      setLocalError('Título e mensagem são obrigatórios.');
+      return;
+    }
+
+    setLoading(true);
+    setLocalError('');
+
+    try {
+      const res = await fetch(`${API_URL}/api/admin/notifications`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          title,
+          message,
+          type,
+          sendEmail
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        onSuccess(data.message || 'Notificação enviada com sucesso!');
+        onClose();
+      } else {
+        setLocalError(data.message || 'Erro ao enviar notificação.');
+      }
+    } catch (err) {
+      console.error(err);
+      setLocalError('Erro ao conectar ao servidor.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200">
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div className="flex items-center gap-2.5 text-indigo-600">
+            <Bell size={20} />
+            <h3 className="text-lg font-bold text-slate-800">Enviar Notificação</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-all cursor-pointer">
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          {/* Body */}
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-slate-500 font-medium">
+              Destinatário: <span className="text-slate-800 font-bold">{user.nome} {user.sobrenome || ''}</span>
+            </p>
+
+            {localError && (
+              <div className="flex items-center gap-2 text-red-600 bg-red-50 rounded-xl px-3 py-2.5 text-sm border border-red-100">
+                <AlertTriangle size={13} className="shrink-0" /> {localError}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Título da Notificação
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex: Atualização cadastral necessária"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Mensagem
+              </label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Escreva a mensagem da notificação..."
+                rows="4"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-all resize-none"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                  Tipo
+                </label>
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
+                >
+                  <option value="SYSTEM">Aviso</option>
+                  <option value="WARNING">Financeiro</option>
+                  <option value="INFO">Dica</option>
+                </select>
+              </div>
+
+              <div className="flex items-center pt-6">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={sendEmail}
+                    onChange={(e) => setSendEmail(e.target.checked)}
+                    className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 cursor-pointer"
+                  />
+                  <span className="text-sm font-medium text-slate-700">Enviar cópia para E-mail</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4.5 bg-slate-50 border-t border-slate-100 flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 border-2 border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl text-sm font-bold transition-all cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-[1.5] py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {loading ? (
+                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Enviando...</>
+              ) : 'Enviar Notificação'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ─── Tab: Gestão de Profissionais ─────────────────────────────────────────────
 
 function ProfessionalsTab({ token }) {
@@ -1075,10 +1238,34 @@ function ProfessionalsTab({ token }) {
 
                     {/* Ações */}
                     <td className="py-4 px-5">
-                      <ActionMenu
-                        user={u}
-                        onAction={(action, targetUser) => setModalAction({ action, user: targetUser })}
-                      />
+                      <div className="flex items-center gap-1.5">
+                        {/* WhatsApp Rápido */}
+                        {u.telefone && (
+                          <a
+                            href={`https://api.whatsapp.com/send?phone=${encodeURIComponent(u.telefone.replace(/\D/g, ''))}&text=${encodeURIComponent('Olá! Aqui é a equipe de suporte do proITA. Enviamos um aviso importante no seu painel, por favor, acesse para verificar.')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition-all"
+                            title="WhatsApp Rápido"
+                          >
+                            <MessageCircle size={16} />
+                          </a>
+                        )}
+
+                        {/* Enviar Notificação */}
+                        <button
+                          onClick={() => setModalAction({ action: 'notify', user: u })}
+                          className="p-1.5 text-sky-600 hover:text-sky-700 hover:bg-sky-50 rounded-xl transition-all cursor-pointer"
+                          title="Enviar Notificação"
+                        >
+                          <Bell size={16} />
+                        </button>
+
+                        <ActionMenu
+                          user={u}
+                          onAction={(action, targetUser) => setModalAction({ action, user: targetUser })}
+                        />
+                      </div>
                     </td>
 
                   </tr>
@@ -1097,8 +1284,15 @@ function ProfessionalsTab({ token }) {
         )}
       </div>
 
-      {/* Modal de confirmàção */}
-      {modalAction && (
+      {/* Modal de confirmação / notificação */}
+      {modalAction && modalAction.action === 'notify' ? (
+        <NotifyModal
+          user={modalAction.user}
+          token={token}
+          onSuccess={handleActionSuccess}
+          onClose={() => setModalAction(null)}
+        />
+      ) : modalAction && (
         <ConfirmModal
           action={modalAction.action}
           user={modalAction.user}
