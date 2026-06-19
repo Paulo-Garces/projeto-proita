@@ -119,7 +119,7 @@ function MetricCard({ title, value, icon: Icon, colorClass, loading, error, subt
 }
 
 // Badge de status de usuário (role + planStatus + expiration checks)
-function UserStatusBadge({ role, hasAd, planStatus, subscriptionEndsAt, trialEndsAt, createdAt }) {
+function UserStatusBadge({ role, hasAd, planStatus, subscriptionEndsAt, trialEndsAt, createdAt, planType }) {
   if (role === 'BLOCKED') {
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
@@ -140,10 +140,20 @@ function UserStatusBadge({ role, hasAd, planStatus, subscriptionEndsAt, trialEnd
     const expirationDate = subscriptionEndsAt || trialEndsAt;
     const isAtivo = expirationDate ? new Date(expirationDate) > new Date() : false;
     
+    if (!isAtivo) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          Plano Expirado
+        </span>
+      );
+    }
+
     // Check if it's a trial plan (30 days from creation)
     const isTrial =
       planStatus === 'DEGUSTACAO' ||
       !!trialEndsAt ||
+      planType === 'TESTE' ||
       (subscriptionEndsAt && createdAt && (() => {
         const diffMs = Math.abs(new Date(subscriptionEndsAt).getTime() - new Date(createdAt).getTime());
         const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
@@ -151,28 +161,50 @@ function UserStatusBadge({ role, hasAd, planStatus, subscriptionEndsAt, trialEnd
         return diffMs >= (thirtyDaysMs - 3600000) && diffMs <= (thirtyDaysMs + 3600000);
       })());
 
+    // Determine plan variation
+    let badgeClass = "bg-blue-100 text-blue-700 border border-blue-200";
+    let dotClass = "bg-blue-500";
+    let badgeText = "Período de Teste";
+
+    if (planType === 'CORTESIA') {
+      badgeClass = "bg-purple-100 text-purple-700 border border-purple-200";
+      dotClass = "bg-purple-500";
+      badgeText = "Cortesia VIP";
+    } else if (planType === 'PRO_ANUAL') {
+      badgeClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
+      dotClass = "bg-emerald-500";
+      badgeText = "Pro Anual";
+    } else if (planType === 'PRO_BIENAL') {
+      badgeClass = "bg-teal-100 text-teal-700 border border-teal-200";
+      dotClass = "bg-teal-500";
+      badgeText = "Pro Bienal";
+    } else if (planType === 'PATROCINADOR_ANUAL') {
+      badgeClass = "bg-yellow-100 text-yellow-800 border border-yellow-300";
+      dotClass = "bg-yellow-500";
+      badgeText = "Patrocinador Anual";
+    } else if (planType === 'PATROCINADOR_BIENAL') {
+      badgeClass = "bg-orange-100 text-orange-700 border border-orange-200";
+      dotClass = "bg-orange-500";
+      badgeText = "Patrocinador Bienal";
+    } else if (planType === 'TESTE' || isTrial) {
+      badgeClass = "bg-blue-100 text-blue-700 border border-blue-200";
+      dotClass = "bg-blue-500";
+      badgeText = "Período de Teste";
+    } else {
+      // Default fallback for active plan
+      badgeClass = "bg-emerald-100 text-emerald-700 border border-emerald-200";
+      dotClass = "bg-emerald-500";
+      badgeText = "Pro Anual";
+    }
+
     return (
       <div className="flex flex-col items-start gap-1">
-        {isAtivo ? (
-          isTrial ? (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200" title="Período de Teste Grátis (30 dias)">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-              Período de Teste
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200" title="Assinante Ativo">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Profissional Ativo
-            </span>
-          )
-        ) : (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-            Plano Expirado
-          </span>
-        )}
+        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
+          {badgeText}
+        </span>
         
-        {isAtivo && expirationDate && (
+        {expirationDate && (
           <p className="text-[10px] text-slate-400 font-medium pl-1">
             até {formatDate(expirationDate)}
           </p>
@@ -1246,6 +1278,7 @@ function BroadcastModal({ token, onSuccess, onClose }) {
 function ExtendPlanModal({ user, token, onSuccess, onClose }) {
   const [option, setOption] = useState('30d'); // '30d', '365d', 'custom'
   const [customDate, setCustomDate] = useState('');
+  const [planType, setPlanType] = useState(user.planType || 'PRO_ANUAL');
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState('');
 
@@ -1256,16 +1289,16 @@ function ExtendPlanModal({ user, token, onSuccess, onClose }) {
 
     let requestBody = {};
     if (option === '30d') {
-      requestBody = { option: '30d' };
+      requestBody = { option: '30d', planType };
     } else if (option === '365d') {
-      requestBody = { option: '365d' };
+      requestBody = { option: '365d', planType };
     } else {
       if (!customDate) {
         setLocalError('Por favor, selecione uma data customizada.');
         setLoading(false);
         return;
       }
-      requestBody = { option: 'custom', customDate };
+      requestBody = { option: 'custom', customDate, planType };
     }
 
     try {
@@ -1320,6 +1353,25 @@ function ExtendPlanModal({ user, token, onSuccess, onClose }) {
               </div>
             )}
 
+            {/* Tipo de Plano */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                Tipo de Plano
+              </label>
+              <select
+                value={planType}
+                onChange={(e) => setPlanType(e.target.value)}
+                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-white text-slate-700 font-medium"
+              >
+                <option value="TESTE">Período de Teste</option>
+                <option value="CORTESIA">Cortesia VIP</option>
+                <option value="PRO_ANUAL">Pro Anual</option>
+                <option value="PRO_BIENAL">Pro Bienal</option>
+                <option value="PATROCINADOR_ANUAL">Patrocinador Anual</option>
+                <option value="PATROCINADOR_BIENAL">Patrocinador Bienal</option>
+              </select>
+            </div>
+
             <div className="space-y-2.5">
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Selecione o Período
@@ -1334,7 +1386,7 @@ function ExtendPlanModal({ user, token, onSuccess, onClose }) {
                       type="radio"
                       name="extendOption"
                       checked={option === '30d'}
-                      onChange={() => setOption('30d')}
+                      onChange={() => { setOption('30d'); setPlanType('TESTE'); }}
                       className="text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
                     />
                     <div>
@@ -1352,7 +1404,7 @@ function ExtendPlanModal({ user, token, onSuccess, onClose }) {
                       type="radio"
                       name="extendOption"
                       checked={option === '365d'}
-                      onChange={() => setOption('365d')}
+                      onChange={() => { setOption('365d'); setPlanType('PRO_ANUAL'); }}
                       className="text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
                     />
                     <div>
@@ -1818,8 +1870,32 @@ function ProfessionalsTab({ token }) {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [activePlanFilter, setActivePlanFilter] = useState(null);
   const [modalAction, setModalAction] = useState(null); // { action, user }
   const [toast, setToast] = useState(null);
+
+  const getPlanTypeForUser = useCallback((u) => {
+    if (u.role === 'BLOCKED' || u.role === 'ADMIN' || !u.hasAd) {
+      return null;
+    }
+    const expirationDate = u.subscriptionEndsAt || u.trialEndsAt;
+    const isAtivo = expirationDate ? new Date(expirationDate) > new Date() : false;
+    if (!isAtivo) return 'EXPIRADO';
+
+    if (u.planType) return u.planType;
+
+    const isTrial =
+      u.planStatus === 'DEGUSTACAO' ||
+      !!u.trialEndsAt ||
+      (u.subscriptionEndsAt && u.createdAt && (() => {
+        const diffMs = Math.abs(new Date(u.subscriptionEndsAt).getTime() - new Date(u.createdAt).getTime());
+        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+        return diffMs >= (thirtyDaysMs - 3600000) && diffMs <= (thirtyDaysMs + 3600000);
+      })());
+
+    if (isTrial) return 'TESTE';
+    return 'PRO_ANUAL';
+  }, []);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -1835,11 +1911,28 @@ function ProfessionalsTab({ token }) {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
+  // Clear plan filter when switching main tabs
+  useEffect(() => {
+    setActivePlanFilter(null);
+  }, [roleFilter]);
+
   const showToast = (message, type = 'success') => setToast({ message, type });
 
   const handleActionSuccess = (message) => {
     showToast(message);
     fetchUsers(); // Recarrega a lista
+  };
+
+  const handleChipClick = (val) => {
+    if (activePlanFilter === val) {
+      setActivePlanFilter(null);
+    } else {
+      setActivePlanFilter(val);
+    }
+  };
+
+  const handleChipDoubleClick = () => {
+    setActivePlanFilter(null);
   };
 
   // Filtros
@@ -1851,6 +1944,12 @@ function ProfessionalsTab({ token }) {
       u.role !== 'BLOCKED' && !u.hasAd;
 
     if (!matchesRole) return false;
+
+    if (activePlanFilter) {
+      const uPlanType = getPlanTypeForUser(u);
+      if (uPlanType !== activePlanFilter) return false;
+    }
+
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
@@ -1867,6 +1966,29 @@ function ProfessionalsTab({ token }) {
     { id: 'users',         label: 'Usuários',      count: users.filter(u => !u.hasAd && u.role !== 'BLOCKED').length },
     { id: 'blocked',       label: 'Bloqueados',    count: users.filter(u => u.role === 'BLOCKED').length },
   ];
+
+  const PLAN_CHIPS = [
+    { value: 'TESTE', label: 'Período de Teste', activeBg: 'bg-blue-50', activeText: 'text-blue-700', activeBorder: 'border-blue-300', badgeBg: 'bg-blue-100', badgeText: 'text-blue-800' },
+    { value: 'CORTESIA', label: 'Cortesia VIP', activeBg: 'bg-purple-50', activeText: 'text-purple-700', activeBorder: 'border-purple-300', badgeBg: 'bg-purple-100', badgeText: 'text-purple-800' },
+    { value: 'PRO_ANUAL', label: 'Pro Anual', activeBg: 'bg-emerald-50', activeText: 'text-emerald-700', activeBorder: 'border-emerald-300', badgeBg: 'bg-emerald-100', badgeText: 'text-emerald-800' },
+    { value: 'PRO_BIENAL', label: 'Pro Bienal', activeBg: 'bg-teal-50', activeText: 'text-teal-700', activeBorder: 'border-teal-300', badgeBg: 'bg-teal-100', badgeText: 'text-teal-800' },
+    { value: 'PATROCINADOR_ANUAL', label: 'Patrocinador Anual', activeBg: 'bg-yellow-50', activeText: 'text-yellow-800', activeBorder: 'border-yellow-300', badgeBg: 'bg-yellow-100', badgeText: 'text-yellow-900' },
+    { value: 'PATROCINADOR_BIENAL', label: 'Patrocinador Bienal', activeBg: 'bg-orange-50', activeText: 'text-orange-700', activeBorder: 'border-orange-300', badgeBg: 'bg-orange-100', badgeText: 'text-orange-850' },
+    { value: 'EXPIRADO', label: 'Plano Expirado', activeBg: 'bg-amber-50', activeText: 'text-amber-700', activeBorder: 'border-amber-300', badgeBg: 'bg-amber-100', badgeText: 'text-amber-800' },
+  ];
+
+  const planChipsWithCounts = PLAN_CHIPS.map(chip => ({
+    ...chip,
+    count: users.filter(u => {
+      const matchesRole =
+        roleFilter === 'all' ? true :
+        roleFilter === 'blocked' ? u.role === 'BLOCKED' :
+        roleFilter === 'professionals' ? u.hasAd && u.role !== 'BLOCKED' :
+        u.role !== 'BLOCKED' && !u.hasAd;
+      if (!matchesRole) return false;
+      return getPlanTypeForUser(u) === chip.value;
+    }).length
+  }));
 
   return (
     <div className="space-y-5">
@@ -1925,6 +2047,42 @@ function ProfessionalsTab({ token }) {
         >
           <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
         </button>
+      </div>
+
+      {/* Filtros por Plano */}
+      <div className="flex flex-wrap gap-2 items-center bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-2">Planos:</span>
+        {planChipsWithCounts.map(chip => {
+          const isActive = activePlanFilter === chip.value;
+          return (
+            <button
+              key={chip.value}
+              onClick={() => handleChipClick(chip.value)}
+              onDoubleClick={handleChipDoubleClick}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer select-none flex items-center gap-2 ${
+                isActive
+                  ? `${chip.activeBg} ${chip.activeText} ${chip.activeBorder} shadow-sm scale-[1.02]`
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-100 hover:border-slate-200'
+              }`}
+              title={`${chip.label} (Clique duplo para limpar)`}
+            >
+              {chip.label}
+              <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                isActive ? `${chip.badgeBg} ${chip.badgeText}` : 'bg-slate-200 text-slate-500'
+              }`}>
+                {chip.count}
+              </span>
+            </button>
+          );
+        })}
+        {activePlanFilter && (
+          <button
+            onClick={() => setActivePlanFilter(null)}
+            className="text-xs font-bold text-red-500 hover:text-red-700 hover:underline px-2 py-1 ml-auto cursor-pointer"
+          >
+            Limpar Filtro
+          </button>
+        )}
       </div>
 
       {/* Tabela */}
@@ -2009,6 +2167,7 @@ function ProfessionalsTab({ token }) {
                         subscriptionEndsAt={u.subscriptionEndsAt}
                         trialEndsAt={u.trialEndsAt}
                         createdAt={u.createdAt}
+                        planType={u.planType}
                       />
                     </td>
 

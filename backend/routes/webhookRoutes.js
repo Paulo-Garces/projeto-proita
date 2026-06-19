@@ -97,12 +97,22 @@ module.exports = (prisma) => {
             let planStatus = 'ATIVO'; // Default: Patrocinador
             let durationDays = 365;
 
+            let planType = 'PRO_ANUAL';
             if (user.pendingPlanId) {
               if (user.pendingPlanId.includes('basico')) {
                 planStatus = 'BASICO';
               }
               if (user.pendingPlanId.includes('bienal')) {
                 durationDays = 730;
+              }
+              if (user.pendingPlanId === 'basico_anual') {
+                planType = 'PRO_ANUAL';
+              } else if (user.pendingPlanId === 'basico_bienal') {
+                planType = 'PRO_BIENAL';
+              } else if (user.pendingPlanId === 'patrocinador_anual') {
+                planType = 'PATROCINADOR_ANUAL';
+              } else if (user.pendingPlanId === 'patrocinador_bienal') {
+                planType = 'PATROCINADOR_BIENAL';
               }
             }
 
@@ -114,6 +124,7 @@ module.exports = (prisma) => {
               data: {
                 planStatus,
                 subscriptionEndsAt,
+                planType,
                 trialEndsAt: null, // Encerra degustação
                 pendingTxid: null, // Limpa pendências
                 pendingPlanId: null,
@@ -151,12 +162,22 @@ module.exports = (prisma) => {
             let planStatus = 'ATIVO';
             let durationDays = 365;
 
+            let planType = 'PRO_ANUAL';
             if (user.pendingPlanId) {
               if (user.pendingPlanId.includes('basico')) {
                 planStatus = 'BASICO';
               }
               if (user.pendingPlanId.includes('bienal')) {
                 durationDays = 730;
+              }
+              if (user.pendingPlanId === 'basico_anual') {
+                planType = 'PRO_ANUAL';
+              } else if (user.pendingPlanId === 'basico_bienal') {
+                planType = 'PRO_BIENAL';
+              } else if (user.pendingPlanId === 'patrocinador_anual') {
+                planType = 'PATROCINADOR_ANUAL';
+              } else if (user.pendingPlanId === 'patrocinador_bienal') {
+                planType = 'PATROCINADOR_BIENAL';
               }
             }
 
@@ -168,6 +189,7 @@ module.exports = (prisma) => {
               data: {
                 planStatus,
                 subscriptionEndsAt,
+                planType,
                 trialEndsAt: null,
                 pendingNossoNumero: null, // Limpa pendências
                 pendingPlanId: null,

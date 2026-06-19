@@ -361,7 +361,8 @@ module.exports = (prisma) => {
         data: {
           planStatus: 'ATIVO',
           subscriptionEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          trialEndsAt: null
+          trialEndsAt: null,
+          planType: 'TESTE'
         }
       });
 
@@ -640,7 +641,8 @@ module.exports = (prisma) => {
       
       let planStatus = 'ATIVO';
       let durationDays = 365;
-
+      let planType = 'PRO_ANUAL';
+      
       if (planId) {
         if (String(planId).toLowerCase().includes('basico')) {
           planStatus = 'BASICO';
@@ -648,6 +650,16 @@ module.exports = (prisma) => {
         
         if (String(planId).toLowerCase().includes('bienal')) {
           durationDays = 730;
+        }
+
+        if (planId === 'basico_anual') {
+          planType = 'PRO_ANUAL';
+        } else if (planId === 'basico_bienal') {
+          planType = 'PRO_BIENAL';
+        } else if (planId === 'patrocinador_anual') {
+          planType = 'PATROCINADOR_ANUAL';
+        } else if (planId === 'patrocinador_bienal') {
+          planType = 'PATROCINADOR_BIENAL';
         }
       }
 
@@ -658,6 +670,8 @@ module.exports = (prisma) => {
         data: {
           planStatus,
           subscriptionEndsAt,
+          planType,
+          trialEndsAt: null
         }
       });
 

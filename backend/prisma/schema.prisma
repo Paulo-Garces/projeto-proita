@@ -31,6 +31,7 @@ model User {
   planStatus                 String       @default("INATIVO")
   subscriptionEndsAt         DateTime?
   trialEndsAt                DateTime?
+  planType                   String?
   cpfCnpj                    String?
   pendingNossoNumero         String?      @unique
   pendingPlanId              String?

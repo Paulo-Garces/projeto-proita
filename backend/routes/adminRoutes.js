@@ -99,6 +99,7 @@ module.exports = (prisma) => {
           planStatus: true,
           subscriptionEndsAt: true,
           trialEndsAt: true,
+          planType: true,
           createdAt: true,
           adminNotes: true,
           profileImageUrl: true,
@@ -131,6 +132,7 @@ module.exports = (prisma) => {
         planStatus: user.planStatus,
         subscriptionEndsAt: user.subscriptionEndsAt,
         trialEndsAt: user.trialEndsAt,
+        planType: user.planType || null,
         hasAd: !!(user.profiles && user.profiles.length > 0),
         referenceCode: user.profiles?.[0]?.referenceCode || null,
         adCategory: user.profiles?.[0]?.atividadePrincipal || null,
@@ -173,7 +175,7 @@ module.exports = (prisma) => {
   // Rota 2c: Estender/renovar plano do usuário (+ N dias)
   router.post('/users/:id/extend-plan', checkAdmin, async (req, res) => {
     const { id } = req.params;
-    const { days = 30 } = req.body;
+    const { days = 30, planType } = req.body;
     try {
       const user = await prisma.user.findUnique({ where: { id } });
       if (!user) return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
@@ -188,8 +190,8 @@ module.exports = (prisma) => {
 
       const updated = await prisma.user.update({
         where: { id },
-        data: { planStatus: 'ATIVO', subscriptionEndsAt: base, trialEndsAt: null },
-        select: { id: true, planStatus: true, subscriptionEndsAt: true }
+        data: { planStatus: 'ATIVO', subscriptionEndsAt: base, trialEndsAt: null, planType },
+        select: { id: true, planStatus: true, subscriptionEndsAt: true, planType: true }
       });
       res.status(200).json({ success: true, user: updated, message: `Plano estendido por ${days} dia(s) até ${base.toLocaleDateString('pt-BR')}.` });
     } catch (error) {
@@ -642,7 +644,7 @@ module.exports = (prisma) => {
   // Rota 13: Renovar / Estender Plano de um profissional manualmente
   router.patch('/users/:id/extend', checkAdmin, async (req, res) => {
     const { id } = req.params;
-    const { option, customDate } = req.body;
+    const { option, customDate, planType } = req.body;
 
     if (!option) {
       return res.status(400).json({ success: false, message: 'O campo option é obrigatório.' });
@@ -686,7 +688,8 @@ module.exports = (prisma) => {
         data: {
           planStatus: 'ATIVO',
           subscriptionEndsAt: newExpirationDate,
-          trialEndsAt: null // Limpa trial se houver para priorizar o plano ativo
+          trialEndsAt: null, // Limpa trial se houver para priorizar o plano ativo
+          planType: planType || undefined
         }
       });
 
@@ -695,7 +698,8 @@ module.exports = (prisma) => {
         message: `Plano de ${updatedUser.nome || 'usuário'} estendido com sucesso até ${newExpirationDate.toLocaleDateString('pt-BR')}!`,
         data: {
           planStatus: updatedUser.planStatus,
-          subscriptionEndsAt: updatedUser.subscriptionEndsAt
+          subscriptionEndsAt: updatedUser.subscriptionEndsAt,
+          planType: updatedUser.planType
         }
       });
 
