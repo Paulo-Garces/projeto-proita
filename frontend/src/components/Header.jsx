@@ -71,10 +71,34 @@ export default function Header() {
   }, [location.pathname]);
 
   const isHome = location.pathname === '/';
+  const hasAdminToken = !!localStorage.getItem('@proita:admin_token');
+  const handleVoltarAdmin = () => {
+    const originalToken = localStorage.getItem('@proita:admin_token');
+    if (originalToken) {
+      localStorage.setItem('@proita:token', originalToken);
+      localStorage.removeItem('@proita:admin_token');
+      localStorage.removeItem('impersonator_name');
+      window.location.href = '/admin';
+    }
+  };
 
   return (
     <>
-      <header className="fixed top-0 left-0 w-full z-40 glass border-b border-slate-200 bg-white/90 backdrop-blur-md">
+      {hasAdminToken && (
+        <div className="fixed top-0 left-0 w-full h-9 bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-4 z-50 flex items-center justify-between text-xs font-semibold shadow-md animate-in slide-in-from-top duration-150">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse shrink-0" />
+            <span className="truncate">Modo Deus: Acessando como <strong className="underline font-bold">{user?.nome} {user?.sobrenome || ''}</strong></span>
+          </div>
+          <button
+            onClick={handleVoltarAdmin}
+            className="bg-white hover:bg-violet-50 text-violet-700 px-3 py-1 rounded-lg text-[10px] font-bold transition-all shadow-sm cursor-pointer shrink-0 uppercase tracking-wider"
+          >
+            Voltar ao Admin
+          </button>
+        </div>
+      )}
+      <header className={`fixed left-0 w-full z-40 glass border-b border-slate-200 bg-white/90 backdrop-blur-md transition-all duration-150 ${hasAdminToken ? 'top-9' : 'top-0'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Esquerda: Menu Mobile e Logo */}

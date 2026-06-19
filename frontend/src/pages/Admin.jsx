@@ -35,6 +35,12 @@ import {
   TrendingDown,
   Bell,
   MessageCircle,
+  LogIn,
+  User,
+  Image,
+  FileText,
+  Trash2,
+  Save,
 } from 'lucide-react';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -666,6 +672,12 @@ function ActionMenu({ user, onAction }) {
       color: 'text-indigo-600 hover:bg-indigo-50',
     },
     {
+      id: 'impersonate',
+      label: 'Acessar Conta (Modo Deus)',
+      icon: LogIn,
+      color: 'text-violet-600 hover:bg-violet-50',
+    },
+    {
       id: 'extend',
       label: 'Renovar / Estender Plano',
       icon: CalendarPlus,
@@ -778,13 +790,12 @@ function ConfirmModal({ action, user, token, onSuccess, onClose }) {
       confirmClass: 'bg-emerald-600 hover:bg-emerald-700 text-white',
       showDaysInput: true,
     },
-    edit: {
-      title: 'Editar Perfil',
-      desc: `A edição direta de perfis via painel será implementada em breve. Por enquanto, oriente o profissional "${user.nome}" a editar seu próprio perfil.`,
-      icon: Edit,
-      confirmLabel: 'Entendido',
-      confirmClass: 'bg-indigo-600 hover:bg-indigo-700 text-white',
-      infoOnly: true,
+    impersonate: {
+      title: 'Acessar Conta (Modo Deus)',
+      desc: `Você iniciará uma sessão simulada para o usuário "${user.nome}". Suas credenciais de administrador serão preservadas localmente e você poderá retornar ao painel admin a qualquer momento.`,
+      icon: LogIn,
+      confirmLabel: 'Acessar Conta',
+      confirmClass: 'bg-violet-600 hover:bg-violet-700 text-white',
     },
   };
 
@@ -799,6 +810,28 @@ function ConfirmModal({ action, user, token, onSuccess, onClose }) {
     setLoading(true);
     setLocalError('');
     try {
+      if (action === 'impersonate') {
+        const res = await fetch(`${API_URL}/api/admin/users/${user.id}/impersonate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.message);
+
+        // Salva token original de admin
+        const adminToken = localStorage.getItem('@proita:token');
+        localStorage.setItem('@proita:admin_token', adminToken);
+        localStorage.setItem('impersonator_name', user.nome);
+
+        // Substitui a sessão pelo usuário de destino
+        localStorage.setItem('@proita:token', data.token);
+        localStorage.setItem('@proita:user', JSON.stringify(data.user));
+
+        // Redireciona e recarrega para reiniciar os estados do react
+        window.location.href = '/dashboard';
+        return;
+      }
+
       let url = '';
       let method = 'POST';
       let body = {};
@@ -1388,6 +1421,396 @@ function ExtendPlanModal({ user, token, onSuccess, onClose }) {
   );
 }
 
+// ─── EditProfileModal: Moderação e Edição de Perfil ───────────────────────────
+
+function EditProfileModal({ user, token, onSuccess, onClose }) {
+  const [activeTab, setActiveTab] = useState('basics'); // 'basics' | 'media' | 'notes'
+  const [loading, setLoading] = useState(false);
+  const [localError, setLocalError] = useState('');
+  
+  // Fields for Tab 1 (basics)
+  const [nome, setNome] = useState(user.nome || '');
+  const [email, setEmail] = useState(user.email || '');
+  const [telefone, setTelefone] = useState(user.telefone || '');
+  const [category, setCategory] = useState(user.adCategory || '');
+
+  // Fields for Tab 2 (media urls)
+  const [profileImageUrl, setProfileImageUrl] = useState(user.profileImageUrl || '');
+  const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || '');
+  const [capaUrl, setCapaUrl] = useState(user.capaUrl || '');
+  const [fotoAnuncioUrl, setFotoAnuncioUrl] = useState(user.fotoAnuncioUrl || '');
+
+  // Fields for Tab 3 (notes)
+  const [adminNotes, setAdminNotes] = useState(user.adminNotes || '');
+
+  const handleSaveBasics = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setLocalError('');
+    try {
+      const res = await fetch(`${API_URL}/api/admin/users/${user.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nome,
+          email,
+          telefone,
+          category
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message);
+      
+      onSuccess('Dados básicos atualizados com sucesso!');
+      onClose();
+    } catch (err) {
+      setLocalError(err.message || 'Erro ao salvar dados.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    setLoading(true);
+    setLocalError('');
+    try {
+      const res = await fetch(`${API_URL}/api/admin/users/${user.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          adminNotes
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message);
+      
+      onSuccess('Notas administrativas salvas!');
+      onClose();
+    } catch (err) {
+      setLocalError(err.message || 'Erro ao salvar notas.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteMedia = async (type) => {
+    if (!window.confirm(`Tem certeza que deseja remover esta mídia (${type})? A imagem será apagada permanentemente.`)) {
+      return;
+    }
+    setLoading(true);
+    setLocalError('');
+    try {
+      const res = await fetch(`${API_URL}/api/admin/users/${user.id}/media`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ type })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message);
+      
+      // Atualiza o estado na tela
+      if (type === 'avatar') {
+        setProfileImageUrl('');
+        setAvatarUrl('');
+      } else if (type === 'banner') {
+        setCapaUrl('');
+      } else if (type === 'sponsor') {
+        setFotoAnuncioUrl('');
+      }
+      
+      onSuccess(`Mídia '${type}' removida com sucesso!`);
+    } catch (err) {
+      setLocalError(err.message || 'Erro ao remover mídia.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]"
+        style={{ animation: 'modalPop 0.22s cubic-bezier(0.34,1.56,0.64,1) both' }}
+      >
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between shrink-0">
+          <div>
+            <h3 className="font-bold text-slate-900 text-lg">Moderação e Perfil</h3>
+            <p className="text-xs text-slate-500 mt-0.5">Profissional: {user.nome}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer">
+            <X size={16} className="text-slate-400" />
+          </button>
+        </div>
+
+        {/* Tabs Bar */}
+        <div className="flex border-b border-slate-100 px-4 shrink-0 bg-slate-50/50">
+          <button
+            onClick={() => setActiveTab('basics')}
+            className={`flex items-center gap-1.5 px-4 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+              activeTab === 'basics' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <User size={14} /> Dados Básicos
+          </button>
+          <button
+            onClick={() => setActiveTab('media')}
+            className={`flex items-center gap-1.5 px-4 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+              activeTab === 'media' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Image size={14} /> Moderação Visual
+          </button>
+          <button
+            onClick={() => setActiveTab('notes')}
+            className={`flex items-center gap-1.5 px-4 py-3 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+              activeTab === 'notes' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <FileText size={14} /> Notas Internas
+          </button>
+        </div>
+
+        {/* Scrollable Content Area */}
+        <div className="p-6 overflow-y-auto flex-1 space-y-4">
+          {localError && (
+            <div className="flex items-center gap-2 text-red-600 bg-red-50 rounded-xl px-3 py-2.5 text-sm border border-red-100 shrink-0">
+              <AlertTriangle size={13} className="shrink-0" /> {localError}
+            </div>
+          )}
+
+          {/* ABA 1: DADOS BÁSICOS */}
+          {activeTab === 'basics' && (
+            <form onSubmit={handleSaveBasics} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nome Completo</label>
+                  <input
+                    type="text"
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 bg-white text-slate-800"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">E-mail</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 bg-white text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Telefone / WhatsApp</label>
+                  <input
+                    type="text"
+                    value={telefone}
+                    onChange={(e) => setTelefone(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 bg-white text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Categoria Principal</label>
+                  <input
+                    type="text"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 bg-white text-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-5 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <Save size={14} />
+                  {loading ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* ABA 2: MODERAÇÃO VISUAL */}
+          {activeTab === 'media' && (
+            <div className="space-y-6">
+              <p className="text-xs text-slate-500">
+                Remova mídias enviadas pelo profissional caso infrinjam os Termos de Uso ou contenham conteúdo inadequado.
+              </p>
+
+              <div className="space-y-4">
+                {/* Avatar */}
+                <div className="flex items-center justify-between p-4 border border-slate-100 rounded-2xl bg-slate-50/30">
+                  <div className="flex items-center gap-3">
+                    {profileImageUrl || avatarUrl ? (
+                      <img
+                        src={profileImageUrl || avatarUrl}
+                        alt="Avatar"
+                        className="w-14 h-14 rounded-full object-cover border border-slate-200 shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 text-xs font-medium">
+                        Sem Foto
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-800">Foto de Perfil (Avatar)</h4>
+                      <p className="text-xs text-slate-400">Exibida na listagem e na página do profissional.</p>
+                    </div>
+                  </div>
+                  {(profileImageUrl || avatarUrl) && (
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => handleDeleteMedia('avatar')}
+                      className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 hover:text-red-700 disabled:opacity-50"
+                    >
+                      <Trash2 size={13} />
+                      Excluir
+                    </button>
+                  )}
+                </div>
+
+                {/* Banner */}
+                <div className="flex flex-col gap-3 p-4 border border-slate-100 rounded-2xl bg-slate-50/30">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-800">Banner de Capa</h4>
+                      <p className="text-xs text-slate-400">Banner exibido no topo da página de detalhes.</p>
+                    </div>
+                    {capaUrl && (
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => handleDeleteMedia('banner')}
+                        className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 hover:text-red-700 disabled:opacity-50 shrink-0"
+                      >
+                        <Trash2 size={13} />
+                        Excluir
+                      </button>
+                    )}
+                  </div>
+                  {capaUrl ? (
+                    <img
+                      src={capaUrl}
+                      alt="Banner"
+                      className="w-full h-24 rounded-xl object-cover border border-slate-200 shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-full h-16 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 text-xs font-medium">
+                      Nenhum banner cadastrado
+                    </div>
+                  )}
+                </div>
+
+                {/* Sponsor (Foto Anúncio) */}
+                <div className="flex flex-col gap-3 p-4 border border-slate-100 rounded-2xl bg-slate-50/30">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="text-sm font-semibold text-slate-800">Foto do Anúncio (Patrocinador)</h4>
+                      <p className="text-xs text-slate-400">Imagem comercial exibida na listagem.</p>
+                    </div>
+                    {fotoAnuncioUrl && (
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => handleDeleteMedia('sponsor')}
+                        className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 hover:text-red-700 disabled:opacity-50 shrink-0"
+                      >
+                        <Trash2 size={13} />
+                        Excluir
+                      </button>
+                    )}
+                  </div>
+                  {fotoAnuncioUrl ? (
+                    <img
+                      src={fotoAnuncioUrl}
+                      alt="Sponsor"
+                      className="w-full h-24 rounded-xl object-cover border border-slate-200 shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-full h-16 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 text-xs font-medium">
+                      Nenhuma imagem comercial cadastrada
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ABA 3: NOTAS INTERNAS */}
+          {activeTab === 'notes' && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Anotações Internas do Administrador</label>
+                <textarea
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  className="w-full min-h-[160px] p-3 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-indigo-500 bg-white text-slate-800 font-medium leading-relaxed"
+                  placeholder="Escreva notas administrativas internas sobre este profissional (ex: histórico de atendimento, acordos comerciais, advertências, etc.). Estas notas NÃO são visíveis para o usuário."
+                />
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={handleSaveNotes}
+                  className="px-5 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <Save size={14} />
+                  {loading ? 'Salvando...' : 'Salvar Notas'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Tab: Gestão de Profissionais ─────────────────────────────────────────────
 
 function ProfessionalsTab({ token }) {
@@ -1653,7 +2076,7 @@ function ProfessionalsTab({ token }) {
         )}
       </div>
 
-      {/* Modal de confirmação / notificação / broadcast / renovação */}
+      {/* Modal de confirmação / notificação / broadcast / renovação / edição */}
       {modalAction && modalAction.action === 'notify' ? (
         <NotifyModal
           user={modalAction.user}
@@ -1669,6 +2092,13 @@ function ProfessionalsTab({ token }) {
         />
       ) : modalAction && modalAction.action === 'extend' ? (
         <ExtendPlanModal
+          user={modalAction.user}
+          token={token}
+          onSuccess={handleActionSuccess}
+          onClose={() => setModalAction(null)}
+        />
+      ) : modalAction && modalAction.action === 'edit' ? (
+        <EditProfileModal
           user={modalAction.user}
           token={token}
           onSuccess={handleActionSuccess}
@@ -1700,6 +2130,10 @@ function FinanceTab({ token }) {
   const [error, setError] = useState(false);
   const [timeFilter, setTimeFilter] = useState('mes');
   const [showAddExpense, setShowAddExpense] = useState(false);
+  
+  // Real database metrics states
+  const [revenue, setRevenue] = useState(0);
+  const [pendingRenewals, setPendingRenewals] = useState(0);
 
   const [expenses, setExpenses] = useState([
     { id: 1, descricao: 'Servidor Vercel Pro', categoria: 'Infraestrutura', valor: 120.00, data: '2026-06-01' },
@@ -1718,20 +2152,36 @@ function FinanceTab({ token }) {
   useEffect(() => {
     setLoading(true);
     setError(false);
-    fetch(`${API_URL}/api/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } })
+
+    const fetchUsersPromise = fetch(`${API_URL}/api/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(r => {
         if (!r.ok) throw new Error('Falha HTTP');
         return r.json();
-      })
-      .then(d => {
-        if (d.success) {
-          setUsers(d.data);
+      });
+
+    const fetchFinanceSummaryPromise = fetch(`${API_URL}/api/admin/finance/summary`, { headers: { 'Authorization': `Bearer ${token}` } })
+      .then(r => {
+        if (!r.ok) throw new Error('Falha HTTP');
+        return r.json();
+      });
+
+    Promise.all([fetchUsersPromise, fetchFinanceSummaryPromise])
+      .then(([usersData, financeData]) => {
+        if (usersData.success) {
+          setUsers(usersData.data);
         } else {
-          throw new Error('Falha API');
+          throw new Error('Falha API ao buscar usuários');
+        }
+
+        if (financeData.success) {
+          setRevenue(financeData.data.totalRevenue);
+          setPendingRenewals(financeData.data.pendingRenewalsCount);
+        } else {
+          throw new Error('Falha API ao buscar resumo financeiro');
         }
       })
       .catch(err => {
-        console.error('Erro ao buscar usuários para finanças:', err);
+        console.error('Erro ao buscar dados financeiros:', err);
         setError(true);
       })
       .finally(() => {
@@ -1774,54 +2224,25 @@ function FinanceTab({ token }) {
     }
   };
 
-  // Processamento de Dados Financeiros baseados nos Usuários Ativos
-  const paidUsers = users.filter(u => u.planStatus === 'ATIVO' || u.planStatus === 'BASICO');
-
-  // Receita Mensal Real
-  const monthlyRevenue = paidUsers.reduce((sum, u) => {
-    return sum + (u.planStatus === 'ATIVO' ? 99.90 : 49.90);
-  }, 0);
+  // Receita Mensal Real obtida do banco de dados (0.00 no soft launch)
+  const monthlyRevenue = revenue;
 
   // Despesas Mensais
   const monthlyExpenses = expenses.reduce((sum, e) => sum + e.valor, 0);
 
   // Lucro Líquido
   const netProfit = monthlyRevenue - monthlyExpenses;
+  // Como todos estão no Trial e receita real é 0, a lista de entradas reais fica limpa
+  const filteredPayments = [];
 
-  // Filtragem de Receitas (Entradas) por período
-  const filteredPayments = paidUsers.filter(u => {
-    // Estimamos a data de pagamento 30 dias atrás do vencimento
-    const payDate = u.subscriptionEndsAt
-      ? new Date(new Date(u.subscriptionEndsAt).getTime() - 30 * 24 * 60 * 60 * 1000)
-      : new Date(u.createdAt);
-
-    const now = new Date();
-    const diffMs = now - payDate;
-    const diffDays = diffMs / (1000 * 60 * 60 * 24);
-
-    if (timeFilter === 'hoje') {
-      return payDate.toDateString() === now.toDateString();
-    }
-    if (timeFilter === 'semana') {
-      return diffDays >= 0 && diffDays <= 7;
-    }
-    if (timeFilter === 'mes') {
-      return payDate.getMonth() === now.getMonth() && payDate.getFullYear() === now.getFullYear();
-    }
-    if (timeFilter === 'ano') {
-      return payDate.getFullYear() === now.getFullYear();
-    }
-    return true;
-  });
-
-  // Profissionais vencendo nos próximos 7 dias ou vencidos nos últimos 5 dias
+  // Profissionais vencidos ou vencendo nos próximos 5 dias
   const renewals = users.filter(u => {
     if (!u.subscriptionEndsAt) return false;
     const expiry = new Date(u.subscriptionEndsAt);
     const now = new Date();
     const diffMs = expiry - now;
     const diffDays = diffMs / (1000 * 60 * 60 * 24);
-    return diffDays >= -5 && diffDays <= 7;
+    return diffDays <= 5;
   });
 
   const handleWhatsAppCobrança = (u) => {

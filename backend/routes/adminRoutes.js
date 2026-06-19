@@ -1,5 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs'); // Importado para criptografar a nova senha
+const jwt = require('jsonwebtoken');
+const imagekit = require('../config/imagekit');
 const { convertToInternationalPhone, getPhoneVariations } = require('../utils/phoneHelper');
 
 module.exports = (prisma) => {
@@ -98,11 +100,20 @@ module.exports = (prisma) => {
           subscriptionEndsAt: true,
           trialEndsAt: true,
           createdAt: true,
+          adminNotes: true,
+          profileImageUrl: true,
+          profileImageFileId: true,
           profiles: {
             select: {
               id: true,
               referenceCode: true,
               atividadePrincipal: true,
+              avatarUrl: true,
+              avatarFileId: true,
+              capaUrl: true,
+              capaFileId: true,
+              fotoAnuncioUrl: true,
+              fotoAnuncioFileId: true
             },
             orderBy: { createdAt: 'asc' },
             take: 1,
@@ -124,6 +135,11 @@ module.exports = (prisma) => {
         referenceCode: user.profiles?.[0]?.referenceCode || null,
         adCategory: user.profiles?.[0]?.atividadePrincipal || null,
         createdAt: user.createdAt,
+        adminNotes: user.adminNotes || null,
+        profileImageUrl: user.profileImageUrl || null,
+        avatarUrl: user.profiles?.[0]?.avatarUrl || null,
+        capaUrl: user.profiles?.[0]?.capaUrl || null,
+        fotoAnuncioUrl: user.profiles?.[0]?.fotoAnuncioUrl || null,
       }));
 
       res.status(200).json({ success: true, data: mappedUsers });
@@ -686,6 +702,245 @@ module.exports = (prisma) => {
     } catch (error) {
       console.error('[PATCH /admin/users/:id/extend] Erro:', error);
       res.status(500).json({ success: false, message: 'Erro interno ao estender plano do usuário.' });
+    }
+  });
+
+  // Rota 14: Modo Deus (Impersonate)
+  router.post('/users/:id/impersonate', checkAdmin, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const targetUser = await prisma.user.findUnique({
+        where: { id },
+        select: { id: true, role: true, nome: true }
+      });
+
+      if (!targetUser) {
+        return res.status(404).json({ success: false, message: 'Usuário de destino não encontrado.' });
+      }
+
+      const secret = process.env.JWT_SECRET || 'chave_secreta_proita_123';
+      const token = jwt.sign(
+        { id: targetUser.id, role: targetUser.role },
+        secret,
+        { expiresIn: '7d' }
+      );
+
+      console.log(`[Impersonation] Admin ${req.user.id} impersonou o usuário ${targetUser.nome} (${targetUser.id})`);
+
+      res.status(200).json({
+        success: true,
+        message: `Token de impersonificação para ${targetUser.nome} gerado com sucesso!`,
+        token,
+        user: {
+          id: targetUser.id,
+          role: targetUser.role,
+          nome: targetUser.nome
+        }
+      });
+
+    } catch (error) {
+      console.error('[POST /admin/users/:id/impersonate] Erro:', error);
+      res.status(500).json({ success: false, message: 'Erro interno ao realizar a impersonificação.' });
+    }
+  });
+
+  // Rota 15: Edição e Moderação rápida de usuários
+  router.patch('/users/:id', checkAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { name, nome, email, phone, telefone, category, atividadePrincipal, adminNotes } = req.body;
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id },
+        include: { profiles: true }
+      });
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+      }
+
+      const updateUserData = {};
+      if (nome !== undefined) updateUserData.nome = nome;
+      if (name !== undefined) updateUserData.nome = name;
+      if (email !== undefined) updateUserData.email = email;
+      if (telefone !== undefined) updateUserData.telefone = telefone;
+      if (phone !== undefined) updateUserData.telefone = phone;
+      if (adminNotes !== undefined) updateUserData.adminNotes = adminNotes;
+
+      const updatedUser = await prisma.user.update({
+        where: { id },
+        data: updateUserData,
+        select: {
+          id: true,
+          nome: true,
+          email: true,
+          telefone: true,
+          adminNotes: true
+        }
+      });
+
+      const targetCategory = category || atividadePrincipal;
+      let updatedProfile = null;
+      if (targetCategory && user.profiles && user.profiles.length > 0) {
+        const profileId = user.profiles[0].id;
+        updatedProfile = await prisma.profile.update({
+          where: { id: profileId },
+          data: { atividadePrincipal: targetCategory },
+          select: {
+            id: true,
+            atividadePrincipal: true
+          }
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Dados do usuário atualizados com sucesso.',
+        data: {
+          user: updatedUser,
+          profile: updatedProfile
+        }
+      });
+
+    } catch (error) {
+      console.error('[PATCH /admin/users/:id] Erro:', error);
+      res.status(500).json({ success: false, message: 'Erro interno ao atualizar dados do usuário.' });
+    }
+  });
+
+  // Helper para exclusão assíncrona e segura no ImageKit
+  const safeDeleteImageKit = async (fileId) => {
+    if (!fileId) return;
+    try {
+      await imagekit.deleteFile(fileId);
+      console.log(`[ImageKit] Imagem com fileId ${fileId} deletada com sucesso.`);
+    } catch (err) {
+      console.error(`[ImageKit Error] Falha ao deletar imagem ${fileId}:`, err.message || err);
+    }
+  };
+
+  // Rota 16: Remoção rápida de mídia por moderação
+  router.delete('/users/:id/media', checkAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { type } = req.body;
+
+    const validTypes = ['avatar', 'banner', 'sponsor'];
+    if (!type || !validTypes.includes(type)) {
+      return res.status(400).json({ success: false, message: `Tipo de mídia inválido. Use um de: ${validTypes.join(', ')}` });
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id },
+        include: { profiles: true }
+      });
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+      }
+
+      const profile = user.profiles?.[0];
+
+      if (type === 'avatar') {
+        if (user.profileImageFileId) {
+          safeDeleteImageKit(user.profileImageFileId);
+        }
+        if (profile?.avatarFileId) {
+          safeDeleteImageKit(profile.avatarFileId);
+        }
+
+        await prisma.user.update({
+          where: { id },
+          data: {
+            profileImageUrl: null,
+            profileImageFileId: null
+          }
+        });
+
+        if (profile) {
+          await prisma.profile.update({
+            where: { id: profile.id },
+            data: {
+              avatarUrl: null,
+              avatarFileId: null
+            }
+          });
+        }
+
+      } else if (type === 'banner') {
+        if (!profile) {
+          return res.status(400).json({ success: false, message: 'Este usuário não possui um perfil associado para conter um banner.' });
+        }
+
+        if (profile.capaFileId) {
+          safeDeleteImageKit(profile.capaFileId);
+        }
+
+        await prisma.profile.update({
+          where: { id: profile.id },
+          data: {
+            capaUrl: null,
+            capaFileId: null
+          }
+        });
+
+      } else if (type === 'sponsor') {
+        if (!profile) {
+          return res.status(400).json({ success: false, message: 'Este usuário não possui um perfil associado para conter imagem comercial.' });
+        }
+
+        if (profile.fotoAnuncioFileId) {
+          safeDeleteImageKit(profile.fotoAnuncioFileId);
+        }
+
+        await prisma.profile.update({
+          where: { id: profile.id },
+          data: {
+            fotoAnuncioUrl: null,
+            fotoAnuncioFileId: null
+          }
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: `Mídia do tipo '${type}' removida com sucesso.`
+      });
+
+    } catch (error) {
+      console.error('[DELETE /admin/users/:id/media] Erro:', error);
+      res.status(500).json({ success: false, message: 'Erro interno ao remover mídia.' });
+    }
+  });
+
+  // Rota 17: Resumo Financeiro (Soft Launch)
+  router.get('/finance/summary', checkAdmin, async (req, res) => {
+    try {
+      const now = new Date();
+      const fiveDaysFromNow = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
+
+      // Conta profissionais ativos com data de expiração vencida ou a menos de 5 dias
+      const pendingRenewalsCount = await prisma.user.count({
+        where: {
+          planStatus: { in: ['ATIVO', 'BASICO'] },
+          subscriptionEndsAt: {
+            lt: fiveDaysFromNow
+          }
+        }
+      });
+
+      res.status(200).json({
+        success: true,
+        data: {
+          totalRevenue: 0.00,
+          pendingRenewalsCount
+        }
+      });
+
+    } catch (error) {
+      console.error('[GET /admin/finance/summary] Erro:', error);
+      res.status(500).json({ success: false, message: 'Erro interno ao buscar resumo financeiro.' });
     }
   });
 
