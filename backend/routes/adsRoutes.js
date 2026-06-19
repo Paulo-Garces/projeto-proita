@@ -128,8 +128,6 @@ module.exports = (prisma) => {
     try {
       const userId = getOptionalUserId(req);
       const now = new Date();
-      const fiveDaysAgo = new Date();
-      fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
 
       const ads = await prisma.profile.findMany({
         where: {
@@ -137,7 +135,7 @@ module.exports = (prisma) => {
             OR: [
               {
                 planStatus: { in: ['ATIVO', 'BASICO'] },
-                subscriptionEndsAt: { gte: fiveDaysAgo }
+                subscriptionEndsAt: { gte: now }
               },
               {
                 planStatus: 'DEGUSTACAO',
@@ -357,12 +355,13 @@ module.exports = (prisma) => {
         },
       });
 
-      // Atualiza o planStatus do usuário para 'DEGUSTACAO' e trialEndsAt para 30 dias
+      // Atualiza o planStatus do usuário para 'ATIVO' e subscriptionEndsAt para 30 dias
       await prisma.user.update({
         where: { id: userId },
         data: {
-          planStatus: 'DEGUSTACAO',
-          trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          planStatus: 'ATIVO',
+          subscriptionEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          trialEndsAt: null
         }
       });
 

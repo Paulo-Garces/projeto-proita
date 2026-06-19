@@ -112,8 +112,8 @@ function MetricCard({ title, value, icon: Icon, colorClass, loading, error, subt
   );
 }
 
-// Badge de status de usuário (role + planStatus)
-function UserStatusBadge({ role, hasAd, planStatus }) {
+// Badge de status de usuário (role + planStatus + expiration checks)
+function UserStatusBadge({ role, hasAd, planStatus, subscriptionEndsAt, trialEndsAt, createdAt }) {
   if (role === 'BLOCKED') {
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
@@ -131,14 +131,47 @@ function UserStatusBadge({ role, hasAd, planStatus }) {
     );
   }
   if (hasAd) {
-    const isAtivo = planStatus === 'ATIVO' || planStatus === 'TRIAL';
+    const expirationDate = subscriptionEndsAt || trialEndsAt;
+    const isAtivo = expirationDate ? new Date(expirationDate) > new Date() : false;
+    
+    // Check if it's a trial plan (30 days from creation)
+    const isTrial =
+      planStatus === 'DEGUSTACAO' ||
+      !!trialEndsAt ||
+      (subscriptionEndsAt && createdAt && (() => {
+        const diffMs = Math.abs(new Date(subscriptionEndsAt).getTime() - new Date(createdAt).getTime());
+        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+        // 1 hour tolerance to handle small delays during registration
+        return diffMs >= (thirtyDaysMs - 3600000) && diffMs <= (thirtyDaysMs + 3600000);
+      })());
+
     return (
-      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
-        isAtivo ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-      }`}>
-        <span className={`w-1.5 h-1.5 rounded-full ${isAtivo ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-        {isAtivo ? 'Profissional Ativo' : 'Plano Expirado'}
-      </span>
+      <div className="flex flex-col items-start gap-1">
+        {isAtivo ? (
+          isTrial ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200" title="Período de Teste Grátis (30 dias)">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              Período de Teste
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200" title="Assinante Ativo">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              Profissional Ativo
+            </span>
+          )
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+            Plano Expirado
+          </span>
+        )}
+        
+        {isAtivo && expirationDate && (
+          <p className="text-[10px] text-slate-400 font-medium pl-1">
+            até {formatDate(expirationDate)}
+          </p>
+        )}
+      </div>
     );
   }
   return (
@@ -1031,6 +1064,330 @@ function NotifyModal({ user, token, onSuccess, onClose }) {
   );
 }
 
+// ─── Modal de Disparo em Massa (Broadcast) ──────────────────────────────────
+
+function BroadcastModal({ token, onSuccess, onClose }) {
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [type, setType] = useState('SYSTEM');
+  const [loading, setLoading] = useState(false);
+  const [localError, setLocalError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!title.trim() || !message.trim()) {
+      setLocalError('Título e mensagem são obrigatórios.');
+      return;
+    }
+
+    setLoading(true);
+    setLocalError('');
+
+    try {
+      const res = await fetch(`${API_URL}/api/admin/notifications/broadcast`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title,
+          message,
+          type
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        onSuccess(data.message || 'Notificação geral enviada com sucesso!');
+        onClose();
+      } else {
+        setLocalError(data.message || 'Erro ao enviar notificação em massa.');
+      }
+    } catch (err) {
+      console.error(err);
+      setLocalError('Erro ao conectar ao servidor.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200">
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div className="flex items-center gap-2.5 text-indigo-600">
+            <ShieldAlert size={20} />
+            <h3 className="text-lg font-bold text-slate-800">Disparo em Massa (Aviso Geral)</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-all cursor-pointer">
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          {/* Body */}
+          <div className="p-6 space-y-4">
+            <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-700 leading-relaxed">
+              ⚠️ <strong>Atenção:</strong> Esta mensagem será gravada no histórico de <strong>todos os usuários</strong> cadastrados na plataforma proITA. Esta ação não envia e-mails para evitar limites do SMTP.
+            </div>
+
+            {localError && (
+              <div className="flex items-center gap-2 text-red-600 bg-red-50 rounded-xl px-3 py-2.5 text-sm border border-red-100">
+                <AlertTriangle size={13} className="shrink-0" /> {localError}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Título do Aviso Geral
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex: Manutenção agendada para o sistema"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Mensagem Geral
+              </label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Escreva a mensagem que todos os usuários vão ver no painel..."
+                rows="5"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-all resize-none"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Tipo do Aviso
+              </label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition-all"
+              >
+                <option value="SYSTEM">Aviso Geral</option>
+                <option value="WARNING">Financeiro / Cobrança</option>
+                <option value="INFO">Dica e Conteúdo</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4.5 bg-slate-50 border-t border-slate-100 flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 border-2 border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl text-sm font-bold transition-all cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-[1.5] py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {loading ? (
+                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Disparando...</>
+              ) : 'Disparar para Todos'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Modal de Renovação / Extensão de Plano ─────────────────────────────────
+
+function ExtendPlanModal({ user, token, onSuccess, onClose }) {
+  const [option, setOption] = useState('30d'); // '30d', '365d', 'custom'
+  const [customDate, setCustomDate] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [localError, setLocalError] = useState('');
+
+  const handleExtend = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setLocalError('');
+
+    let requestBody = {};
+    if (option === '30d') {
+      requestBody = { option: '30d' };
+    } else if (option === '365d') {
+      requestBody = { option: '365d' };
+    } else {
+      if (!customDate) {
+        setLocalError('Por favor, selecione uma data customizada.');
+        setLoading(false);
+        return;
+      }
+      requestBody = { option: 'custom', customDate };
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/api/admin/users/${user.id}/extend`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        onSuccess(data.message || 'Plano estendido com sucesso!');
+        onClose();
+      } else {
+        setLocalError(data.message || 'Erro ao estender plano.');
+      }
+    } catch (err) {
+      console.error(err);
+      setLocalError('Erro ao conectar ao servidor.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div className="flex items-center gap-2.5 text-emerald-600">
+            <CalendarPlus size={20} />
+            <h3 className="text-lg font-bold text-slate-800">Renovar / Estender Plano</h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-all cursor-pointer">
+            <X size={18} />
+          </button>
+        </div>
+
+        <form onSubmit={handleExtend}>
+          {/* Body */}
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-slate-500 font-medium">
+              Profissional: <span className="text-slate-800 font-bold">{user.nome}</span>
+            </p>
+
+            {localError && (
+              <div className="flex items-center gap-2 text-red-600 bg-red-50 rounded-xl px-3 py-2.5 text-sm border border-red-100">
+                <AlertTriangle size={13} className="shrink-0" /> {localError}
+              </div>
+            )}
+
+            <div className="space-y-2.5">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                Selecione o Período
+              </label>
+              
+              <div className="flex flex-col gap-2">
+                <label className={`flex items-center justify-between p-3.5 border-2 rounded-2xl cursor-pointer transition-all ${
+                  option === '30d' ? 'border-emerald-500 bg-emerald-50/20' : 'border-slate-100 hover:border-slate-200'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="extendOption"
+                      checked={option === '30d'}
+                      onChange={() => setOption('30d')}
+                      className="text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">Adicionar 30 dias (Teste)</p>
+                      <p className="text-xs text-slate-500 mt-0.5">Recomendado para degustação ou cortesia.</p>
+                    </div>
+                  </div>
+                </label>
+
+                <label className={`flex items-center justify-between p-3.5 border-2 rounded-2xl cursor-pointer transition-all ${
+                  option === '365d' ? 'border-emerald-500 bg-emerald-50/20' : 'border-slate-100 hover:border-slate-200'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="extendOption"
+                      checked={option === '365d'}
+                      onChange={() => setOption('365d')}
+                      className="text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">Adicionar 1 Ano (Pix)</p>
+                      <p className="text-xs text-slate-500 mt-0.5">Plano anual oficial patrocinado.</p>
+                    </div>
+                  </div>
+                </label>
+
+                <label className={`flex flex-col p-3.5 border-2 rounded-2xl cursor-pointer transition-all ${
+                  option === 'custom' ? 'border-emerald-500 bg-emerald-50/20' : 'border-slate-100 hover:border-slate-200'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="extendOption"
+                      checked={option === 'custom'}
+                      onChange={() => setOption('custom')}
+                      className="text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">Escolher data customizada</p>
+                      <p className="text-xs text-slate-500 mt-0.5">Selecione uma data específica de expiração.</p>
+                    </div>
+                  </div>
+
+                  {option === 'custom' && (
+                    <div className="mt-3 pl-7 animate-in slide-in-from-top-1 duration-150">
+                      <input
+                        type="date"
+                        value={customDate}
+                        onChange={(e) => setCustomDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-white"
+                        min={new Date().toISOString().split('T')[0]}
+                        required
+                      />
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4.5 bg-slate-50 border-t border-slate-100 flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 border-2 border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl text-sm font-bold transition-all cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-[1.5] py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {loading ? (
+                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Salvando...</>
+              ) : 'Estender Plano'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ─── Tab: Gestão de Profissionais ─────────────────────────────────────────────
 
 function ProfessionalsTab({ token }) {
@@ -1126,6 +1483,16 @@ function ProfessionalsTab({ token }) {
           />
         </div>
 
+        {/* Disparo em Massa */}
+        <button
+          onClick={() => setModalAction({ action: 'broadcast' })}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm shadow-indigo-100 cursor-pointer shrink-0"
+          title="Disparo em Massa"
+        >
+          <ShieldAlert size={15} />
+          Disparo em Massa
+        </button>
+
         {/* Refresh */}
         <button
           onClick={fetchUsers}
@@ -1212,12 +1579,14 @@ function ProfessionalsTab({ token }) {
 
                     {/* Status */}
                     <td className="py-4 px-5">
-                      <UserStatusBadge role={u.role} hasAd={u.hasAd} planStatus={u.planStatus} />
-                      {u.hasAd && u.subscriptionEndsAt && (
-                        <p className="text-[10px] text-slate-400 mt-1">
-                          até {formatDate(u.subscriptionEndsAt)}
-                        </p>
-                      )}
+                      <UserStatusBadge
+                        role={u.role}
+                        hasAd={u.hasAd}
+                        planStatus={u.planStatus}
+                        subscriptionEndsAt={u.subscriptionEndsAt}
+                        trialEndsAt={u.trialEndsAt}
+                        createdAt={u.createdAt}
+                      />
                     </td>
 
                     {/* Código */}
@@ -1284,9 +1653,22 @@ function ProfessionalsTab({ token }) {
         )}
       </div>
 
-      {/* Modal de confirmação / notificação */}
+      {/* Modal de confirmação / notificação / broadcast / renovação */}
       {modalAction && modalAction.action === 'notify' ? (
         <NotifyModal
+          user={modalAction.user}
+          token={token}
+          onSuccess={handleActionSuccess}
+          onClose={() => setModalAction(null)}
+        />
+      ) : modalAction && modalAction.action === 'broadcast' ? (
+        <BroadcastModal
+          token={token}
+          onSuccess={handleActionSuccess}
+          onClose={() => setModalAction(null)}
+        />
+      ) : modalAction && modalAction.action === 'extend' ? (
+        <ExtendPlanModal
           user={modalAction.user}
           token={token}
           onSuccess={handleActionSuccess}

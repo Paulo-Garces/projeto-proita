@@ -498,7 +498,7 @@ module.exports = (prisma) => {
     }
   });
 
-  // Rota 11: Disparo de notificações pelo admin (com opção de e-mail)
+  // Rota 11: Disparo de notificações pelo admin (com opção de e-mail - ASSÍNCRONO/BACKGROUND)
   router.post('/notifications', checkAdmin, async (req, res) => {
     const { userId, title, message, type, sendEmail } = req.body;
 
@@ -526,58 +526,166 @@ module.exports = (prisma) => {
         }
       });
 
-      let emailSent = false;
-      let emailError = null;
-
+      // Se sendEmail for true, tenta enviar no background sem bloquear o response da requisição HTTP
       if (sendEmail === true || sendEmail === 'true') {
-        if (!user.email) {
-          return res.status(400).json({
-            success: false,
-            message: 'O usuário não possui um e-mail cadastrado para envio.',
-            notification
-          });
-        }
-
-        const sendEmailUtil = require('../utils/sendEmail');
-        
-        const htmlBody = `
-          <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-            <div style="text-align: center; margin-bottom: 20px;">
-              <h2 style="color: #0284c7; margin: 0;">Portal proITA</h2>
-              <p style="font-size: 14px; color: #64748b; margin-top: 5px;">Guia de Profissionais e Serviços</p>
+        if (user.email) {
+          const sendEmailUtil = require('../utils/sendEmail');
+          
+          const htmlBody = `
+            <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+              <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="color: #0284c7; margin: 0;">Portal proITA</h2>
+                <p style="font-size: 14px; color: #64748b; margin-top: 5px;">Guia de Profissionais e Serviços</p>
+              </div>
+              <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px;">
+                <h3 style="color: #0f172a; margin-top: 0; font-size: 18px;">${title}</h3>
+                <p style="font-size: 16px; color: #334155; line-height: 1.6;">Olá, ${user.nome} ${user.sobrenome || ''}!</p>
+                <p style="font-size: 15px; color: #334155; line-height: 1.6; white-space: pre-line;">${message}</p>
+              </div>
+              <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+              <p style="font-size: 11px; color: #94a3b8; text-align: center;">Esta é uma mensagem automática enviada pelo portal proITA. Por favor, não responda a este e-mail.</p>
             </div>
-            <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px;">
-              <h3 style="color: #0f172a; margin-top: 0; font-size: 18px;">${title}</h3>
-              <p style="font-size: 16px; color: #334155; line-height: 1.6;">Olá, ${user.nome} ${user.sobrenome || ''}!</p>
-              <p style="font-size: 15px; color: #334155; line-height: 1.6; white-space: pre-line;">${message}</p>
-            </div>
-            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-            <p style="font-size: 11px; color: #94a3b8; text-align: center;">Esta é uma mensagem automática enviada pelo portal proITA. Por favor, não responda a este e-mail.</p>
-          </div>
-        `;
+          `;
 
-        const emailResult = await sendEmailUtil(user.email, title, message, htmlBody);
-        
-        if (emailResult.success) {
-          emailSent = true;
+          // Dispara em background
+          sendEmailUtil(user.email, title, message, htmlBody)
+            .then(result => {
+              if (result.success) {
+                console.log(`[Email Admin] E-mail enviado com sucesso para ${user.email}`);
+              } else {
+                console.error(`[Email Admin Error] Falha ao enviar e-mail para ${user.email}:`, result.error);
+              }
+            })
+            .catch(err => {
+              console.error(`[Email Admin Catch Error] Erro inesperado no envio de e-mail para ${user.email}:`, err);
+            });
         } else {
-          emailError = emailResult.error?.message || 'Falha no envio de e-mail';
+          console.warn(`[Email Admin Warning] O usuário ${userId} não possui e-mail cadastrado. Disparo pulado.`);
         }
       }
 
-      res.status(201).json({
+      // Retorna imediatamente após salvar no banco de dados
+      return res.status(201).json({
         success: true,
-        message: emailSent 
-          ? 'Notificação criada e e-mail transacional enviado com sucesso!' 
-          : (sendEmail ? `Notificação criada, mas erro no envio do e-mail: ${emailError}` : 'Notificação criada com sucesso no sistema!'),
+        message: 'Notificação criada com sucesso no sistema!',
         data: notification,
-        emailSent,
-        emailError
+        emailTriggered: !!(sendEmail && user.email)
       });
 
     } catch (error) {
       console.error('[POST /admin/notifications] Erro:', error);
       res.status(500).json({ success: false, message: 'Erro interno ao processar a notificação.' });
+    }
+  });
+
+  // Rota 12: Disparo de notificações em massa (broadcast)
+  router.post('/notifications/broadcast', checkAdmin, async (req, res) => {
+    const { title, message, type } = req.body;
+
+    if (!title || !message || !type) {
+      return res.status(400).json({ success: false, message: 'Os campos title, message e type são obrigatórios.' });
+    }
+
+    try {
+      // Busca os IDs de todos os usuários do banco
+      const users = await prisma.user.findMany({
+        select: { id: true }
+      });
+
+      if (users.length === 0) {
+        return res.status(404).json({ success: false, message: 'Nenhum usuário encontrado no sistema.' });
+      }
+
+      // Prepara o array de dados para inserção em lote
+      const notificationsData = users.map(user => ({
+        userId: user.id,
+        title,
+        message,
+        type,
+        read: false
+      }));
+
+      // Utiliza createMany para inserção em lote otimizada
+      const result = await prisma.notification.createMany({
+        data: notificationsData,
+        skipDuplicates: true
+      });
+
+      res.status(201).json({
+        success: true,
+        message: `Notificação geral enviada com sucesso para ${result.count} usuários!`,
+        count: result.count
+      });
+
+    } catch (error) {
+      console.error('[POST /admin/notifications/broadcast] Erro:', error);
+      res.status(500).json({ success: false, message: 'Erro interno ao processar o disparo em massa.' });
+    }
+  });
+
+  // Rota 13: Renovar / Estender Plano de um profissional manualmente
+  router.patch('/users/:id/extend', checkAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { option, customDate } = req.body;
+
+    if (!option) {
+      return res.status(400).json({ success: false, message: 'O campo option é obrigatório.' });
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id },
+        select: { id: true, planStatus: true, subscriptionEndsAt: true, trialEndsAt: true, nome: true }
+      });
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+      }
+
+      let newExpirationDate = new Date();
+      // Se o usuário já tiver uma data de expiração ativa e no futuro, podemos estender a partir dela
+      const currentExpiration = user.subscriptionEndsAt || user.trialEndsAt;
+      const baseDate = (currentExpiration && new Date(currentExpiration) > new Date()) 
+        ? new Date(currentExpiration) 
+        : new Date();
+
+      if (option === '30d') {
+        newExpirationDate = new Date(baseDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+      } else if (option === '365d') {
+        newExpirationDate = new Date(baseDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+      } else if (option === 'custom') {
+        if (!customDate) {
+          return res.status(400).json({ success: false, message: 'Data customizada é obrigatória para esta opção.' });
+        }
+        newExpirationDate = new Date(customDate);
+        // Garante hora no final do dia
+        newExpirationDate.setHours(23, 59, 59, 999);
+      } else {
+        return res.status(400).json({ success: false, message: 'Opção de extensão inválida.' });
+      }
+
+      // Atualiza o plano do usuário para ATIVO e define a expiração
+      const updatedUser = await prisma.user.update({
+        where: { id },
+        data: {
+          planStatus: 'ATIVO',
+          subscriptionEndsAt: newExpirationDate,
+          trialEndsAt: null // Limpa trial se houver para priorizar o plano ativo
+        }
+      });
+
+      res.status(200).json({
+        success: true,
+        message: `Plano de ${updatedUser.nome || 'usuário'} estendido com sucesso até ${newExpirationDate.toLocaleDateString('pt-BR')}!`,
+        data: {
+          planStatus: updatedUser.planStatus,
+          subscriptionEndsAt: updatedUser.subscriptionEndsAt
+        }
+      });
+
+    } catch (error) {
+      console.error('[PATCH /admin/users/:id/extend] Erro:', error);
+      res.status(500).json({ success: false, message: 'Erro interno ao estender plano do usuário.' });
     }
   });
 
