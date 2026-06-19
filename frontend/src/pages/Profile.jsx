@@ -23,7 +23,8 @@ import {
   Sparkles,
   Edit2,
   Loader2,
-  Trash
+  Trash,
+  ExternalLink
 } from 'lucide-react';
 import SponsorSlider from '../components/SponsorSlider';
 import ReportModal from '../components/ReportModal';
@@ -109,6 +110,7 @@ export default function Profile() {
   const queryParams = new URLSearchParams(location.search);
   const initialTab = queryParams.get('tab') || 'sobre';
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [selectedPartnerDetails, setSelectedPartnerDetails] = useState(null);
 
   // Sincroniza a aba ativa caso o query parameter da URL seja alterado
   useEffect(() => {
@@ -560,6 +562,8 @@ export default function Profile() {
             verified: true,
             user: profile.user,
             referenceCode: profile.referenceCode || null,
+            partners: profile.partners,
+            fotoAnuncioUrl: profile.fotoAnuncioUrl || null,
           });
 
           // Dispara tracking silencioso de visualização
@@ -1031,14 +1035,11 @@ export default function Profile() {
               
               const isActive = activeTab === tab;
               
-              // Oculta a aba parceiros no desktop (já que ela fica na sidebar no desktop)
-              const displayClass = tab === 'parceiros' ? 'lg:hidden' : '';
-              
               return (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`py-4 px-4 font-bold text-sm transition-all border-b-2 -mb-[2px] whitespace-nowrap ${displayClass} ${
+                  className={`py-4 px-4 font-bold text-sm transition-all border-b-2 -mb-[2px] whitespace-nowrap ${
                     isActive 
                       ? 'border-indigo-600 text-indigo-600' 
                       : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -1179,7 +1180,16 @@ export default function Profile() {
                     } catch {
                       list = professional.partners || [];
                     }
-                    const valid = list.filter(p => p && p.imageUrl);
+                    let valid = list.filter(p => p && p.imageUrl);
+                    if (valid.length === 0 && professional.fotoAnuncioUrl) {
+                      valid = [{
+                        imageUrl: professional.fotoAnuncioUrl,
+                        partnerAddress: professional.enderecoComercial || 'Itapipoca - CE',
+                        partnerPhone: professional.telefoneComercial || professional.phone || '',
+                        link: '',
+                        isMainSponsor: true
+                      }];
+                    }
                     if (valid.length === 0) return null;
 
                     return (
@@ -1188,7 +1198,7 @@ export default function Profile() {
                           <Users className="text-indigo-600" size={18} />
                           Parceiro
                         </h3>
-                        <SponsorSlider partners={valid} layout="sidebar" />
+                        <SponsorSlider partners={valid} layout="sidebar" onPartnerClick={setSelectedPartnerDetails} />
                       </div>
                     );
                   })()}
@@ -1491,9 +1501,9 @@ export default function Profile() {
               </div>
             )}
 
-            {/* Aba 'Parceiros' (Mobile Only) */}
+            {/* Aba 'Parceiros' */}
             {activeTab === 'parceiros' && (
-              <div className="lg:hidden animate-in fade-in duration-300 space-y-6">
+              <div className="animate-in fade-in duration-300 space-y-6">
                 {(() => {
                   let list = [];
                   try {
@@ -1503,7 +1513,16 @@ export default function Profile() {
                   } catch {
                     list = professional.partners || [];
                   }
-                  const valid = list.filter(p => p && p.imageUrl);
+                  let valid = list.filter(p => p && p.imageUrl);
+                  if (valid.length === 0 && professional.fotoAnuncioUrl) {
+                    valid = [{
+                      imageUrl: professional.fotoAnuncioUrl,
+                      partnerAddress: professional.enderecoComercial || 'Itapipoca - CE',
+                      partnerPhone: professional.telefoneComercial || professional.phone || '',
+                      link: '',
+                      isMainSponsor: true
+                    }];
+                  }
                   if (valid.length === 0) {
                     return (
                       <div className="bg-slate-50/50 rounded-3xl p-10 border border-slate-100 text-center">
@@ -1523,7 +1542,7 @@ export default function Profile() {
                         <h4 className="font-bold text-slate-900 mb-1">Nossos Patrocinadores</h4>
                         <p className="text-xs text-slate-600">Apoie os negócios locais que patrocinam e tornam este trabalho possível!</p>
                       </div>
-                      <SponsorSlider partners={valid} layout="tab" />
+                      <SponsorSlider partners={valid} layout="tab" onPartnerClick={setSelectedPartnerDetails} />
                     </div>
                   );
                 })()}
@@ -1764,6 +1783,86 @@ export default function Profile() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Detalhes do Parceiro */}
+      {selectedPartnerDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Imagem do Patrocinador */}
+            <div className="relative h-64 bg-slate-100 flex items-center justify-center overflow-hidden border-b border-slate-100">
+              <div 
+                className="absolute inset-0 bg-cover bg-center blur-md opacity-25 scale-110 pointer-events-none"
+                style={{ backgroundImage: `url(${selectedPartnerDetails.imageUrl})` }}
+              />
+              <img
+                src={selectedPartnerDetails.imageUrl}
+                alt="Foto do Patrocinador"
+                className="relative z-10 max-w-full max-h-full object-contain p-4"
+              />
+              <button 
+                onClick={() => setSelectedPartnerDetails(null)}
+                className="absolute top-4 right-4 z-20 p-2 bg-slate-900/60 hover:bg-slate-900/80 text-white rounded-full transition-all cursor-pointer shadow-md"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Informações */}
+            <div className="p-6 space-y-4">
+              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Users className="text-indigo-600 shrink-0" size={20} />
+                {selectedPartnerDetails.isMainSponsor ? 'Patrocinador Principal' : 'Detalhes do Parceiro'}
+              </h3>
+
+              <div className="space-y-3.5">
+                {/* Endereço */}
+                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                  <MapPin className="text-slate-400 shrink-0 mt-0.5" size={16} />
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Endereço</p>
+                    <p className="text-sm text-slate-700 font-medium">
+                      {selectedPartnerDetails.partnerAddress || 'Endereço não informado'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Telefone */}
+                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                  <Phone className="text-slate-400 shrink-0 mt-0.5" size={16} />
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Telefone / Contato</p>
+                    <p className="text-sm text-slate-700 font-medium">
+                      {selectedPartnerDetails.partnerPhone || 'Telefone não informado'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botões / Ações */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedPartnerDetails(null)}
+                  className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl text-sm font-bold transition-all cursor-pointer text-center"
+                >
+                  Fechar
+                </button>
+                {selectedPartnerDetails.link && (
+                  <a
+                    href={selectedPartnerDetails.link.startsWith('http') ? selectedPartnerDetails.link : `https://${selectedPartnerDetails.link}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary/10 text-center"
+                  >
+                    <ExternalLink size={14} />
+                    Visitar Site
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

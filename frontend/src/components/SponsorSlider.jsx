@@ -7,7 +7,7 @@ import { ExternalLink } from 'lucide-react';
  * @param {Array} partners - Lista de parceiros [{ imageUrl: string, link: string }]
  * @param {string} layout - Estilo e tamanho do slide: 'card' (busca), 'sidebar' (perfil desktop), 'tab' (perfil mobile)
  */
-export default function SponsorSlider({ partners = [], layout = 'card' }) {
+export default function SponsorSlider({ partners = [], layout = 'card', onPartnerClick }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Filtra parceiros válidos que possuem imagem
@@ -35,10 +35,14 @@ export default function SponsorSlider({ partners = [], layout = 'card' }) {
 
   const currentPartner = validPartners[currentIndex];
 
-  const handlePartnerClick = (e, link) => {
-    if (!link) return;
+  const handlePartnerClick = (e, partner) => {
     e.stopPropagation();
-    window.open(link.startsWith('http') ? link : `https://${link}`, '_blank', 'noopener,noreferrer');
+    if (onPartnerClick) {
+      onPartnerClick(partner);
+    } else if (partner.link) {
+      const link = partner.link;
+      window.open(link.startsWith('http') ? link : `https://${link}`, '_blank', 'noopener,noreferrer');
+    }
   };
 
   return (
@@ -46,17 +50,17 @@ export default function SponsorSlider({ partners = [], layout = 'card' }) {
       {/* Slides */}
       {validPartners.map((partner, index) => {
         const isActive = index === currentIndex;
-        const hasLink = !!partner.link;
+        const isClickable = !!partner.link || !!onPartnerClick;
 
         return (
           <div
             key={index}
-            onClick={(e) => handlePartnerClick(e, partner.link)}
+            onClick={(e) => handlePartnerClick(e, partner)}
             className={`absolute inset-0 w-full h-full flex items-center justify-center transition-all duration-700 ease-in-out cursor-pointer ${
               isActive 
                 ? 'opacity-100 scale-100 z-10' 
                 : 'opacity-0 scale-95 z-0 pointer-events-none'
-            } ${hasLink ? 'hover:scale-[1.01]' : ''}`}
+            } ${isClickable ? 'hover:scale-[1.01]' : ''}`}
           >
             {/* Imagem de Fundo (Blur para enquadramento premium) */}
             <div 
@@ -76,7 +80,7 @@ export default function SponsorSlider({ partners = [], layout = 'card' }) {
             />
 
             {/* Overlay com Link Indicador se houver link e estiver ativo */}
-            {isActive && hasLink && (
+            {isActive && (partner.link || onPartnerClick) && (
               <div className="absolute top-2 right-2 z-20 bg-slate-900/60 backdrop-blur-xs text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <ExternalLink size={12} className="text-white" />
               </div>

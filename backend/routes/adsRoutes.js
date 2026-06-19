@@ -366,6 +366,17 @@ module.exports = (prisma) => {
         }
       });
 
+      // Cria a notificação de Onboarding
+      await prisma.notification.create({
+        data: {
+          userId,
+          title: 'Bem-vindo ao proITA! 🎉',
+          message: 'Seu anúncio já está no ar para toda Itapipoca! Aproveite seus 30 dias de cortesia para explorar o painel, adicionar suas melhores fotos e se destacar nas buscas. Qualquer dúvida, estamos aqui.',
+          type: 'INFO',
+          read: false
+        }
+      });
+
       res.status(201).json({ success: true, profile });
     } catch (error) {
       console.error('[POST /api/ads] Erro:', error.message);

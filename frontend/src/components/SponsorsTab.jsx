@@ -106,6 +106,8 @@ export default function SponsorsTab({ token, onSaved }) {
             fileId: data.fileId,
             originalImageUrl: originalUrl,
             link: '',
+            partnerAddress: '',
+            partnerPhone: '',
           }]);
         }
       } else {
@@ -493,18 +495,42 @@ export default function SponsorsTab({ token, onSaved }) {
                           <span className="text-[9px] font-semibold text-slate-400">Enquadramento Banner (3:4)</span>
                         </div>
 
-                        <div className="relative">
+                        <div className="space-y-1.5">
                           <input
                             type="text"
-                            value={partner.link}
+                            value={partner.link || ''}
                             onChange={(e) => {
                               const updated = [...adPartners];
                               updated[idx].link = e.target.value;
                               setAdPartners(updated);
                             }}
                             placeholder="Link de redirecionamento (ex: https://...)"
-                            className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-primary focus:outline-none"
+                            className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-800 placeholder-slate-450 focus:ring-1 focus:ring-primary focus:outline-none"
                           />
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                            <input
+                              type="text"
+                              value={partner.partnerAddress || ''}
+                              onChange={(e) => {
+                                const updated = [...adPartners];
+                                updated[idx].partnerAddress = e.target.value;
+                                setAdPartners(updated);
+                              }}
+                              placeholder="Endereço do parceiro"
+                              className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-800 placeholder-slate-450 focus:ring-1 focus:ring-primary focus:outline-none"
+                            />
+                            <input
+                              type="text"
+                              value={partner.partnerPhone || ''}
+                              onChange={(e) => {
+                                const updated = [...adPartners];
+                                updated[idx].partnerPhone = e.target.value;
+                                setAdPartners(updated);
+                              }}
+                              placeholder="Telefone do parceiro"
+                              className="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-800 placeholder-slate-450 focus:ring-1 focus:ring-primary focus:outline-none"
+                            />
+                          </div>
                         </div>
                       </div>
 

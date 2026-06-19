@@ -371,7 +371,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
           </div>
 
           {/* Banner de Apoio (Patrocinador) posicionado no lado direito em formato retrato (vertical) */}
-          {!showEdit && professional.partners && (
+          {!showEdit && (
             (() => {
               let list = [];
               try {
@@ -381,13 +381,20 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               } catch {
                 list = professional.partners || [];
               }
-              const valid = list.filter(p => p && p.imageUrl);
+              let valid = list.filter(p => p && p.imageUrl);
+              if (valid.length === 0 && professional.fotoAnuncioUrl) {
+                valid = [{ imageUrl: professional.fotoAnuncioUrl }];
+              }
               if (valid.length === 0) return null;
 
               return (
                 <div className="flex flex-col items-center gap-1 shrink-0 self-center">
                   <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none">Apoio</span>
-                  <SponsorSlider partners={valid} layout="portrait" />
+                  <SponsorSlider 
+                    partners={valid} 
+                    layout="portrait" 
+                    onPartnerClick={() => navigate(`/profile/${professional.id}?tab=parceiros`)} 
+                  />
                 </div>
               );
             })()
