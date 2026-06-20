@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, User, Search, Home, PlusCircle, HelpCircle, Info, LogOut, Shield, Heart, Download } from 'lucide-react';
+import { Menu, X, User, Search, Home, PlusCircle, HelpCircle, Info, LogOut, Shield, Heart, Download, Newspaper } from 'lucide-react';
 import { useState, useRef, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { PwaContext } from '../context/PwaContext';
@@ -132,6 +132,9 @@ export default function Header() {
                 )}
                 <Link to="/search" className="text-slate-600 hover:text-primary font-medium transition-colors flex items-center gap-2">
                   <Search size={18} /> Explorar
+                </Link>
+                <Link to="/mural" className="text-slate-600 hover:text-primary font-medium transition-colors flex items-center gap-2">
+                  <Newspaper size={18} /> Mural
                 </Link>
                 {isAuthenticated ? (
                   <Link to="/central-de-ajuda" className="text-slate-600 hover:text-primary font-medium transition-colors flex items-center gap-2">
@@ -278,6 +281,9 @@ export default function Header() {
           )}
           <Link to="/search" className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
             <Search size={20} className="text-slate-400" /> Explorar Profissionais
+          </Link>
+          <Link to="/mural" className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
+            <Newspaper size={20} className="text-slate-400" /> Mural de Oportunidades
           </Link>
           {isAuthenticated ? (
             <Link to="/central-de-ajuda" className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">

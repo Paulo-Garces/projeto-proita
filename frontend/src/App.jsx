@@ -22,6 +22,7 @@ import Dicas from './pages/Dicas';
 import Faq from './pages/Faq';
 import Denuncias from './pages/Denuncias';
 import TermsAndPrivacy from './pages/TermsAndPrivacy';
+import Mural from './pages/Mural';
 import ScrollToTop from './components/ScrollToTop';
 
 function App() {
@@ -54,6 +55,7 @@ function App() {
                 <Route path="/faq" element={<Faq />} />
                 <Route path="/denuncias" element={<Denuncias />} />
                 <Route path="/terms" element={<TermsAndPrivacy />} />
+                <Route path="/mural" element={<Mural />} />
               </Routes>
             </main>
             <BottomNav />
