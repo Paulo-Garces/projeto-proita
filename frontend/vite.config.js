@@ -11,6 +11,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
+      devOptions: {
+        enabled: true
+      },
       manifest: {
         name: 'proITA',
         short_name: 'proITA',
@@ -20,14 +23,14 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: '/pwa-192x192.png',
-            sizes: '192x192',
+            src: '/pwa-192x192-p.png',
+            sizes: '196x196',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
           },
           {
-            src: '/pwa-512x512.png',
-            sizes: '512x512',
+            src: '/pwa-512x512-p.png',
+            sizes: '516x516',
             type: 'image/png',
             purpose: 'any'
           }
