@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, User, Search, Home, PlusCircle, HelpCircle, Info, LogOut, Shield, Heart, Download, Smartphone } from 'lucide-react';
+import { Menu, X, User, Search, Home, PlusCircle, HelpCircle, Info, LogOut, Shield, Heart, Download } from 'lucide-react';
 import { useState, useRef, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { PwaContext } from '../context/PwaContext';
@@ -294,25 +294,14 @@ export default function Header() {
             <PlusCircle size={20} /> Anuncie
           </button>
 
-          {/* Card de Instalação do PWA no Mobile */}
+          {/* Botão de Instalação do PWA no Mobile */}
           {isInstallable && (
-            <div className="p-4 bg-gradient-to-r from-sky-50 to-cyan-50 rounded-xl border border-sky-100 flex flex-col gap-3 mt-4 mx-3">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg text-primary shrink-0">
-                  <Smartphone size={20} />
-                </div>
-                <div className="text-left">
-                  <h4 className="font-semibold text-slate-800 text-sm">Instalar Aplicativo</h4>
-                  <p className="text-xs text-slate-500">Tenha acesso rápido e use offline.</p>
-                </div>
-              </div>
-              <button 
-                onClick={installApp} 
-                className="w-full bg-primary hover:bg-primary-hover text-white py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-              >
-                <Download size={16} /> Instalar proITA
-              </button>
-            </div>
+            <button 
+              onClick={installApp} 
+              className="w-full text-center block px-3 py-4 text-base font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md flex items-center gap-3 mt-4 justify-center cursor-pointer"
+            >
+              <Download size={20} /> Instalar proITA
+            </button>
           )}
 
           {isAuthenticated ? (

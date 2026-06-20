@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useContext } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import AdCard from '../components/AdCard';
 import { Search as SearchIcon, Filter, X, ChevronDown, Heart } from 'lucide-react';
+import Fuse from 'fuse.js';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 import { getProfileDisplayName, getProfileAvatarNameParam } from '../utils/profileDisplayName';
@@ -186,15 +187,19 @@ export default function Search() {
     }
 
     if (queryParam) {
-      const q = queryParam.toLowerCase();
-      filtered = filtered.filter(p => {
-        const name = (p.name || '').toLowerCase();
-        const cat = (p.category || '').toLowerCase();
-        const catGeral = (p.categoriaGeral || '').toLowerCase();
-        const desc = (p.fullDescription || '').toLowerCase();
-        const short = (p.shortDescription || '').toLowerCase();
-        return name.includes(q) || cat.includes(q) || catGeral.includes(q) || desc.includes(q) || short.includes(q);
+      const fuse = new Fuse(filtered, {
+        keys: [
+          { name: 'name', weight: 1.0 },
+          { name: 'category', weight: 1.0 },
+          { name: 'categoriaGeral', weight: 0.5 },
+          { name: 'shortDescription', weight: 0.3 },
+          { name: 'fullDescription', weight: 0.3 }
+        ],
+        threshold: 0.35,
+        ignoreLocation: true
       });
+      const fuseResults = fuse.search(queryParam);
+      filtered = fuseResults.map(result => result.item);
     }
 
     if (derivedCat) {
