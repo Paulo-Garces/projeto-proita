@@ -1233,6 +1233,29 @@ app.get('/api/categories/popular', async (req, res) => {
   }
 });
 
+// Buscar oportunidades do mural (Neon DB raw SQL)
+app.get('/api/mural', async (req, res) => {
+  try {
+    const opportunities = await prisma.$queryRaw`
+      SELECT 
+        id, 
+        title, 
+        description, 
+        category, 
+        source_name AS "sourceName", 
+        source_url AS "sourceUrl", 
+        published_date AS "publishedDate", 
+        created_at AS "createdAt"
+      FROM mural_oportunidades 
+      ORDER BY published_date DESC
+    `;
+    res.json({ success: true, data: opportunities });
+  } catch (err) {
+    console.error('Erro ao buscar oportunidades do mural:', err);
+    res.status(500).json({ error: 'Erro ao buscar oportunidades' });
+  }
+});
+
 // Iniciando o servidor
 app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);

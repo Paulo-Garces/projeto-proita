@@ -8,40 +8,40 @@ datasource db {
 }
 
 model User {
-  id                         String       @id @default(uuid())
+  id                         String         @id @default(uuid())
   nome                       String
   sobrenome                  String?
-  telefone                   String?      @unique
+  telefone                   String?        @unique
   senha                      String?
   bairro                     String?
-  role                       String       @default("USER")
-  createdAt                  DateTime     @default(now())
+  role                       String         @default("USER")
+  createdAt                  DateTime       @default(now())
   profileImageFileId         String?
   profileImageUrl            String?
   cep                        String?
-  isWhatsapp                 Boolean      @default(false)
-  email                      String?      @unique
-  googleId                   String?      @unique
+  isWhatsapp                 Boolean        @default(false)
+  email                      String?        @unique
+  googleId                   String?        @unique
   resetCode                  String?
   resetCodeExpires           DateTime?
   emailSecundario            String?
   emailSecundarioCode        String?
   emailSecundarioCodeExpires DateTime?
-  emailSecundarioVerificado  Boolean      @default(false)
-  planStatus                 String       @default("INATIVO")
+  emailSecundarioVerificado  Boolean        @default(false)
+  planStatus                 String         @default("INATIVO")
   subscriptionEndsAt         DateTime?
   trialEndsAt                DateTime?
-  planType                   String?
   cpfCnpj                    String?
-  pendingNossoNumero         String?      @unique
+  pendingNossoNumero         String?        @unique
   pendingPlanId              String?
-  pendingTxid                String?      @unique
+  pendingTxid                String?        @unique
+  adminNotes                 String?
+  planType                   String?
   NfeRequest                 NfeRequest[]
+  notifications              Notification[]
   profiles                   Profile[]
   reviews                    Review[]
-  favoriteProfiles           Profile[]    @relation("UserFavorites")
-  notifications              Notification[]
-  adminNotes                 String?
+  favoriteProfiles           Profile[]      @relation("UserFavorites")
 }
 
 model Profile {
@@ -162,11 +162,24 @@ model NfeRequest {
 model Notification {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   message   String
   type      String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model mural_oportunidades {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String    @db.VarChar(255)
+  description    String
+  category       String    @db.VarChar(100)
+  source_name    String    @db.VarChar(150)
+  source_url     String?
+  published_date DateTime  @db.Timestamptz(6)
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([category], map: "idx_mural_category")
+  @@index([published_date(sort: Desc)], map: "idx_mural_published_date")
+}

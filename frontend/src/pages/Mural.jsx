@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Building2, ExternalLink, GraduationCap, Briefcase, FileText } from 'lucide-react';
+import { API_URL } from '../config';
 
 const CATEGORIES = [
   { id: 'all', label: 'Todos', emoji: '📰' },
@@ -8,65 +9,72 @@ const CATEGORIES = [
   { id: 'editais', label: 'Editais', emoji: '🏛️' }
 ];
 
-const MOCK_OPORTUNIDADES = [
-  {
-    id: 1,
-    category: 'capacitacao',
-    categoryLabel: 'Capacitação',
-    title: 'Curso Empreendedorismo de Sucesso - SEBRAE Itapipoca',
-    description: 'Aprenda a estruturar seu modelo de negócio, fluxo de caixa e estratégias de marketing digital para alavancar suas vendas regionais.',
-    date: '25 Jun, 2026',
-    source: 'SEBRAE Itapipoca',
-    url: 'https://sebrae.com.br'
-  },
-  {
-    id: 2,
-    category: 'editais',
-    categoryLabel: 'Editais',
-    title: 'Edital de Fomento à Cultura e Economia Criativa - Prefeitura',
-    description: 'Abertura de inscrições para projetos artísticos, artesanais e de manifestação cultural no município de Itapipoca com incentivo financeiro para artistas locais.',
-    date: '20 Jun, 2026',
-    source: 'Prefeitura de Itapipoca',
-    url: 'https://itapipoca.ce.gov.br'
-  },
-  {
-    id: 3,
-    category: 'capacitacao',
-    categoryLabel: 'Capacitação',
-    title: 'Curso Superior de Tecnologia em Alimentos - Processo Seletivo IFCE',
-    description: 'Vagas abertas para cursos técnicos e superiores gratuitos no campus do IFCE Itapipoca. Inscrições online até o fim do mês.',
-    date: '18 Jun, 2026',
-    source: 'IFCE Campus Itapipoca',
-    url: 'https://ifce.edu.br/itapipoca'
-  },
-  {
-    id: 4,
-    category: 'empregos',
-    categoryLabel: 'Empregos',
-    title: 'Vagas de Emprego Ativas no SINE Itapipoca',
-    description: 'Oportunidades abertas para Vendedor Lojista, Auxiliar de Cozinha, Eletricista Industrial e Recepcionista. Compareça com currículo atualizado.',
-    date: '19 Jun, 2026',
-    source: 'SINE Itapipoca / IDT',
-    url: 'https://www.idt.org.br'
-  },
-  {
-    id: 5,
-    category: 'editais',
-    categoryLabel: 'Editais',
-    title: 'Edital para Credenciamento de Microempreendedores Individuais (MEI)',
-    description: 'Credenciamento de MEIs locais para prestação de serviços de manutenção, limpeza e pequenos reparos junto aos prédios públicos da Prefeitura.',
-    date: '15 Jun, 2026',
-    source: 'Secretaria de Desenvolvimento Econômico',
-    url: 'https://itapipoca.ce.gov.br'
-  }
-];
-
 export default function Mural() {
   const [activeCategory, setActiveCategory] = useState('all');
+  const [opportunities, setOpportunities] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const normalizeCategory = (cat) => {
+    if (!cat) return 'all';
+    const normalized = cat.toLowerCase().trim();
+    if (normalized.includes('capacita') || normalized.includes('capacitação')) return 'capacitacao';
+    if (normalized.includes('emprego')) return 'empregos';
+    if (normalized.includes('edital') || normalized.includes('editais')) return 'editais';
+    return 'all';
+  };
+
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString;
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    } catch (e) {
+      return dateString;
+    }
+  };
+
+  const fetchOpportunities = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/api/mural`);
+      const data = await res.json();
+      if (res.ok && data.success) {
+        // Mapear os dados vindos do banco para o formato esperado pelo layout
+        const mappedData = (data.data || []).map(item => ({
+          id: item.id,
+          category: normalizeCategory(item.category),
+          categoryLabel: item.category,
+          title: item.title,
+          description: item.description,
+          date: formatDate(item.publishedDate),
+          source: item.sourceName || 'Fonte Oficial',
+          url: item.sourceUrl || '#'
+        }));
+        setOpportunities(mappedData);
+      } else {
+        setError(data.error || 'Não foi possível carregar as oportunidades.');
+      }
+    } catch (err) {
+      console.error('Erro ao buscar mural:', err);
+      setError('Erro de conexão ao tentar carregar o mural.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOpportunities();
+  }, [fetchOpportunities]);
 
   const filteredOportunidades = activeCategory === 'all'
-    ? MOCK_OPORTUNIDADES
-    : MOCK_OPORTUNIDADES.filter(item => item.category === activeCategory);
+    ? opportunities
+    : opportunities.filter(item => item.category === activeCategory);
 
   const getCategoryStyles = (category) => {
     switch (category) {
@@ -84,15 +92,70 @@ export default function Mural() {
   const getCategoryIcon = (category) => {
     switch (category) {
       case 'capacitacao':
-        return <GraduationCap size={14} className="mr-1 inline-block align-text-bottom text-sky-500" />;
+        return <GraduationCap size={14} className="mr-1.5 inline-block align-text-bottom text-sky-500" />;
       case 'empregos':
-        return <Briefcase size={14} className="mr-1 inline-block align-text-bottom text-emerald-500" />;
+        return <Briefcase size={14} className="mr-1.5 inline-block align-text-bottom text-emerald-500" />;
       case 'editais':
-        return <FileText size={14} className="mr-1 inline-block align-text-bottom text-violet-500" />;
+        return <FileText size={14} className="mr-1.5 inline-block align-text-bottom text-violet-500" />;
       default:
         return null;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="pt-24 pb-16 px-4 max-w-5xl mx-auto min-h-screen bg-slate-50">
+        {/* Título Skeleton */}
+        <div className="text-center md:text-left mb-8 animate-pulse">
+          <div className="h-9 w-64 bg-slate-200 rounded-lg mb-3"></div>
+          <div className="h-4 w-full max-w-md bg-slate-200 rounded-md"></div>
+        </div>
+        {/* Filtros Skeleton */}
+        <div className="flex gap-2 overflow-x-auto pb-4 mb-8">
+          {[1, 2, 3, 4].map(n => (
+            <div key={n} className="h-10 w-28 bg-slate-200 rounded-full shrink-0 animate-pulse"></div>
+          ))}
+        </div>
+        {/* Grid de Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map(n => (
+            <div key={n} className="bg-white border border-slate-100 rounded-2xl p-6 h-56 flex flex-col justify-between animate-pulse">
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <div className="h-6 w-20 bg-slate-200 rounded-full"></div>
+                  <div className="h-4 w-24 bg-slate-200 rounded-md"></div>
+                </div>
+                <div className="h-6 w-3/4 bg-slate-200 rounded-md mb-2"></div>
+                <div className="h-4 w-full bg-slate-200 rounded-md mb-2"></div>
+                <div className="h-4 w-5/6 bg-slate-200 rounded-md"></div>
+              </div>
+              <div className="flex justify-between items-center pt-4 border-t border-slate-100 mt-4">
+                <div className="h-4 w-32 bg-slate-200 rounded-md"></div>
+                <div className="h-4 w-20 bg-slate-200 rounded-md"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="pt-24 pb-16 px-4 max-w-5xl mx-auto min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+        <div className="text-center bg-white border border-slate-100 p-8 rounded-2xl shadow-sm max-w-md w-full">
+          <p className="text-red-500 font-bold text-lg mb-2">Erro de conexão</p>
+          <p className="text-slate-500 text-sm mb-6">{error}</p>
+          <button
+            onClick={fetchOpportunities}
+            className="bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-full font-semibold transition-all cursor-pointer shadow-md shadow-sky-100"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-24 pb-16 px-4 max-w-5xl mx-auto min-h-screen bg-slate-50">
