@@ -479,15 +479,15 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         {/* LINHA 3 DIREITA: Botões de Ação centralizados (Ligar, WhatsApp, Compartilhar) ou Editar/Excluir */}
         <div className="flex items-center justify-center w-full">
           {showEdit ? (
-            <div className="flex w-full gap-2 items-center justify-center max-w-xs">
+            <div className="flex flex-wrap w-full gap-2 items-center justify-center max-w-xs">
               <button 
                 onClick={() => onEdit?.(professional)} 
                 disabled={disableEdit}
-                className="flex-1 flex justify-center items-center gap-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 py-2 px-3 rounded-full font-medium transition-colors text-xs md:text-sm"
+                className="flex-1 min-w-[90px] flex justify-center items-center gap-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 py-2 px-3 rounded-full font-medium transition-colors text-xs md:text-sm"
               >
                 <Edit2 size={16} /> Editar
               </button>
-              <button onClick={() => onDelete?.(professional.id)} className="flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-500 px-3 py-2 rounded-full font-medium transition-colors text-xs md:text-sm">
+              <button onClick={() => onDelete?.(professional.id)} className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-500 px-3 py-2 rounded-full font-medium transition-colors text-xs md:text-sm">
                 <Trash2 size={16} /> Excluir
               </button>
             </div>
@@ -528,54 +528,54 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
 
 
       {showEdit && (
-        <div className="border-t border-slate-100 bg-slate-50/50 p-5 rounded-b-2xl animate-in fade-in duration-300">
+        <div className="border-t border-slate-100 bg-slate-50/50 p-4 sm:p-5 rounded-b-2xl animate-in fade-in duration-300">
           <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 text-center md:text-left">Funil de Conversão & Estatísticas</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs font-semibold text-slate-600">
-            <div className="flex items-center gap-2 bg-white px-3 py-2.5 rounded-xl border border-slate-100 shadow-sm" title="Exibições nas buscas de clientes">
-              <TrendingUp size={16} className="text-slate-400 shrink-0" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs font-semibold text-slate-600">
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-100 shadow-sm" title="Exibições nas buscas de clientes">
+              <TrendingUp size={14} className="text-slate-400 shrink-0" />
               <div className="min-w-0">
-                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Exibições</span>
-                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.impressions ?? 0}</span>
+                <span className="text-[9px] sm:text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Exibições</span>
+                <span className="text-xs sm:text-sm font-extrabold text-slate-800 leading-none">{professional.impressions ?? 0}</span>
               </div>
             </div>
             
-            <div className="flex items-center gap-2 bg-white px-3 py-2.5 rounded-xl border border-slate-100 shadow-sm" title="Visitas completas ao seu perfil profissional">
-              <Eye size={16} className="text-slate-400 shrink-0" />
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-100 shadow-sm" title="Visitas completas ao seu perfil profissional">
+              <Eye size={14} className="text-slate-400 shrink-0" />
               <div className="min-w-0">
-                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Visitas</span>
-                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.profileViews ?? 0}</span>
+                <span className="text-[9px] sm:text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Visitas</span>
+                <span className="text-xs sm:text-sm font-extrabold text-slate-800 leading-none">{professional.profileViews ?? 0}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-white px-3 py-2.5 rounded-xl border border-slate-100 shadow-sm" title="Clientes que favoritaram seu perfil">
-              <Bookmark size={16} className="text-slate-400 shrink-0" />
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-100 shadow-sm" title="Clientes que favoritaram seu perfil">
+              <Bookmark size={14} className="text-slate-400 shrink-0" />
               <div className="min-w-0">
-                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Favoritos</span>
-                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.favoritesCount ?? 0}</span>
+                <span className="text-[9px] sm:text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Favoritos</span>
+                <span className="text-xs sm:text-sm font-extrabold text-slate-800 leading-none">{professional.favoritesCount ?? 0}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-white px-3 py-2.5 rounded-xl border border-slate-100 shadow-sm" title="Cliques para iniciar conversa no WhatsApp">
-              <MessageCircle size={16} className="text-slate-400 shrink-0" />
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-100 shadow-sm" title="Clientes que iniciaram conversa no WhatsApp">
+              <MessageCircle size={14} className="text-slate-400 shrink-0" />
               <div className="min-w-0">
-                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-0.5">WhatsApp</span>
-                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.whatsappClicks ?? 0}</span>
+                <span className="text-[9px] sm:text-[10px] text-slate-400 block font-normal leading-none mb-0.5">WhatsApp</span>
+                <span className="text-xs sm:text-sm font-extrabold text-slate-800 leading-none">{professional.whatsappClicks ?? 0}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-white px-3 py-2.5 rounded-xl border border-slate-100 shadow-sm" title="Cliques para efetuar ligação direta">
-              <Phone size={16} className="text-slate-400 shrink-0" />
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-100 shadow-sm" title="Clientes que clicaram para efetuar ligação direta">
+              <Phone size={14} className="text-slate-400 shrink-0" />
               <div className="min-w-0">
-                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Ligações</span>
-                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.phoneClicks ?? 0}</span>
+                <span className="text-[9px] sm:text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Ligações</span>
+                <span className="text-xs sm:text-sm font-extrabold text-slate-800 leading-none">{professional.phoneClicks ?? 0}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-white px-3 py-2.5 rounded-xl border border-slate-100 shadow-sm" title="Número de vezes que seu link foi compartilhado">
-              <Share2 size={16} className="text-slate-400 shrink-0" />
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-100 shadow-sm" title="Número de vezes que seu link foi compartilhado">
+              <Share2 size={14} className="text-slate-400 shrink-0" />
               <div className="min-w-0">
-                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Partilhas</span>
-                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.shares ?? 0}</span>
+                <span className="text-[9px] sm:text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Partilhas</span>
+                <span className="text-xs sm:text-sm font-extrabold text-slate-800 leading-none">{professional.shares ?? 0}</span>
               </div>
             </div>
           </div>

@@ -1344,9 +1344,22 @@ export default function Dashboard() {
   const [photoError, setPhotoError] = useState('');
   const fileInputRef = useRef(null);
   const contentRef = useRef(null);
+  const isFirstMount = useRef(true);
 
+  // Rola para o topo apenas no primeiro carregamento (ex: retorno do checkout da InfinitePay)
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  // Rola para o contêiner do conteúdo da aba no mobile quando o usuário altera a aba ativa
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    if (window.innerWidth < 768 && contentRef.current) {
+      contentRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [activeTab]);
 
   // Crop de Foto de Perfil Pessoal
