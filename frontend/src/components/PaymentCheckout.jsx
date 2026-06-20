@@ -390,36 +390,36 @@ const PaymentCheckout = ({
           )}
 
           {/* Seletor de Método de Pagamento (Visual Clean e Coeso) */}
-          <div className="flex gap-4 mb-6">
+          <div className="flex flex-wrap md:flex-nowrap gap-3 md:gap-4 mb-6">
             <button
               onClick={() => handleMethodChange('pix')}
-              className={`flex-1 py-3 px-4 rounded-xl border font-bold text-xs transition-all duration-200 cursor-pointer ${
+              className={`flex-1 min-w-[100px] py-3 px-4 rounded-xl border font-bold text-xs transition-all duration-200 cursor-pointer ${
                 paymentMethod === 'pix'
                   ? 'border-indigo-600 bg-indigo-50/40 text-indigo-700 ring-2 ring-indigo-600/5'
                   : 'border-slate-200 text-slate-500 hover:bg-slate-50'
               }`}
             >
-              Pix <span className="text-[10px] font-normal block mt-0.5">(Aprovação Imediata)</span>
+              Pix <span className="text-[10px] font-normal block mt-0.5 whitespace-normal sm:whitespace-nowrap">(Aprovação Imediata)</span>
             </button>
             <button
               onClick={() => handleMethodChange('boleto')}
-              className={`flex-1 py-3 px-4 rounded-xl border font-bold text-xs transition-all duration-200 cursor-pointer ${
+              className={`flex-1 min-w-[100px] py-3 px-4 rounded-xl border font-bold text-xs transition-all duration-200 cursor-pointer ${
                 paymentMethod === 'boleto'
                   ? 'border-indigo-600 bg-indigo-50/40 text-indigo-700 ring-2 ring-indigo-600/5'
                   : 'border-slate-200 text-slate-500 hover:bg-slate-50'
               }`}
             >
-              Boleto <span className="text-[10px] font-normal block mt-0.5">(1 dia útil)</span>
+              Boleto <span className="text-[10px] font-normal block mt-0.5 whitespace-normal sm:whitespace-nowrap">(1 dia útil)</span>
             </button>
             <button
               onClick={() => handleMethodChange('credit-card')}
-              className={`flex-1 py-3 px-4 rounded-xl border font-bold text-xs transition-all duration-200 cursor-pointer ${
+              className={`flex-1 min-w-[100px] py-3 px-4 rounded-xl border font-bold text-xs transition-all duration-200 cursor-pointer ${
                 paymentMethod === 'credit-card'
                   ? 'border-emerald-600 bg-emerald-50/40 text-emerald-700 ring-2 ring-emerald-600/5'
                   : 'border-slate-200 text-slate-500 hover:bg-slate-50'
               }`}
             >
-              Cartão <span className="text-[10px] font-normal block mt-0.5">(Ambiente Seguro)</span>
+              Cartão <span className="text-[10px] font-normal block mt-0.5 whitespace-normal sm:whitespace-nowrap">(Ambiente Seguro)</span>
             </button>
           </div>
 
@@ -489,13 +489,13 @@ const PaymentCheckout = ({
                     Copie a chave Pix abaixo e pague através do aplicativo de faturamento ou banco de sua preferência. A compensação ocorre em instantes.
                   </p>
 
-                  <div className="flex items-stretch gap-2">
-                    <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-3 font-mono text-xs text-slate-700 break-all select-all flex-1">
+                  <div className="flex flex-col sm:flex-row items-stretch gap-2 w-full">
+                    <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-3 font-mono text-xs text-slate-700 break-all select-all flex-1 min-w-0 w-full">
                       {pixData?.pixCopiaECola}
                     </div>
                     <button
                       onClick={() => handleCopy(pixData?.pixCopiaECola || '')}
-                      className="px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+                      className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
                     >
                       {copiedText ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                       {copiedText ? 'Copiado' : 'Copiar'}
@@ -571,13 +571,13 @@ const PaymentCheckout = ({
                     Copie a linha digitável abaixo para pagar através do seu aplicativo bancário:
                   </p>
 
-                  <div className="flex items-stretch gap-2">
-                    <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-3 font-mono text-xs text-slate-700 break-all select-all flex-1">
+                  <div className="flex flex-col sm:flex-row items-stretch gap-2 w-full">
+                    <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-3 font-mono text-xs text-slate-700 break-all select-all flex-1 min-w-0 w-full">
                       {boletoData?.linhaDigitavel}
                     </div>
                     <button
                       onClick={() => handleCopy(boletoData?.linhaDigitavel || '')}
-                      className="px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+                      className="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
                     >
                       {copiedText ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                       {copiedText ? 'Copiado' : 'Copiar'}
