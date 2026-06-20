@@ -54,7 +54,7 @@ export default function Mural() {
           description: item.description,
           date: formatDate(item.publishedDate),
           source: item.sourceName || 'Fonte Oficial',
-          url: item.sourceUrl || '#'
+          source_url: item.sourceUrl || '#'
         }));
         setOpportunities(mappedData);
       } else {
@@ -233,7 +233,7 @@ export default function Mural() {
                   <span className="truncate" title={item.source}>{item.source}</span>
                 </div>
                 <a
-                  href={item.url}
+                  href={item.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs font-bold text-primary hover:text-primary-hover flex items-center gap-1 transition-colors group shrink-0"

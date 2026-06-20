@@ -55,6 +55,10 @@ const pool = new Pool({
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+// Inicialização do Web Scraper do Mural
+const { initScraper } = require('./services/scraper');
+initScraper(prisma);
+
 // Teste de conexão (opcional, só para logging)
 if (process.env.DATABASE_URL) {
   pool.connect((err, client, release) => {
