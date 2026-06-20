@@ -1,7 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, User, Search, Home, PlusCircle, HelpCircle, Info, LogOut, Shield, Heart } from 'lucide-react';
+import { Menu, X, User, Search, Home, PlusCircle, HelpCircle, Info, LogOut, Shield, Heart, Download, Smartphone } from 'lucide-react';
 import { useState, useRef, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { PwaContext } from '../context/PwaContext';
 import NotificationBell from './NotificationBell';
 
 export default function Header() {
@@ -50,6 +51,7 @@ export default function Header() {
   };
 
   const { user, isAuthenticated, logout } = useContext(AuthContext);
+  const { isInstallable, installApp } = useContext(PwaContext);
 
   const isTrialExpired = user?.planStatus === 'DEGUSTACAO' && user?.trialEndsAt && new Date(user.trialEndsAt) < new Date();
   const hasActivePlan = isAuthenticated && (user?.planStatus === 'ATIVO' || user?.planStatus === 'BASICO' || (user?.planStatus === 'DEGUSTACAO' && !isTrialExpired));
@@ -144,6 +146,16 @@ export default function Header() {
 
               {/* Divisor */}
               <div className="h-6 w-px bg-slate-200"></div>
+
+              {/* Botão Instalar App (PWA) */}
+              {isInstallable && (
+                <button
+                  onClick={installApp}
+                  className="border border-primary text-primary hover:bg-primary/5 px-4 py-2 rounded-full font-medium transition-colors flex items-center gap-2 cursor-pointer text-sm shadow-sm"
+                >
+                  <Download size={18} /> Instalar
+                </button>
+              )}
 
               {/* Botão Anuncie (Sempre Visível) */}
               <button onClick={handleAnuncieClick} className="bg-primary hover:bg-primary-hover text-white px-5 py-2 rounded-full font-medium transition-colors shadow-md shadow-sky-200 flex items-center gap-2">
@@ -281,6 +293,27 @@ export default function Header() {
           <button onClick={handleAnuncieClick} className="w-full text-center block px-3 py-4 text-base font-medium text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md flex items-center gap-3 mt-4 justify-center">
             <PlusCircle size={20} /> Anuncie
           </button>
+
+          {/* Card de Instalação do PWA no Mobile */}
+          {isInstallable && (
+            <div className="p-4 bg-gradient-to-r from-sky-50 to-cyan-50 rounded-xl border border-sky-100 flex flex-col gap-3 mt-4 mx-3">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary shrink-0">
+                  <Smartphone size={20} />
+                </div>
+                <div className="text-left">
+                  <h4 className="font-semibold text-slate-800 text-sm">Instalar Aplicativo</h4>
+                  <p className="text-xs text-slate-500">Tenha acesso rápido e use offline.</p>
+                </div>
+              </div>
+              <button 
+                onClick={installApp} 
+                className="w-full bg-primary hover:bg-primary-hover text-white py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              >
+                <Download size={16} /> Instalar proITA
+              </button>
+            </div>
+          )}
 
           {isAuthenticated ? (
             <>
