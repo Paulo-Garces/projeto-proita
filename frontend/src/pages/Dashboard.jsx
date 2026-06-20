@@ -1,5 +1,5 @@
 import { useState, useContext, useRef, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard, Sparkles, Clock, Copy, ChevronLeft, ChevronRight, Check, X, Link2, Crop, RefreshCw } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
@@ -1330,7 +1330,15 @@ export default function Dashboard() {
   const { user, token, logout, updateUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState('profile');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const activeTab = searchParams.get('tab') || (searchParams.get('payment') ? 'subscription' : 'profile');
+
+  const setActiveTab = (newTab) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', newTab);
+    setSearchParams(newParams);
+  };
 
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState('');
@@ -1338,14 +1346,7 @@ export default function Dashboard() {
   const contentRef = useRef(null);
 
   useEffect(() => {
-    if (window.innerWidth < 768 && contentRef.current) {
-      const elementPosition = contentRef.current.getBoundingClientRect().top + window.scrollY;
-      const offsetPosition = elementPosition - 80;
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeTab]);
 
   // Crop de Foto de Perfil Pessoal
