@@ -334,8 +334,8 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         <div className="flex items-center justify-between gap-4 w-full min-w-0">
           <div className="flex flex-col gap-1 min-w-0 justify-center items-start text-left flex-1">
             <div className="flex justify-between items-start w-full min-w-0 gap-1.5">
-              <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors truncate w-full min-w-0">
-                <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate w-full block" title={displayName}>
+              <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors min-w-0 flex-1">
+                <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate block w-full" title={displayName}>
                   {displayName}
                 </h3>
               </Link>
@@ -344,18 +344,18 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             <Link 
               to={`/profile/${professional.id}?tab=avaliacoes`}
               onClick={handleProfileClick}
-              className="flex flex-col items-start gap-y-1 w-full hover:underline hover:text-primary transition-all cursor-pointer group/rating"
+              className="flex flex-row items-center gap-1.5 flex-wrap w-full hover:underline hover:text-primary transition-all cursor-pointer group/rating min-w-0"
               title="Ver todas as avaliações deste profissional"
             >
-              <div className="flex items-center gap-0.5">
+              <div className="flex items-center gap-0.5 shrink-0">
                 {[1, 2, 3, 4, 5].map(i => (
                   <Star key={i} size={14} className={i <= rating ? "text-amber-400 fill-amber-400 group-hover/rating:scale-110 transition-transform duration-200" : "text-slate-200 fill-slate-200"} />
                 ))}
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-bold text-slate-750">{rating > 0 ? rating.toFixed(1) : 'Novo'}</span>
+              <div className="flex items-center gap-1 text-xs font-bold text-slate-750 whitespace-nowrap shrink-0">
+                <span>{rating > 0 ? rating.toFixed(1) : 'Novo'}</span>
                 {reviewCount > 0 && (
-                  <span className="text-[11px] text-slate-450">({reviewCount} {reviewCount === 1 ? 'avaliação' : 'avaliações'})</span>
+                  <span className="text-[11px] text-slate-450 font-normal">({reviewCount} {reviewCount === 1 ? 'avaliação' : 'avaliações'})</span>
                 )}
               </div>
             </Link>
@@ -436,8 +436,8 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
           )}
         </div>
 
-        {/* LINHA 3 ESQUERDA */}
-        {isDashboard ? (
+        {/* LINHA 3 ESQUERDA (DASHBOARD ONLY) */}
+        {isDashboard && (
           <div className="col-span-2 md:col-span-1 flex flex-col items-center justify-between h-full gap-2 w-full pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
             <div className="flex flex-row flex-wrap items-center gap-2 justify-center">
               {displayedSocials.map((link, idx) => {
@@ -476,35 +476,10 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               )}
             </div>
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-between h-full gap-1.5">
-            <div className="flex flex-row flex-nowrap items-center gap-1.5 justify-center w-max min-w-max">
-              {displayedSocials.map((link, idx) => {
-                const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
-                return (
-                  <a key={idx} href={url} target="_blank" rel="noopener noreferrer" title={link.platform} onClick={(e) => e.stopPropagation()} className="w-10 h-10 flex items-center justify-center hover:scale-110 transition-transform shrink-0">
-                    <SocialIconBadge platform={link.platform} />
-                  </a>
-                );
-              })}
-              {[...Array(placeholdersCount)].map((_, idx) => (
-                <div key={`placeholder-${idx}`} className="w-10 h-10 rounded-full border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center text-slate-300 shrink-0" title="Rede não cadastrada">
-                  <Plus size={12} className="stroke-[2.5]" />
-                </div>
-              ))}
-            </div>
-            <div className="mt-auto flex flex-col items-center gap-1">
-              {ownerName && (
-                <span className="text-[10px] md:text-xs text-slate-500 opacity-70 font-semibold truncate max-w-full select-none">
-                  Por {ownerName}
-                </span>
-              )}
-            </div>
-          </div>
         )}
 
-        {/* LINHA 3 DIREITA */}
-        {isDashboard ? (
+        {/* LINHA 3 DIREITA (DASHBOARD ONLY) */}
+        {isDashboard && (
           <div className="col-span-2 md:col-span-1 flex items-center justify-center w-full mt-2 md:mt-0">
             {showEdit ? (
               <div className="flex flex-wrap w-full gap-3 items-center justify-center max-w-sm px-2">
@@ -524,9 +499,37 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               </div>
             ) : null}
           </div>
-        ) : (
-          <div className="flex items-center justify-center w-full">
-            <div className="flex items-center justify-center gap-3 md:gap-5 w-full">
+        )}
+
+        {/* LINHA 3 COMPARTILHADA (PUBLIC CARD ONLY) */}
+        {!isDashboard && (
+          <div className="col-span-2 flex flex-row items-center justify-between gap-4 w-full pt-4 border-t border-slate-100/60 mt-1">
+            {/* Left side: Social Links */}
+            <div className="flex flex-col items-start gap-1">
+              <div className="flex flex-row flex-nowrap items-center gap-1.5">
+                {displayedSocials.map((link, idx) => {
+                  const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
+                  return (
+                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" title={link.platform} onClick={(e) => e.stopPropagation()} className="w-10 h-10 flex items-center justify-center hover:scale-110 transition-transform shrink-0">
+                      <SocialIconBadge platform={link.platform} />
+                    </a>
+                  );
+                })}
+                {[...Array(placeholdersCount)].map((_, idx) => (
+                  <div key={`placeholder-${idx}`} className="w-10 h-10 rounded-full border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center text-slate-300 shrink-0" title="Rede não cadastrada">
+                    <Plus size={12} className="stroke-[2.5]" />
+                  </div>
+                ))}
+              </div>
+              {ownerName && (
+                <span className="text-[10px] md:text-xs text-slate-500 opacity-70 font-semibold truncate max-w-[120px] select-none text-left">
+                  Por {ownerName}
+                </span>
+              )}
+            </div>
+
+            {/* Right side: Action Buttons */}
+            <div className="flex items-center gap-3 md:gap-4 shrink-0">
               {phone && (
                 <div className="flex flex-col items-center gap-1">
                   <button onClick={callPhone} title="Ligar" className="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-full transition-colors shadow-sm active:scale-95 cursor-pointer">
@@ -538,7 +541,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
 
               {phone && (
                 <div className="flex flex-col items-center gap-1">
-                  <button onClick={openWhatsApp} title="WhatsApp" className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center bg-[#25D366] text-white hover:bg-[#1fb355] rounded-full transition-all shadow-md shadow-green-200 hover:scale-105 active:scale-95 cursor-pointer">
+                  <button onClick={openWhatsApp} title="WhatsApp" className="w-12 h-12 md:w-13 md:h-13 flex items-center justify-center bg-[#25D366] text-white hover:bg-[#1fb355] rounded-full transition-all shadow-md shadow-green-200 hover:scale-105 active:scale-95 cursor-pointer">
                     {WA_SVG}
                   </button>
                   <span className="text-[10px] font-bold text-slate-600">WhatsApp</span>
