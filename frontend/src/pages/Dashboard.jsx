@@ -2282,6 +2282,7 @@ export default function Dashboard() {
                                   key={ad.id}
                                   professional={cardPro}
                                   showEdit={true}
+                                  isDashboard={true}
                                   disableEdit={isSuspended}
                                   onEdit={() => setEditingAd(ad)}
                                   onDelete={() => handleDeleteAd(ad.id)}
