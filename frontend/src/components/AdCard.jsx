@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useContext } from 'react';
-import { Star, Phone, Share2, CheckCircle, Edit2, Trash2, IdCard, Bookmark, Plus, MapPin, Award, ShieldCheck, Eye, MessageCircle, TrendingUp, Loader2, X, BadgeCheck } from 'lucide-react';
+import { Star, Phone, Share2, CheckCircle, Edit2, Trash2, IdCard, Bookmark, Plus, MapPin, Award, ShieldCheck, Eye, MessageCircle, TrendingUp, Loader2, X, BadgeCheck, BarChart3 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 import { getProfileDisplayName } from '../utils/profileDisplayName';
@@ -284,300 +284,320 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 overflow-hidden group relative animate-card-fade" style={style}>
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-cyan-400 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300" />
+    <div className="flex flex-col gap-4 w-full" style={style}>
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 overflow-hidden group relative animate-card-fade">
+        <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-cyan-400 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300" />
 
-      {/* Grid Layout: 2 colunas, 3 linhas */}
-      <div className="grid grid-cols-[100px_1fr] md:grid-cols-[130px_1fr] gap-x-4 md:gap-x-6 gap-y-5 p-5 items-center">
-        
-        {/* LINHA 1 ESQUERDA: Foto de perfil centralizada na coluna */}
-        <div className="flex justify-center items-center">
-          <Link 
-            to={`/profile/${professional.id}`} 
-            onClick={handleProfileClick} 
-            className="relative cursor-pointer inline-block hover:scale-105 transition-transform rounded-full"
-            style={{ width: 'fit-content', height: 'fit-content' }}
-          >
-            {avatar ? (
-              <img src={avatar} alt={displayName} className="w-24 h-24 md:w-28 md:h-28 rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md" />
-            ) : (
-              <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white text-3xl font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none">
-                {displayName?.[0]?.toUpperCase() || 'P'}
-              </div>
-            )}
-            {badge ? (
-              <div 
-                className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 bg-white rounded-full p-0.5 shadow-md flex items-center justify-center" 
-                title={badge.title}
-              >
-                <BadgeCheck 
-                  className={`w-6 h-6 md:w-7 md:h-7 ${
-                    badge.level === 'ouro' ? 'text-yellow-500 fill-yellow-500/10' :
-                    badge.level === 'prata' ? 'text-slate-400 fill-slate-400/10' :
-                    badge.level === 'bronze' ? 'text-amber-700 fill-amber-700/10' :
-                    'text-gray-400'
-                  }`} 
-                />
-              </div>
-            ) : (
-              <div 
-                className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 bg-white rounded-full p-0.5 shadow-md flex items-center justify-center text-gray-400 cursor-help" 
-                title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista."
-              >
-                <BadgeCheck className="w-6 h-6 md:w-7 md:h-7 text-gray-400" />
-              </div>
-            )}
-          </Link>
-        </div>
-
-        {/* LINHA 1 DIREITA: Dados/Textos (Centro) + Banner de Apoio (Direita) */}
-        <div className="flex items-center justify-between gap-4 w-full min-w-0">
-          <div className="flex flex-col gap-1 min-w-0 justify-center items-start text-left flex-1">
-            <div className="flex justify-between items-start w-full min-w-0 gap-1.5">
-              <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors truncate w-full min-w-0">
-                <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate w-full block" title={displayName}>
-                  {displayName}
-                </h3>
-              </Link>
-            </div>
-            
+        {/* Grid Layout: 2 colunas, 3 linhas */}
+        <div className="grid grid-cols-[100px_1fr] md:grid-cols-[130px_1fr] gap-x-4 md:gap-x-6 gap-y-5 p-5 items-center">
+          
+          {/* LINHA 1 ESQUERDA: Foto de perfil centralizada na coluna */}
+          <div className="flex justify-center items-center">
             <Link 
-              to={`/profile/${professional.id}?tab=avaliacoes`}
-              onClick={handleProfileClick}
-              className="flex flex-col items-start gap-y-1 w-full hover:underline hover:text-primary transition-all cursor-pointer group/rating"
-              title="Ver todas as avaliações deste profissional"
+              to={`/profile/${professional.id}`} 
+              onClick={handleProfileClick} 
+              className="relative cursor-pointer inline-block hover:scale-105 transition-transform rounded-full"
+              style={{ width: 'fit-content', height: 'fit-content' }}
             >
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <Star key={i} size={14} className={i <= rating ? "text-amber-400 fill-amber-400 group-hover/rating:scale-110 transition-transform duration-200" : "text-slate-200 fill-slate-200"} />
-                ))}
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-bold text-slate-750">{rating > 0 ? rating.toFixed(1) : 'Novo'}</span>
-                {reviewCount > 0 && (
-                  <span className="text-[11px] text-slate-450">({reviewCount} {reviewCount === 1 ? 'avaliação' : 'avaliações'})</span>
-                )}
-              </div>
-            </Link>
-
-            <div className="text-slate-600 text-xs md:text-sm font-medium flex flex-col gap-1 mt-1 items-start w-full">
-              {phone && <span className="truncate">{formatPhone(phone)}</span>}
-              <div className="flex items-center gap-2 flex-wrap text-slate-500 w-full">
-                <span className="truncate flex items-center gap-1">
-                  <MapPin size={14} className="text-slate-400 shrink-0" /> {location}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Banner de Apoio (Patrocinador) posicionado no lado direito em formato retrato (vertical) */}
-          {!showEdit && (
-            (() => {
-              let list = [];
-              try {
-                list = typeof professional.partners === 'string' 
-                  ? JSON.parse(professional.partners) 
-                  : (professional.partners || []);
-              } catch {
-                list = professional.partners || [];
-              }
-              let valid = list.filter(p => p && p.imageUrl);
-              if (valid.length === 0 && professional.fotoAnuncioUrl) {
-                valid = [{ imageUrl: professional.fotoAnuncioUrl }];
-              }
-              if (valid.length === 0) return null;
-
-              return (
-                <div className="flex flex-col items-center gap-1 shrink-0 self-center">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none">Apoio</span>
-                  <SponsorSlider 
-                    partners={valid} 
-                    layout="portrait" 
-                    onPartnerClick={() => navigate(`/profile/${professional.id}?tab=parceiros`)} 
+              {avatar ? (
+                <img src={avatar} alt={displayName} className="w-24 h-24 md:w-28 md:h-28 rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md" />
+              ) : (
+                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white text-3xl font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none">
+                  {displayName?.[0]?.toUpperCase() || 'P'}
+                </div>
+              )}
+              {badge ? (
+                <div 
+                  className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 bg-white rounded-full p-0.5 shadow-md flex items-center justify-center" 
+                  title={badge.title}
+                >
+                  <BadgeCheck 
+                    className={`w-6 h-6 md:w-7 md:h-7 ${
+                      badge.level === 'ouro' ? 'text-yellow-500 fill-yellow-500/10' :
+                      badge.level === 'prata' ? 'text-slate-400 fill-slate-400/10' :
+                      badge.level === 'bronze' ? 'text-amber-700 fill-amber-700/10' :
+                      'text-gray-400'
+                    }`} 
                   />
                 </div>
-              );
-            })()
-          )}
-        </div>
+              ) : (
+                <div 
+                  className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 bg-white rounded-full p-0.5 shadow-md flex items-center justify-center text-gray-400 cursor-help" 
+                  title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista."
+                >
+                  <BadgeCheck className="w-6 h-6 md:w-7 md:h-7 text-gray-400" />
+                </div>
+              )}
+            </Link>
+          </div>
 
-        {/* LINHA 2 ESQUERDA: Título da profissão, centralizado, negrito, azul principal */}
-        <div className="flex justify-center items-center text-center px-1">
-          <p className="text-xs md:text-sm font-bold text-primary uppercase tracking-wider leading-tight line-clamp-2">
-            {professional.category || professional.atividadePrincipal || '—'}
-          </p>
-        </div>
+          {/* LINHA 1 DIREITA: Dados/Textos (Centro) + Banner de Apoio (Direita) */}
+          <div className="flex items-center justify-between gap-4 w-full min-w-0">
+            <div className="flex flex-col gap-1 min-w-0 justify-center items-start text-left flex-1">
+              <div className="flex justify-between items-start w-full min-w-0 gap-1.5">
+                <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors truncate w-full min-w-0">
+                  <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate w-full block" title={displayName}>
+                    {displayName}
+                  </h3>
+                </Link>
+              </div>
+              
+              <Link 
+                to={`/profile/${professional.id}?tab=avaliacoes`}
+                onClick={handleProfileClick}
+                className="flex flex-col items-start gap-y-1 w-full hover:underline hover:text-primary transition-all cursor-pointer group/rating"
+                title="Ver todas as avaliações deste profissional"
+              >
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <Star key={i} size={14} className={i <= rating ? "text-amber-400 fill-amber-400 group-hover/rating:scale-110 transition-transform duration-200" : "text-slate-200 fill-slate-200"} />
+                  ))}
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-bold text-slate-750">{rating > 0 ? rating.toFixed(1) : 'Novo'}</span>
+                  {reviewCount > 0 && (
+                    <span className="text-[11px] text-slate-450">({reviewCount} {reviewCount === 1 ? 'avaliação' : 'avaliações'})</span>
+                  )}
+                </div>
+              </Link>
 
-        {/* LINHA 2 DIREITA: Botão 'Ver Perfil' e botão de Favoritar */}
-        <div className="flex items-center gap-3 justify-center">
-          <Link
-            to={`/profile/${professional.id}`}
-            onClick={handleProfileClick}
-            className="inline-flex items-center gap-2 text-xs md:text-sm font-bold text-primary hover:text-primary-hover bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-full transition-colors"
-          >
-            <IdCard size={18} /> Ver Perfil
-          </Link>
-          
-          {!showEdit && (
-            <button
-              onClick={handleToggleFavorite}
-              className="group/fav p-2.5 rounded-full border border-slate-100 hover:border-primary/20 bg-slate-50/50 hover:bg-primary/5 transition-all duration-200 active:scale-90 shadow-sm"
-              title={isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+              <div className="text-slate-600 text-xs md:text-sm font-medium flex flex-col gap-1 mt-1 items-start w-full">
+                {phone && <span className="truncate">{formatPhone(phone)}</span>}
+                <div className="flex items-center gap-2 flex-wrap text-slate-500 w-full">
+                  <span className="truncate flex items-center gap-1">
+                    <MapPin size={14} className="text-slate-400 shrink-0" /> {location}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Banner de Apoio (Patrocinador) posicionado no lado direito em formato retrato (vertical) */}
+            {!showEdit && (
+              (() => {
+                let list = [];
+                try {
+                  list = typeof professional.partners === 'string' 
+                    ? JSON.parse(professional.partners) 
+                    : (professional.partners || []);
+                } catch {
+                  list = professional.partners || [];
+                }
+                let valid = list.filter(p => p && p.imageUrl);
+                if (valid.length === 0 && professional.fotoAnuncioUrl) {
+                  valid = [{ imageUrl: professional.fotoAnuncioUrl }];
+                }
+                if (valid.length === 0) return null;
+
+                return (
+                  <div className="flex flex-col items-center gap-1 shrink-0 self-center">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none">Apoio</span>
+                    <SponsorSlider 
+                      partners={valid} 
+                      layout="portrait" 
+                      onPartnerClick={() => navigate(`/profile/${professional.id}?tab=parceiros`)} 
+                    />
+                  </div>
+                );
+              })()
+            )}
+          </div>
+
+          {/* LINHA 2 ESQUERDA: Título da profissão, centralizado, negrito, azul principal */}
+          <div className="flex justify-center items-center text-center px-1">
+            <p className="text-xs md:text-sm font-bold text-primary uppercase tracking-wider leading-tight line-clamp-2">
+              {professional.category || professional.atividadePrincipal || '—'}
+            </p>
+          </div>
+
+          {/* LINHA 2 DIREITA: Botão 'Ver Perfil' e botão de Favoritar */}
+          <div className="flex items-center gap-3 justify-center">
+            <Link
+              to={`/profile/${professional.id}`}
+              onClick={handleProfileClick}
+              className="inline-flex items-center gap-2 text-xs md:text-sm font-bold text-primary hover:text-primary-hover bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-full transition-colors"
             >
-              <Bookmark
-                size={18}
-                className={`transition-colors duration-200 ${
-                  isFavorited
-                    ? 'fill-primary text-primary'
-                    : 'text-slate-400 group-hover/fav:text-primary'
-                }`}
-              />
-            </button>
-          )}
-        </div>
-
-        {/* LINHA 3 ESQUERDA: Redes sociais (sempre 3 espaços) + Selo de Titularidade */}
-        <div className="flex flex-col items-center justify-between h-full gap-1.5">
-          <div className="flex flex-row flex-nowrap items-center gap-1.5 justify-center">
-            {displayedSocials.map((link, idx) => {
-              const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
-              return (
-                <a key={idx} href={url} target="_blank" rel="noopener noreferrer" title={link.platform} onClick={(e) => e.stopPropagation()} className="hover:scale-110 transition-transform shrink-0">
-                  <SocialIconBadge platform={link.platform} />
-                </a>
-              );
-            })}
-            {[...Array(placeholdersCount)].map((_, idx) => (
-              <div key={`placeholder-${idx}`} className="w-9 h-9 md:w-10 md:h-10 rounded-full border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center text-slate-300 shrink-0" title="Rede não cadastrada">
-                <Plus size={12} className="stroke-[2.5]" />
-              </div>
-            ))}
-            {showEdit && (
+              <IdCard size={18} /> Ver Perfil
+            </Link>
+            
+            {!showEdit && (
               <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsSocialModalOpen(true);
-                  setSocialError('');
-                }}
-                className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-slate-100 hover:bg-primary hover:text-white text-slate-500 flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs shrink-0"
-                title="Adicionar/Editar Rede Social"
+                onClick={handleToggleFavorite}
+                className="group/fav p-2.5 rounded-full border border-slate-100 hover:border-primary/20 bg-slate-50/50 hover:bg-primary/5 transition-all duration-200 active:scale-90 shadow-sm"
+                title={isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
               >
-                <Edit2 size={14} />
+                <Bookmark
+                  size={18}
+                  className={`transition-colors duration-200 ${
+                    isFavorited
+                      ? 'fill-primary text-primary'
+                      : 'text-slate-400 group-hover/fav:text-primary'
+                  }`}
+                />
               </button>
             )}
           </div>
-          <div className="mt-auto flex flex-col items-center gap-1">
-            {ownerName && (
-              <span className="text-[10px] md:text-xs text-slate-500 opacity-70 font-semibold truncate max-w-full select-none">
-                Por {ownerName}
-              </span>
-            )}
-          </div>
-        </div>
 
-        {/* LINHA 3 DIREITA: Botões de Ação centralizados (Ligar, WhatsApp, Compartilhar) ou Editar/Excluir */}
-        <div className="flex items-center justify-center w-full">
-          {showEdit ? (
-            <div className="flex flex-wrap w-full gap-2 items-center justify-center max-w-xs">
-              <button 
-                onClick={() => onEdit?.(professional)} 
-                disabled={disableEdit}
-                className="flex-1 min-w-[90px] flex justify-center items-center gap-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 py-2 px-3 rounded-full font-medium transition-colors text-xs md:text-sm"
-              >
-                <Edit2 size={16} /> Editar
-              </button>
-              <button onClick={() => onDelete?.(professional.id)} className="flex-1 min-w-[90px] flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-500 px-3 py-2 rounded-full font-medium transition-colors text-xs md:text-sm">
-                <Trash2 size={16} /> Excluir
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-3 md:gap-5 w-full">
-              {phone && (
-                <div className="flex flex-col items-center gap-1">
-                  <button onClick={callPhone} title="Ligar" className="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-full transition-colors shadow-sm active:scale-95">
-                    <Phone size={18} />
-                  </button>
-                  <span className="text-[10px] font-semibold text-slate-500">Ligar</span>
+          {/* LINHA 3 ESQUERDA: Redes sociais (sempre 3 espaços) + Selo de Titularidade */}
+          <div className="col-span-2 md:col-span-1 flex flex-col items-center justify-between h-full gap-2 w-full pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
+            <div className="flex flex-row flex-wrap items-center gap-2 justify-center">
+              {displayedSocials.map((link, idx) => {
+                const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
+                return (
+                  <a key={idx} href={url} target="_blank" rel="noopener noreferrer" title={link.platform} onClick={(e) => e.stopPropagation()} className="hover:scale-110 transition-transform shrink-0">
+                    <SocialIconBadge platform={link.platform} />
+                  </a>
+                );
+              })}
+              {[...Array(placeholdersCount)].map((_, idx) => (
+                <div key={`placeholder-${idx}`} className="w-9 h-9 md:w-10 md:h-10 rounded-full border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center text-slate-300 shrink-0" title="Rede não cadastrada">
+                  <Plus size={12} className="stroke-[2.5]" />
                 </div>
-              )}
-
-              {phone && (
-                <div className="flex flex-col items-center gap-1">
-                  <button onClick={openWhatsApp} title="WhatsApp" className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center bg-[#25D366] text-white hover:bg-[#1fb355] rounded-full transition-all shadow-md shadow-green-200 hover:scale-105 active:scale-95">
-                    {WA_SVG}
-                  </button>
-                  <span className="text-[10px] font-bold text-slate-600">WhatsApp</span>
-                </div>
-              )}
-
-              <div className="flex flex-col items-center gap-1">
-                <button onClick={share} title={copied ? 'Copiado!' : 'Compartilhar link'} className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-full transition-colors shadow-sm active:scale-95">
-                  {copied ? <CheckCircle size={18} className="text-emerald-500" /> : <Share2 size={18} />}
+              ))}
+              {showEdit && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsSocialModalOpen(true);
+                    setSocialError('');
+                  }}
+                  className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-slate-100 hover:bg-primary hover:text-white text-slate-500 flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs shrink-0"
+                  title="Adicionar/Editar Rede Social"
+                >
+                  <Edit2 size={14} />
                 </button>
-                <span className="text-[10px] font-semibold text-slate-500">
-                  {copied ? 'Copiado!' : 'Compartilhar'}
-                </span>
-              </div>
+              )}
             </div>
-          )}
-        </div>
+            <div className="mt-1 flex flex-col items-center gap-1">
+              {ownerName && (
+                <span className="text-[10px] md:text-xs text-slate-500 opacity-70 font-semibold truncate max-w-full select-none">
+                  Por {ownerName}
+                </span>
+              )}
+            </div>
+          </div>
 
+          {/* LINHA 3 DIREITA: Botões de Ação centralizados (Ligar, WhatsApp, Compartilhar) ou Editar/Excluir */}
+          <div className="col-span-2 md:col-span-1 flex items-center justify-center w-full mt-2 md:mt-0">
+            {showEdit ? (
+              <div className="flex flex-wrap w-full gap-3 items-center justify-center max-w-sm px-2">
+                <button 
+                  onClick={() => onEdit?.(professional)} 
+                  disabled={disableEdit}
+                  className="flex-1 min-w-[110px] flex justify-center items-center gap-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 py-2.5 px-4 rounded-xl font-bold transition-all text-xs md:text-sm border border-slate-200/50 shadow-xs cursor-pointer"
+                >
+                  <Edit2 size={16} /> Editar
+                </button>
+                <button 
+                  onClick={() => onDelete?.(professional.id)} 
+                  className="flex-1 min-w-[110px] flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-600 px-4 py-2.5 rounded-xl font-bold transition-all text-xs md:text-sm border border-rose-100/50 shadow-xs cursor-pointer"
+                >
+                  <Trash2 size={16} /> Excluir
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-3 md:gap-5 w-full">
+                {phone && (
+                  <div className="flex flex-col items-center gap-1.5">
+                    <button onClick={callPhone} title="Ligar" className="w-10 h-10 flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-full transition-colors shadow-sm active:scale-95 cursor-pointer">
+                      <Phone size={18} />
+                    </button>
+                    <span className="text-[10px] font-semibold text-slate-500">Ligar</span>
+                  </div>
+                )}
+
+                {phone && (
+                  <div className="flex flex-col items-center gap-1.5">
+                    <button onClick={openWhatsApp} title="WhatsApp" className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center bg-[#25D366] text-white hover:bg-[#1fb355] rounded-full transition-all shadow-md shadow-green-200 hover:scale-105 active:scale-95 cursor-pointer">
+                      {WA_SVG}
+                    </button>
+                    <span className="text-[10px] font-bold text-slate-600">WhatsApp</span>
+                  </div>
+                )}
+
+                <div className="flex flex-col items-center gap-1.5">
+                  <button onClick={share} title={copied ? 'Copiado!' : 'Compartilhar link'} className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-full transition-colors shadow-sm active:scale-95 cursor-pointer">
+                    {copied ? <CheckCircle size={18} className="text-emerald-500" /> : <Share2 size={18} />}
+                  </button>
+                  <span className="text-[10px] font-semibold text-slate-500">
+                    {copied ? 'Copiado!' : 'Compartilhar'}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
       </div>
 
-
-
       {showEdit && (
-        <div className="border-t border-slate-100 bg-slate-50/50 p-4 sm:p-5 rounded-b-2xl animate-in fade-in duration-300">
-          <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-3 text-center md:text-left">Funil de Conversão & Estatísticas</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs font-semibold text-slate-600">
-            <div className="flex items-center gap-1.5 sm:gap-2 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-100 shadow-sm" title="Exibições nas buscas de clientes">
-              <TrendingUp size={14} className="text-slate-400 shrink-0" />
-              <div className="min-w-0">
-                <span className="text-[9px] sm:text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Exibições</span>
-                <span className="text-xs sm:text-sm font-extrabold text-slate-800 leading-none">{professional.impressions ?? 0}</span>
-              </div>
-            </div>
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 animate-in fade-in duration-300">
+          <h4 className="text-sm font-bold text-slate-800 mb-4 text-left flex items-center gap-2">
+            <BarChart3 size={18} className="text-primary shrink-0" />
+            Estatísticas
+          </h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs font-semibold text-slate-650">
             
-            <div className="flex items-center gap-1.5 sm:gap-2 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-100 shadow-sm" title="Visitas completas ao seu perfil profissional">
-              <Eye size={14} className="text-slate-400 shrink-0" />
+            <div className="flex items-center gap-3 bg-slate-50/30 p-2.5 rounded-xl border border-slate-100" title="Exibições nas buscas de clientes">
+              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
+                <TrendingUp size={16} />
+              </div>
               <div className="min-w-0">
-                <span className="text-[9px] sm:text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Visitas</span>
-                <span className="text-xs sm:text-sm font-extrabold text-slate-800 leading-none">{professional.profileViews ?? 0}</span>
+                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-1">Exibições</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.impressions ?? 0}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-100 shadow-sm" title="Clientes que favoritaram seu perfil">
-              <Bookmark size={14} className="text-slate-400 shrink-0" />
+            <div className="flex items-center gap-3 bg-slate-50/30 p-2.5 rounded-xl border border-slate-100" title="Visitas completas ao seu perfil profissional">
+              <div className="p-2 bg-purple-50 text-purple-600 rounded-lg shrink-0">
+                <Eye size={16} />
+              </div>
               <div className="min-w-0">
-                <span className="text-[9px] sm:text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Favoritos</span>
-                <span className="text-xs sm:text-sm font-extrabold text-slate-800 leading-none">{professional.favoritesCount ?? 0}</span>
+                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-1">Visitas</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.profileViews ?? 0}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-100 shadow-sm" title="Clientes que iniciaram conversa no WhatsApp">
-              <MessageCircle size={14} className="text-slate-400 shrink-0" />
+            <div className="flex items-center gap-3 bg-slate-50/30 p-2.5 rounded-xl border border-slate-100" title="Clientes que favoritaram seu perfil">
+              <div className="p-2 bg-rose-50 text-rose-500 rounded-lg shrink-0">
+                <Bookmark size={16} />
+              </div>
               <div className="min-w-0">
-                <span className="text-[9px] sm:text-[10px] text-slate-400 block font-normal leading-none mb-0.5">WhatsApp</span>
-                <span className="text-xs sm:text-sm font-extrabold text-slate-800 leading-none">{professional.whatsappClicks ?? 0}</span>
+                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-1">Favoritos</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.favoritesCount ?? 0}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-100 shadow-sm" title="Clientes que clicaram para efetuar ligação direta">
-              <Phone size={14} className="text-slate-400 shrink-0" />
+            <div className="flex items-center gap-3 bg-slate-50/30 p-2.5 rounded-xl border border-slate-100" title="Clientes que iniciaram conversa no WhatsApp">
+              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg shrink-0">
+                <MessageCircle size={16} />
+              </div>
               <div className="min-w-0">
-                <span className="text-[9px] sm:text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Ligações</span>
-                <span className="text-xs sm:text-sm font-extrabold text-slate-800 leading-none">{professional.phoneClicks ?? 0}</span>
+                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-1">WhatsApp</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.whatsappClicks ?? 0}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5 sm:gap-2 bg-white p-2.5 sm:p-3 rounded-xl border border-slate-100 shadow-sm" title="Número de vezes que seu link foi compartilhado">
-              <Share2 size={14} className="text-slate-400 shrink-0" />
+            <div className="flex items-center gap-3 bg-slate-50/30 p-2.5 rounded-xl border border-slate-100" title="Clientes que clicaram para efetuar ligação direta">
+              <div className="p-2 bg-teal-50 text-teal-600 rounded-lg shrink-0">
+                <Phone size={16} />
+              </div>
               <div className="min-w-0">
-                <span className="text-[9px] sm:text-[10px] text-slate-400 block font-normal leading-none mb-0.5">Partilhas</span>
-                <span className="text-xs sm:text-sm font-extrabold text-slate-800 leading-none">{professional.shares ?? 0}</span>
+                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-1">Ligações</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.phoneClicks ?? 0}</span>
               </div>
             </div>
+
+            <div className="flex items-center gap-3 bg-slate-50/30 p-2.5 rounded-xl border border-slate-100" title="Número de vezes que seu link foi compartilhado">
+              <div className="p-2 bg-orange-50 text-orange-500 rounded-lg shrink-0">
+                <Share2 size={16} />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] text-slate-400 block font-normal leading-none mb-1">Partilhas</span>
+                <span className="text-sm font-extrabold text-slate-800 leading-none">{professional.shares ?? 0}</span>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
