@@ -110,7 +110,7 @@ export default function Profile() {
   const queryParams = new URLSearchParams(location.search);
   const initialTab = queryParams.get('tab') || 'sobre';
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [selectedPartnerDetails, setSelectedPartnerDetails] = useState(null);
+
 
   // Sincroniza a aba ativa caso o query parameter da URL seja alterado
   useEffect(() => {
@@ -1198,7 +1198,7 @@ export default function Profile() {
                           <Users className="text-indigo-600" size={18} />
                           Parceiro
                         </h3>
-                        <SponsorSlider partners={valid} layout="sidebar" onPartnerClick={setSelectedPartnerDetails} />
+                        <SponsorSlider partners={valid} layout="sidebar" onPartnerClick={() => setActiveTab('parceiros')} />
                       </div>
                     );
                   })()}
@@ -1542,7 +1542,79 @@ export default function Profile() {
                         <h4 className="font-bold text-slate-900 mb-1">Nossos Patrocinadores</h4>
                         <p className="text-xs text-slate-600">Apoie os negócios locais que patrocinam e tornam este trabalho possível!</p>
                       </div>
-                      <SponsorSlider partners={valid} layout="tab" onPartnerClick={setSelectedPartnerDetails} />
+                      
+                      <div className="space-y-4">
+                        {valid.map((partner, index) => {
+                          const partnerLink = partner.link ? (partner.link.startsWith('http') ? partner.link : `https://${partner.link}`) : null;
+                          const imageElement = (
+                            <img
+                              src={partner.imageUrl}
+                              alt={`Banner Patrocinador ${index + 1}`}
+                              className="w-32 sm:w-40 shrink-0 aspect-[3/4] object-cover rounded-lg border border-slate-100 shadow-sm"
+                            />
+                          );
+
+                          return (
+                            <div 
+                              key={index} 
+                              className="flex flex-col sm:flex-row gap-4 sm:gap-6 p-4 sm:p-6 border border-slate-200 rounded-xl bg-white shadow-sm"
+                            >
+                              {/* Imagem do Patrocinador (Lado Esquerdo) */}
+                              {partnerLink ? (
+                                <a 
+                                  href={partnerLink} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="block hover:opacity-90 transition-opacity shrink-0"
+                                >
+                                  {imageElement}
+                                </a>
+                              ) : (
+                                imageElement
+                              )}
+
+                              {/* Informações de Contato (Lado Direito) */}
+                              <div className="flex flex-1 flex-col justify-center gap-3">
+                                {partner.isMainSponsor && (
+                                  <span className="inline-flex items-center w-fit px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-150">
+                                    Patrocinador Principal
+                                  </span>
+                                )}
+
+                                <div className="space-y-2">
+                                  {partner.partnerAddress && (
+                                    <div className="flex items-start gap-2.5 text-slate-700 text-sm">
+                                      <MapPin className="text-slate-450 shrink-0 mt-0.5" size={16} />
+                                      <span className="font-medium text-slate-750">{partner.partnerAddress}</span>
+                                    </div>
+                                  )}
+
+                                  {partner.partnerPhone && (
+                                    <div className="flex items-start gap-2.5 text-slate-700 text-sm">
+                                      <Phone className="text-slate-450 shrink-0 mt-0.5" size={16} />
+                                      <span className="font-medium text-slate-750">{partner.partnerPhone}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {partnerLink && (
+                                  <div className="pt-1">
+                                    <a
+                                      href={partnerLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary-hover transition-colors bg-primary/5 hover:bg-primary/10 px-3.5 py-1.5 rounded-lg border border-primary/15 shadow-xs"
+                                    >
+                                      Visitar Parceiro
+                                      <ExternalLink size={12} className="shrink-0" />
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })()}
@@ -1787,85 +1859,7 @@ export default function Profile() {
         </div>
       )}
 
-      {/* Modal de Detalhes do Parceiro */}
-      {selectedPartnerDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
-            {/* Imagem do Patrocinador */}
-            <div className="relative h-64 bg-slate-100 flex items-center justify-center overflow-hidden border-b border-slate-100">
-              <div 
-                className="absolute inset-0 bg-cover bg-center blur-md opacity-25 scale-110 pointer-events-none"
-                style={{ backgroundImage: `url(${selectedPartnerDetails.imageUrl})` }}
-              />
-              <img
-                src={selectedPartnerDetails.imageUrl}
-                alt="Foto do Patrocinador"
-                className="relative z-10 max-w-full max-h-full object-contain p-4"
-              />
-              <button 
-                onClick={() => setSelectedPartnerDetails(null)}
-                className="absolute top-4 right-4 z-20 p-2 bg-slate-900/60 hover:bg-slate-900/80 text-white rounded-full transition-all cursor-pointer shadow-md"
-              >
-                <X size={16} />
-              </button>
-            </div>
 
-            {/* Informações */}
-            <div className="p-6 space-y-4">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <Users className="text-indigo-600 shrink-0" size={20} />
-                {selectedPartnerDetails.isMainSponsor ? 'Patrocinador Principal' : 'Detalhes do Parceiro'}
-              </h3>
-
-              <div className="space-y-3.5">
-                {/* Endereço */}
-                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                  <MapPin className="text-slate-400 shrink-0 mt-0.5" size={16} />
-                  <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Endereço</p>
-                    <p className="text-sm text-slate-700 font-medium">
-                      {selectedPartnerDetails.partnerAddress || 'Endereço não informado'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Telefone */}
-                <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                  <Phone className="text-slate-400 shrink-0 mt-0.5" size={16} />
-                  <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Telefone / Contato</p>
-                    <p className="text-sm text-slate-700 font-medium">
-                      {selectedPartnerDetails.partnerPhone || 'Telefone não informado'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Botões / Ações */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedPartnerDetails(null)}
-                  className="flex-1 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-2xl text-sm font-bold transition-all cursor-pointer text-center"
-                >
-                  Fechar
-                </button>
-                {selectedPartnerDetails.link && (
-                  <a
-                    href={selectedPartnerDetails.link.startsWith('http') ? selectedPartnerDetails.link : `https://${selectedPartnerDetails.link}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary/10 text-center"
-                  >
-                    <ExternalLink size={14} />
-                    Visitar Site
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

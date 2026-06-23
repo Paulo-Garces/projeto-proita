@@ -288,7 +288,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-cyan-400 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300" />
 
       {/* Grid Layout: 2 colunas, 3 linhas */}
-      <div className={`grid ${!isDashboard ? 'grid-cols-[82px_1fr] md:grid-cols-[130px_1fr] gap-x-3.5 md:gap-x-6 gap-y-3 md:gap-y-4.5 p-4 md:p-6' : 'grid-cols-[100px_1fr] md:grid-cols-[130px_1fr] gap-x-4 md:gap-x-6 gap-y-3.5 md:gap-y-4.5 p-5'} items-center`}>
+      <div className={`grid ${!isDashboard ? 'grid-cols-[82px_1fr] md:grid-cols-[116px_1fr] gap-x-3.5 md:gap-x-5 gap-y-3 md:gap-y-4 p-4 md:p-5' : 'grid-cols-[100px_1fr] md:grid-cols-[130px_1fr] gap-x-4 md:gap-x-6 gap-y-3.5 md:gap-y-4.5 p-5'} items-center`}>
         
         {/* LINHA 1 ESQUERDA: Foto de perfil centralizada na coluna */}
         <div className="flex justify-center items-center">
@@ -299,9 +299,9 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             style={{ width: 'fit-content', height: 'fit-content' }}
           >
             {avatar ? (
-              <img src={avatar} alt={displayName} className={`${!isDashboard ? 'w-[72px] h-[72px] md:w-28 md:h-28' : 'w-24 h-24 md:w-28 md:h-28'} rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md`} />
+              <img src={avatar} alt={displayName} className={`${!isDashboard ? 'w-[72px] h-[72px] md:w-[100px] md:h-[100px]' : 'w-24 h-24 md:w-28 md:h-28'} rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md`} />
             ) : (
-              <div className={`${!isDashboard ? 'w-[72px] h-[72px] md:w-28 md:h-28' : 'w-24 h-24 md:w-28 md:h-28'} rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white ${!isDashboard ? 'text-2xl md:text-3xl' : 'text-3xl'} font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none`}>
+              <div className={`${!isDashboard ? 'w-[72px] h-[72px] md:w-[100px] md:h-[100px]' : 'w-24 h-24 md:w-28 md:h-28'} rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white ${!isDashboard ? 'text-2xl md:text-3xl' : 'text-3xl'} font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none`}>
                 {displayName?.[0]?.toUpperCase() || 'P'}
               </div>
             )}
@@ -360,10 +360,10 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               </div>
             </Link>
 
-            <div className="text-slate-600 text-xs md:text-sm font-medium flex flex-col gap-1 mt-1 items-start w-full">
+            <div className="text-slate-600 text-xs md:text-sm font-medium flex flex-col gap-1 mt-1 items-start w-full min-w-0">
               {phone && <span className="truncate">{formatPhone(phone)}</span>}
-              <div className="flex items-center gap-2 flex-wrap text-slate-500 w-full">
-                <span className="truncate flex items-center gap-1">
+              <div className="flex items-center gap-1.5 text-slate-500 w-full min-w-0">
+                <span className="truncate flex items-center gap-1 min-w-0">
                   <MapPin size={14} className="text-slate-400 shrink-0" /> {location}
                 </span>
               </div>
