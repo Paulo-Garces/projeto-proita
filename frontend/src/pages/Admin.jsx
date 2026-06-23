@@ -731,6 +731,12 @@ function ActionMenu({ user, onAction }) {
         ? 'text-emerald-600 hover:bg-emerald-50'
         : 'text-red-600 hover:bg-red-50',
     },
+    {
+      id: 'delete',
+      label: 'Excluir Definitivamente',
+      icon: Trash2,
+      color: 'text-red-600 hover:bg-red-50',
+    },
   ];
 
   return (
@@ -829,6 +835,13 @@ function ConfirmModal({ action, user, token, onSuccess, onClose }) {
       confirmLabel: 'Acessar Conta',
       confirmClass: 'bg-violet-600 hover:bg-violet-700 text-white',
     },
+    delete: {
+      title: 'Excluir Usuário Definitivamente',
+      desc: `Tem certeza que deseja excluir o usuário "${user.nome}" e todos os seus anúncios? Esta ação não pode ser desfeita.`,
+      icon: Trash2,
+      confirmLabel: 'Excluir Definitivamente',
+      confirmClass: 'bg-red-600 hover:bg-red-700 text-white',
+    },
   };
 
   const c = config[action];
@@ -872,6 +885,7 @@ function ConfirmModal({ action, user, token, onSuccess, onClose }) {
       if (action === 'unblock') { url = `/api/admin/users/${user.id}/role`;       method = 'PATCH'; body = { role: 'USER' }; }
       if (action === 'reset')   { url = `/api/admin/users/${user.id}/send-reset`; }
       if (action === 'extend')  { url = `/api/admin/users/${user.id}/extend-plan`; body = { days }; }
+      if (action === 'delete')  { url = `/api/admin/users/${user.id}`;             method = 'DELETE'; }
 
       const res = await fetch(`${API_URL}${url}`, {
         method,
@@ -880,7 +894,7 @@ function ConfirmModal({ action, user, token, onSuccess, onClose }) {
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message);
-      onSuccess(data.message);
+      onSuccess(data.message, action, user.id);
       onClose();
     } catch (err) {
       setLocalError(err.message || 'Erro ao executar ação.');
@@ -1918,9 +1932,13 @@ function ProfessionalsTab({ token }) {
 
   const showToast = (message, type = 'success') => setToast({ message, type });
 
-  const handleActionSuccess = (message) => {
+  const handleActionSuccess = (message, action, userId) => {
     showToast(message);
-    fetchUsers(); // Recarrega a lista
+    if (action === 'delete' && userId) {
+      setUsers(prev => prev.filter(u => u.id !== userId));
+    } else {
+      fetchUsers(); // Recarrega a lista
+    }
   };
 
   const handleChipClick = (val) => {

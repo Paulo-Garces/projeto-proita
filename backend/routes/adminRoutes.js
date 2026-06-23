@@ -918,6 +918,105 @@ module.exports = (prisma) => {
     }
   });
 
+  // Rota: Exclusão definitiva de usuário e dependências (com limpeza de mídias no ImageKit)
+  router.delete('/users/:id', checkAdmin, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      // 1. Localizar o usuário e seus perfis com todas as mídias cadastrados no banco
+      const user = await prisma.user.findUnique({
+        where: { id },
+        include: {
+          profiles: true
+        }
+      });
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+      }
+
+      // Evitar que um admin delete a si próprio (boa prática de segurança)
+      if (req.user && req.user.id === id) {
+        return res.status(400).json({ success: false, message: 'Você não pode excluir o seu próprio usuário administrador.' });
+      }
+
+      // 2. Coletar IDs de mídia do ImageKit para exclusão segura
+      const mediaFilesToDelete = [];
+      if (user.profileImageFileId) {
+        mediaFilesToDelete.push(user.profileImageFileId);
+      }
+
+      if (user.profiles && user.profiles.length > 0) {
+        for (const profile of user.profiles) {
+          if (profile.avatarFileId) mediaFilesToDelete.push(profile.avatarFileId);
+          if (profile.capaFileId) mediaFilesToDelete.push(profile.capaFileId);
+          if (profile.fotoAnuncioFileId) mediaFilesToDelete.push(profile.fotoAnuncioFileId);
+        }
+      }
+
+      // 3. Excluir no ImageKit de forma assíncrona (não bloqueia a resposta da API)
+      mediaFilesToDelete.forEach(fileId => {
+        safeDeleteImageKit(fileId);
+      });
+
+      // 4. Executar transação no banco de dados para tratar o Cascade manualmente
+      await prisma.$transaction(async (tx) => {
+        const profileIds = user.profiles.map(p => p.id);
+
+        if (profileIds.length > 0) {
+          // Deletar serviços atrelados aos perfis
+          await tx.service.deleteMany({
+            where: { profileId: { in: profileIds } }
+          });
+
+          // Deletar denúncias (reports) atreladas aos perfis
+          await tx.report.deleteMany({
+            where: { adId: { in: profileIds } }
+          });
+
+          // Deletar reviews recebidos pelos perfis
+          await tx.review.deleteMany({
+            where: { profileId: { in: profileIds } }
+          });
+
+          // Deletar perfis
+          await tx.profile.deleteMany({
+            where: { userId: id }
+          });
+        }
+
+        // Deletar reviews feitos pelo próprio usuário
+        await tx.review.deleteMany({
+          where: { authorId: id }
+        });
+
+        // Deletar notificações do usuário
+        await tx.notification.deleteMany({
+          where: { userId: id }
+        });
+
+        // Deletar solicitações de NFe do usuário
+        await tx.nfeRequest.deleteMany({
+          where: { userId: id }
+        });
+
+        // Finalmente deletar o usuário
+        await tx.user.delete({
+          where: { id }
+        });
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Usuário e todos os seus dados associados foram excluídos definitivamente.'
+      });
+
+    } catch (error) {
+      console.error('[DELETE /admin/users/:id] Erro:', error);
+      res.status(500).json({ success: false, message: 'Erro interno ao realizar exclusão definitiva do usuário.' });
+    }
+  });
+
   // Rota 17: Resumo Financeiro (Soft Launch)
   router.get('/finance/summary', checkAdmin, async (req, res) => {
     try {
