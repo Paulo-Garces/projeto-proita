@@ -513,7 +513,7 @@ export default function Search() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
               </div>
             ) : displayResults.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-5">
                 {displayResults.map((pro, index) => (
                   <AdCard key={pro.id} professional={pro} style={{ animationDelay: `${index * 80}ms` }} />
                 ))}
@@ -563,7 +563,7 @@ export default function Search() {
             <h2 className="text-3xl font-bold text-slate-900">Profissionais em Destaque</h2>
             <p className="mt-2 text-slate-500">Os mais bem avaliados pelos clientes proITA</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {destaques.map(pro => (
               <AdCard key={pro.id} professional={pro} />
             ))}

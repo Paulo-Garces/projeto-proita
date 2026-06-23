@@ -1974,6 +1974,7 @@ function ProfessionalsTab({ token }) {
       (u.nome || '').toLowerCase().includes(q) ||
       (u.email || '').toLowerCase().includes(q) ||
       (u.referenceCode || '').toLowerCase().includes(q) ||
+      (u.profiles && u.profiles.some(p => (p.referenceCode || p.code || '').toLowerCase().includes(q))) ||
       (u.telefone || '').replace(/\D/g, '').includes(q.replace(/\D/g, ''))
     );
   });
@@ -2191,7 +2192,11 @@ function ProfessionalsTab({ token }) {
 
                     {/* Código */}
                     <td className="py-4 px-5">
-                      {u.referenceCode ? (
+                      {u.profiles && u.profiles.map(p => p.referenceCode || p.code).filter(Boolean).length > 0 ? (
+                        <span className="font-mono text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100">
+                          {u.profiles.map(p => p.referenceCode || p.code).filter(Boolean).join(', ')}
+                        </span>
+                      ) : u.referenceCode ? (
                         <span className="font-mono text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg border border-indigo-100">
                           {u.referenceCode}
                         </span>

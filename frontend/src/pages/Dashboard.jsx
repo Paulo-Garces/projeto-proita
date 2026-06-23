@@ -1378,6 +1378,11 @@ export default function Dashboard() {
   const [nfeError, setNfeError] = useState('');
   const [nfeSuccess, setNfeSuccess] = useState('');
 
+  // Estados para Exclusão de Anúncio e Toast
+  const [toast, setToast] = useState(null);
+  const [deletingAdId, setDeletingAdId] = useState(null);
+  const [deletingAdLoading, setDeletingAdLoading] = useState(false);
+
   useEffect(() => {
     if (showNfeModal && user?.email) {
       setNfeEmail(user.email);
@@ -1570,15 +1575,32 @@ export default function Dashboard() {
     }
   };
 
-  const handleDeleteAd = async (adId) => {
-    if (!confirm('Excluir este anúncio?')) return;
+  const handleDeleteAd = (adId) => {
+    setDeletingAdId(adId);
+  };
+
+  const handleConfirmDeleteAd = async () => {
+    if (!deletingAdId) return;
+    setDeletingAdLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/ads/${adId}`, {
+      const res = await fetch(`${API_URL}/api/ads/${deletingAdId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
-      if (res.ok) setMyAds(prev => prev.filter(a => a.id !== adId));
-    } catch (e) { console.error(e); }
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setMyAds(prev => prev.filter(a => a.id !== deletingAdId));
+        setToast({ message: data.message || 'Anúncio excluído com sucesso.', type: 'success' });
+        setDeletingAdId(null);
+      } else {
+        setToast({ message: data.message || 'Erro ao excluir o anúncio.', type: 'error' });
+      }
+    } catch (e) {
+      console.error(e);
+      setToast({ message: 'Erro de conexão ao excluir o anúncio.', type: 'error' });
+    } finally {
+      setDeletingAdLoading(false);
+    }
   };
 
   const handleAdSaved = (updatedProfile) => {
@@ -3395,6 +3417,123 @@ export default function Dashboard() {
           onCropComplete={handleCroppedProfileImage}
         />
       )}
+
+      <DeleteAdConfirmModal
+        isOpen={deletingAdId !== null}
+        onClose={() => setDeletingAdId(null)}
+        onConfirm={handleConfirmDeleteAd}
+        loading={deletingAdLoading}
+      />
+
+      <DashboardToast
+        toast={toast}
+        onClose={() => setToast(null)}
+      />
+    </div>
+  );
+}
+
+// ── Componente: Toast de Feedback do Dashboard ───────────────────────────────
+function DashboardToast({ toast, onClose }) {
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      onClose();
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [toast, onClose]);
+
+  if (!toast) return null;
+  const isError = toast.type === 'error';
+
+  return (
+    <div
+      className="fixed bottom-5 right-5 z-[100] flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border border-slate-100 bg-white"
+      style={{
+        animation: 'toastSlideIn 0.3s cubic-bezier(0.16,1,0.3,1) both',
+      }}
+    >
+      <div className={`p-1.5 rounded-lg ${isError ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+        {isError ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
+      </div>
+      <span className="text-sm font-medium text-slate-800 pr-2">{toast.message}</span>
+      <button onClick={onClose} className="p-1 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-slate-600 transition-colors">
+        <X size={15} />
+      </button>
+
+      <style>{`
+        @keyframes toastSlideIn {
+          from { opacity: 0; transform: translateY(12px) scale(0.95); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ── Componente: Modal de Confirmação de Exclusão de Anúncio ───────────────────
+function DeleteAdConfirmModal({ isOpen, onClose, onConfirm, loading }) {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden"
+        style={{ animation: 'modalPop 0.22s cubic-bezier(0.34,1.56,0.64,1) both' }}
+      >
+        <div className="px-6 py-5 flex items-center gap-3 border-b border-slate-100">
+          <div className="p-2.5 bg-red-50 rounded-xl text-red-600">
+            <Trash2 size={20} />
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-900">Excluir Anúncio</h3>
+          </div>
+          <button onClick={onClose} className="ml-auto p-2 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer">
+            <X size={16} className="text-slate-400" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Tem certeza que deseja excluir este anúncio? Esta ação não pode ser desfeita e removerá permanentemente seu perfil e dados associados.
+          </p>
+        </div>
+
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="px-4 py-2 border border-slate-200 text-slate-500 hover:bg-slate-100 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <Loader2 size={13} className="animate-spin" /> Excluindo...
+              </>
+            ) : (
+              'Excluir Definitivamente'
+            )}
+          </button>
+        </div>
+      </div>
+      <style>{`
+        @keyframes modalPop {
+          from { opacity: 0; transform: scale(0.9) translateY(10px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

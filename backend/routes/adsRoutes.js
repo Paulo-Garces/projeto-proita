@@ -1,7 +1,19 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/authMiddleware');
+const imagekit = require('../config/imagekit');
 const { convertToInternationalPhone } = require('../utils/phoneHelper');
+
+// Helper para exclusão assíncrona e segura no ImageKit
+const safeDeleteImageKit = async (fileId) => {
+  if (!fileId) return;
+  try {
+    await imagekit.deleteFile(fileId);
+    console.log(`[ImageKit] Imagem com fileId ${fileId} deletada de forma segura.`);
+  } catch (err) {
+    console.error(`[ImageKit Error] Falha ao deletar imagem ${fileId}:`, err.message || err);
+  }
+};
 
 /** String preenchida: não nula, não indefinida e não vazia após trim. */
 function isNonEmptyString(value) {
@@ -521,7 +533,40 @@ module.exports = (prisma) => {
         return res.status(403).json({ success: false, message: 'Você não tem permissão para excluir este anúncio.' });
       }
 
-      await prisma.profile.delete({ where: { id } });
+      // 2. Coletar IDs de mídias para limpar no ImageKit
+      const mediaFilesToDelete = [];
+      if (existing.avatarFileId) mediaFilesToDelete.push(existing.avatarFileId);
+      if (existing.capaFileId) mediaFilesToDelete.push(existing.capaFileId);
+      if (existing.fotoAnuncioFileId) mediaFilesToDelete.push(existing.fotoAnuncioFileId);
+
+      // Excluir mídias do ImageKit de forma assíncrona
+      mediaFilesToDelete.forEach(fileId => {
+        safeDeleteImageKit(fileId);
+      });
+
+      // 3. Deletar dependências no banco e depois o perfil
+      await prisma.$transaction(async (tx) => {
+        // Deletar serviços vinculados ao perfil
+        await tx.service.deleteMany({
+          where: { profileId: id }
+        });
+
+        // Deletar denúncias (reports) vinculadas
+        await tx.report.deleteMany({
+          where: { adId: id }
+        });
+
+        // Deletar reviews relacionados ao perfil
+        await tx.review.deleteMany({
+          where: { profileId: id }
+        });
+
+        // Deletar o perfil (implicit favorites will be deleted automatically)
+        await tx.profile.delete({
+          where: { id }
+        });
+      });
+
       res.status(200).json({ success: true, message: 'Anúncio excluído com sucesso.' });
     } catch (error) {
       console.error('[DELETE /api/ads/:id] Erro:', error.message);

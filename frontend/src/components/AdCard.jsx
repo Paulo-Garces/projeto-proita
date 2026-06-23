@@ -288,7 +288,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-cyan-400 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300" />
 
       {/* Grid Layout: 2 colunas, 3 linhas */}
-      <div className="grid grid-cols-[100px_1fr] md:grid-cols-[130px_1fr] gap-x-4 md:gap-x-6 gap-y-3.5 md:gap-y-4.5 p-5 items-center">
+      <div className={`grid ${!isDashboard ? 'grid-cols-[82px_1fr] md:grid-cols-[130px_1fr] gap-x-3.5 md:gap-x-6 gap-y-3 md:gap-y-4.5 p-4 md:p-6' : 'grid-cols-[100px_1fr] md:grid-cols-[130px_1fr] gap-x-4 md:gap-x-6 gap-y-3.5 md:gap-y-4.5 p-5'} items-center`}>
         
         {/* LINHA 1 ESQUERDA: Foto de perfil centralizada na coluna */}
         <div className="flex justify-center items-center">
@@ -299,9 +299,9 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             style={{ width: 'fit-content', height: 'fit-content' }}
           >
             {avatar ? (
-              <img src={avatar} alt={displayName} className="w-24 h-24 md:w-28 md:h-28 rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md" />
+              <img src={avatar} alt={displayName} className={`${!isDashboard ? 'w-[72px] h-[72px] md:w-28 md:h-28' : 'w-24 h-24 md:w-28 md:h-28'} rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md`} />
             ) : (
-              <div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white text-3xl font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none">
+              <div className={`${!isDashboard ? 'w-[72px] h-[72px] md:w-28 md:h-28' : 'w-24 h-24 md:w-28 md:h-28'} rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white ${!isDashboard ? 'text-2xl md:text-3xl' : 'text-3xl'} font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none`}>
                 {displayName?.[0]?.toUpperCase() || 'P'}
               </div>
             )}
@@ -311,7 +311,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                 title={badge.title}
               >
                 <BadgeCheck 
-                  className={`w-6 h-6 md:w-7 md:h-7 ${
+                  className={`w-5 h-5 md:w-7 md:h-7 ${
                     badge.level === 'ouro' ? 'text-yellow-500 fill-yellow-500/10' :
                     badge.level === 'prata' ? 'text-slate-400 fill-slate-400/10' :
                     badge.level === 'bronze' ? 'text-amber-700 fill-amber-700/10' :
@@ -324,18 +324,18 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                 className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 bg-white rounded-full p-0.5 shadow-md flex items-center justify-center text-gray-400 cursor-help" 
                 title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista."
               >
-                <BadgeCheck className="w-6 h-6 md:w-7 md:h-7 text-gray-400" />
+                <BadgeCheck className="w-5 h-5 md:w-7 md:h-7 text-gray-400" />
               </div>
             )}
           </Link>
         </div>
 
         {/* LINHA 1 DIREITA: Dados/Textos (Centro) + Banner de Apoio (Direita) */}
-        <div className="flex items-center justify-between gap-4 w-full min-w-0">
+        <div className="flex items-center justify-between gap-3 md:gap-4 w-full min-w-0">
           <div className="flex flex-col gap-1 min-w-0 justify-center items-start text-left flex-1">
             <div className="flex justify-between items-start w-full min-w-0 gap-1.5">
               <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors min-w-0 flex-1">
-                <h3 className="font-bold text-slate-800 text-lg md:text-xl leading-snug truncate block w-full" title={displayName}>
+                <h3 className={`font-bold text-slate-800 ${!isDashboard ? 'text-base md:text-xl' : 'text-lg md:text-xl'} leading-snug truncate block w-full`} title={displayName}>
                   {displayName}
                 </h3>
               </Link>
@@ -413,7 +413,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
           <Link
             to={`/profile/${professional.id}`}
             onClick={handleProfileClick}
-            className="inline-flex items-center gap-2 text-xs md:text-sm font-bold text-primary hover:text-primary-hover bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-full transition-colors"
+            className={`inline-flex items-center ${!isDashboard ? 'gap-1.5 text-[11px] md:text-sm px-3.5 py-1.5 md:px-4 md:py-2' : 'gap-2 text-xs md:text-sm px-4 py-2'} font-bold text-primary hover:text-primary-hover bg-primary/10 hover:bg-primary/20 rounded-full transition-colors`}
           >
             <IdCard size={18} /> Ver Perfil
           </Link>

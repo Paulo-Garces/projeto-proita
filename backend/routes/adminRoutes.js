@@ -56,8 +56,19 @@ module.exports = (prisma) => {
         }),
         prisma.user.count({
           where: {
-            planStatus: { in: ['ATIVO', 'BASICO'] },
-            subscriptionEndsAt: { gte: now }
+            profiles: {
+              some: {}
+            },
+            OR: [
+              {
+                planStatus: { in: ['ATIVO', 'BASICO'] },
+                subscriptionEndsAt: { gte: now }
+              },
+              {
+                planStatus: 'DEGUSTACAO',
+                trialEndsAt: { gte: now }
+              }
+            ]
           }
         }),
         prisma.user.count({
@@ -89,36 +100,8 @@ module.exports = (prisma) => {
   router.get('/users', checkAdmin, async (req, res) => {
     try {
       const users = await prisma.user.findMany({
-        select: {
-          id: true,
-          nome: true,
-          sobrenome: true,
-          email: true,
-          telefone: true,
-          role: true,
-          planStatus: true,
-          subscriptionEndsAt: true,
-          trialEndsAt: true,
-          planType: true,
-          createdAt: true,
-          adminNotes: true,
-          profileImageUrl: true,
-          profileImageFileId: true,
-          profiles: {
-            select: {
-              id: true,
-              referenceCode: true,
-              atividadePrincipal: true,
-              avatarUrl: true,
-              avatarFileId: true,
-              capaUrl: true,
-              capaFileId: true,
-              fotoAnuncioUrl: true,
-              fotoAnuncioFileId: true
-            },
-            orderBy: { createdAt: 'asc' },
-            take: 1,
-          }
+        include: {
+          profiles: true
         },
         orderBy: { createdAt: 'desc' }
       });
@@ -142,6 +125,7 @@ module.exports = (prisma) => {
         avatarUrl: user.profiles?.[0]?.avatarUrl || null,
         capaUrl: user.profiles?.[0]?.capaUrl || null,
         fotoAnuncioUrl: user.profiles?.[0]?.fotoAnuncioUrl || null,
+        profiles: user.profiles || []
       }));
 
       res.status(200).json({ success: true, data: mappedUsers });
