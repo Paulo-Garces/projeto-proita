@@ -1,6 +1,6 @@
 import { useState, useContext, useRef, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard, Sparkles, Clock, Copy, ChevronLeft, ChevronRight, Check, X, Link2, Crop, RefreshCw } from 'lucide-react';
+import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard, Sparkles, Clock, Copy, ChevronLeft, ChevronRight, Check, X, Link2, Crop, RefreshCw, Bell } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
@@ -1392,6 +1392,94 @@ export default function Dashboard() {
   const [favoriteAds, setFavoriteAds] = useState([]);
   const [favoritesLoading, setFavoritesLoading] = useState(false);
 
+  // Central de Notificações
+  const [dbNotifications, setDbNotifications] = useState([]);
+  const [dbNotificationsLoading, setDbNotificationsLoading] = useState(false);
+
+  const fetchDbNotifications = async () => {
+    if (!token) return;
+    setDbNotificationsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/notifications`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDbNotifications(data.data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar notificações no painel:', err);
+    } finally {
+      setDbNotificationsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'notifications' && token) {
+      fetchDbNotifications();
+    }
+
+    const handleSync = () => {
+      if (activeTab === 'notifications' && token) {
+        fetchDbNotifications();
+      }
+    };
+
+    window.addEventListener('notifications-updated', handleSync);
+    return () => {
+      window.removeEventListener('notifications-updated', handleSync);
+    };
+  }, [activeTab, token]);
+
+  const markAllDbAsRead = async () => {
+    setDbNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    try {
+      const res = await fetch(`${API_URL}/api/notifications/read-all`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.dispatchEvent(new Event('notifications-updated'));
+      }
+    } catch (err) {
+      console.error('Erro ao marcar todas como lidas:', err);
+    }
+  };
+
+  const clearDbNotifications = async () => {
+    setDbNotifications([]);
+    try {
+      const res = await fetch(`${API_URL}/api/notifications/clear`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.dispatchEvent(new Event('notifications-updated'));
+      }
+    } catch (err) {
+      console.error('Erro ao limpar notificações:', err);
+    }
+  };
+
+  const markDbSingleAsRead = async (id, isRead) => {
+    if (isRead) return;
+    setDbNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    try {
+      const res = await fetch(`${API_URL}/api/notifications/${id}/read`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        window.dispatchEvent(new Event('notifications-updated'));
+      }
+    } catch (err) {
+      console.error('Erro ao marcar notificação única como lida:', err);
+    }
+  };
+
   const [senhaAtual, setSenhaAtual] = useState('');
   const [novaSenha, setNovaSenha] = useState('');
   const [novaSenhaCriar, setNovaSenhaCriar] = useState('');
@@ -2017,6 +2105,7 @@ export default function Dashboard() {
     { key: 'favorites', label: 'Favoritos', Icon: Heart },
     { key: 'professional', label: 'Meus Anúncios', Icon: LayoutDashboard },
     { key: 'sponsors', label: 'Meus Patrocínios', Icon: Sparkles },
+    { key: 'notifications', label: 'Notificações', Icon: Bell },
     { key: 'subscription', label: 'Assinatura e Anuidade', Icon: CreditCard },
     { key: 'security', label: 'Segurança', Icon: Settings },
   ];
@@ -2336,10 +2425,10 @@ export default function Dashboard() {
                 <div className="space-y-8 animate-in fade-in duration-300">
                   <div className="border-b border-slate-100 pb-4">
                     <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                      <Sparkles className="text-primary animate-pulse" size={24} />
+                      <Sparkles className="text-primary animate-pulse hidden md:inline-block" size={24} />
                       Meus Patrocínios
                     </h2>
-                    <p className="text-sm text-slate-500 mt-1">
+                    <p className="text-sm text-slate-500 mt-1 hidden md:block">
                       Monetize seu perfil de prestador vendendo espaços publicitários para comerciantes ou parceiros locais de Itapipoca.
                     </p>
                   </div>
@@ -2350,6 +2439,90 @@ export default function Dashboard() {
                       setMyAds(prev => prev.map(item => item.id === updatedProfile.id ? updatedProfile : item));
                     }}
                   />
+                </div>
+              )}
+
+              {activeTab === 'notifications' && (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4">
+                    <div>
+                      <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                        <Bell className="text-primary" size={24} />
+                        Notificações
+                      </h2>
+                      <p className="text-sm text-slate-500 mt-1">
+                        Histórico completo de mensagens, alertas e novidades da sua conta.
+                      </p>
+                    </div>
+                    {dbNotifications.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={markAllDbAsRead}
+                          className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                        >
+                          <CheckCircle size={14} /> Marcar todas como lidas
+                        </button>
+                        <button
+                          onClick={clearDbNotifications}
+                          className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                        >
+                          <Trash2 size={14} /> Limpar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {dbNotificationsLoading && dbNotifications.length === 0 ? (
+                    <div className="flex justify-center items-center py-20">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  ) : dbNotifications.length === 0 ? (
+                    <div className="bg-slate-50/50 rounded-3xl p-16 text-center border border-slate-100">
+                      <Bell size={48} className="text-slate-350 mx-auto mb-4 animate-pulse" />
+                      <h3 className="text-lg font-bold text-slate-800 mb-1">Nenhuma notificação</h3>
+                      <p className="text-slate-500 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
+                        Você receberá atualizações importantes sobre o seu anúncio, avaliações de clientes e novidades da plataforma por aqui.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {dbNotifications.map((n) => {
+                        const date = new Date(n.createdAt);
+                        const formatTime = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                        const formatDate = date.toLocaleDateString('pt-BR');
+                        return (
+                          <div
+                            key={n.id}
+                            onClick={() => markDbSingleAsRead(n.id, n.read)}
+                            className={`p-5 rounded-2xl border transition-all duration-200 relative group cursor-pointer ${
+                              n.read
+                                ? 'bg-white border-slate-200/80 hover:shadow-md'
+                                : 'bg-sky-50/30 border-sky-100 hover:bg-sky-50/50 hover:shadow-md border-l-[4px] border-primary'
+                            }`}
+                          >
+                            {!n.read && (
+                              <span className="absolute top-5 right-5 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary text-white">
+                                Nova
+                              </span>
+                            )}
+                            <div className="pr-12">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className={`text-base text-slate-900 ${n.read ? 'font-bold' : 'font-extrabold'}`}>
+                                  {n.title}
+                                </h3>
+                                <span className="text-[10px] text-slate-450 font-semibold bg-slate-100 px-2 py-0.5 rounded-md">
+                                  {formatDate} às {formatTime}
+                                </span>
+                              </div>
+                              <p className="text-sm text-slate-650 mt-2.5 leading-relaxed font-medium">
+                                {n.message}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
@@ -9,6 +10,8 @@ export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const bellRef = useRef(null);
+  const navigate = useNavigate();
+  const [expandedIds, setExpandedIds] = useState(new Set());
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -35,9 +38,19 @@ export default function NotificationBell() {
   useEffect(() => {
     if (isAuthenticated && token) {
       fetchNotifications();
+
+      const handleSync = () => {
+        fetchNotifications();
+      };
+
+      window.addEventListener('notifications-updated', handleSync);
+
       // Polling a cada 30 segundos
       const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('notifications-updated', handleSync);
+      };
     }
   }, [token, isAuthenticated]);
 
@@ -68,16 +81,32 @@ export default function NotificationBell() {
     );
 
     try {
-      await fetch(`${API_URL}/api/notifications/${id}/read`, {
+      const res = await fetch(`${API_URL}/api/notifications/${id}/read`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+      const data = await res.json();
+      if (data.success) {
+        window.dispatchEvent(new Event('notifications-updated'));
+      }
     } catch (error) {
       console.error('Erro ao marcar notificação como lida:', error);
-      // Opcional: reverter alteração otimista se necessário, mas para notificações em background não é crítico
     }
+  };
+
+  const handleItemClick = (id, read) => {
+    handleMarkAsRead(id, read);
+    setExpandedIds(prev => {
+      const copy = new Set(prev);
+      if (copy.has(id)) {
+        copy.delete(id);
+      } else {
+        copy.add(id);
+      }
+      return copy;
+    });
   };
 
   const formatRelativeTime = (dateString) => {
@@ -135,33 +164,48 @@ export default function NotificationBell() {
               <p className="text-center text-sm text-slate-500 py-8">Nenhuma notificação encontrada.</p>
             ) : (
               <div className="space-y-1">
-                {notifications.map((n) => (
-                  <div
-                    key={n.id}
-                    onClick={() => handleMarkAsRead(n.id, n.read)}
-                    className={`p-3 rounded-xl transition-all duration-200 flex gap-3 cursor-pointer ${
-                      n.read
-                        ? 'hover:bg-slate-50'
-                        : 'bg-sky-50/40 hover:bg-sky-50 border-l-[3px] border-primary'
-                    }`}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start gap-2">
-                        <h4 className={`text-sm text-slate-900 truncate ${n.read ? 'font-medium' : 'font-semibold'}`}>
-                          {n.title}
-                        </h4>
-                        <span className="text-[10px] text-slate-400 shrink-0 mt-0.5">
-                          {formatRelativeTime(n.createdAt)}
-                        </span>
+                {notifications.map((n) => {
+                  const isExpanded = expandedIds.has(n.id);
+                  return (
+                    <div
+                      key={n.id}
+                      onClick={() => handleItemClick(n.id, n.read)}
+                      className={`p-3 rounded-xl transition-all duration-200 flex gap-3 cursor-pointer ${
+                        n.read
+                          ? 'hover:bg-slate-50'
+                          : 'bg-sky-50/40 hover:bg-sky-50 border-l-[3px] border-primary'
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-2">
+                          <h4 className={`text-sm text-slate-900 truncate ${n.read ? 'font-medium' : 'font-semibold'}`}>
+                            {n.title}
+                          </h4>
+                          <span className="text-[10px] text-slate-400 shrink-0 mt-0.5">
+                            {formatRelativeTime(n.createdAt)}
+                          </span>
+                        </div>
+                        <p className={`text-xs text-slate-600 mt-1 leading-relaxed ${isExpanded ? '' : 'line-clamp-2'}`}>
+                          {n.message}
+                        </p>
                       </div>
-                      <p className="text-xs text-slate-600 mt-1 line-clamp-2 leading-relaxed">
-                        {n.message}
-                      </p>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
+          </div>
+
+          <div className="border-t border-slate-100 mt-2 pt-2 px-4">
+            <button
+              onClick={() => {
+                setIsOpen(false);
+                navigate('/dashboard?tab=notifications');
+              }}
+              className="w-full text-center block text-xs font-semibold text-primary hover:text-primary-hover hover:underline py-1 cursor-pointer"
+            >
+              Ver todas as notificações
+            </button>
           </div>
         </div>
       )}

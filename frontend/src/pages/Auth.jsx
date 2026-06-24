@@ -135,6 +135,12 @@ export default function Auth() {
     }
   }, [authView]);
 
+  useEffect(() => {
+    if (showSuccess) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [showSuccess]);
+
   // ── Confirmar mesclagem de conta ────────────────────────────
   const handleConfirmMerge = async () => {
     if (!conflictData) return;

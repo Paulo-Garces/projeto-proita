@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useContext } from 'react';
-import { Star, Phone, Share2, CheckCircle, Edit2, Trash2, IdCard, Bookmark, Plus, MapPin, Award, ShieldCheck, Eye, MessageCircle, TrendingUp, Loader2, X, BadgeCheck, BarChart3 } from 'lucide-react';
+import { Star, Phone, Share2, CheckCircle, Edit2, Trash2, IdCard, Bookmark, Plus, MapPin, Award, ShieldCheck, Eye, MessageCircle, TrendingUp, Loader2, X, BadgeCheck, BarChart3, Map, CircleUser } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 import { getProfileDisplayName } from '../utils/profileDisplayName';
@@ -66,15 +66,47 @@ function detectSocialNetwork(url) {
   return 'website';
 }
 
+const SocialIcon = ({ platform }) => {
+  const icons = {
+    instagram: INSTAGRAM_SVG,
+    facebook: FB_SVG,
+    youtube: YT_SVG,
+    tiktok: TIKTOK_SVG,
+  };
+  return icons[platform?.toLowerCase()] || WEB_SVG;
+};
+
 export default function AdCard({ professional, showEdit = false, onEdit, onDelete, style, disableEdit = false, isDashboard = false }) {
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [isFavorited, setIsFavorited] = useState(professional.isFavorited || false);
+  const [currentSponsorIdx, setCurrentSponsorIdx] = useState(0);
 
   useEffect(() => {
     setIsFavorited(professional.isFavorited || false);
   }, [professional.isFavorited]);
+
+  let listPartners = [];
+  try {
+    listPartners = typeof professional.partners === 'string'
+      ? JSON.parse(professional.partners)
+      : (professional.partners || []);
+  } catch {
+    listPartners = professional.partners || [];
+  }
+  let validPartners = listPartners.filter(p => p && p.imageUrl);
+  if (validPartners.length === 0 && professional.fotoAnuncioUrl) {
+    validPartners = [{ imageUrl: professional.fotoAnuncioUrl }];
+  }
+
+  useEffect(() => {
+    if (validPartners.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentSponsorIdx(prev => (prev + 1) % validPartners.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [validPartners.length]);
 
   const handleToggleFavorite = async (e) => {
     e.preventDefault();
@@ -127,6 +159,9 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   const location = professional.serviceBairro || professional.location || 'Itapipoca';
   const avatar = professional.avatar || professional.avatarUrl;
   const badge = getReputationBadge(professional);
+  const planStatus = professional.user?.planStatus || professional.planStatus || 'DEGUSTACAO';
+  const planType = professional.user?.planType || professional.planType || '';
+  const isSponsorPlan = planStatus === 'DEGUSTACAO' || planType.startsWith('PATROCINADOR');
   const getMapsLink = () => {
     const address = professional.enderecoComercial || professional.endereco || location;
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${address}, Itapipoca, CE`)}`;
@@ -284,14 +319,15 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   };
 
   const cardContent = (
-    <div className={`bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 overflow-hidden group relative animate-card-fade ${!isDashboard ? 'w-full' : ''}`} style={!isDashboard ? style : undefined}>
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-cyan-400 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300" />
+    <div 
+      style={!isDashboard ? style : undefined}
+      className={`grid grid-cols-[105px_minmax(0,1fr)] xl:grid-cols-[130px_minmax(0,1fr)] gap-3 sm:gap-4 p-4 border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full' : ''}`}
+    >
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-cyan-400 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300 rounded-t-xl" />
 
-      {/* Grid Layout: 2 colunas, 3 linhas */}
-      <div className={`grid ${!isDashboard ? 'grid-cols-[82px_1fr] md:grid-cols-[116px_1fr] gap-x-3.5 md:gap-x-5 gap-y-3 md:gap-y-4 p-4 md:p-5' : 'grid-cols-[100px_1fr] md:grid-cols-[130px_1fr] gap-x-4 md:gap-x-6 gap-y-3.5 md:gap-y-4.5 p-5'} items-center`}>
-        
-        {/* LINHA 1 ESQUERDA: Foto de perfil centralizada na coluna */}
-        <div className="flex justify-center items-center">
+      {/* Coluna Esquerda: flex flex-col justify-between h-full */}
+      <div className="flex flex-col justify-between items-center h-full text-center border-r border-slate-100 pr-2">
+        <div className="flex flex-col items-center w-full">
           <Link 
             to={`/profile/${professional.id}`} 
             onClick={handleProfileClick} 
@@ -299,19 +335,19 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             style={{ width: 'fit-content', height: 'fit-content' }}
           >
             {avatar ? (
-              <img src={avatar} alt={displayName} className={`${!isDashboard ? 'w-[72px] h-[72px] md:w-[100px] md:h-[100px]' : 'w-24 h-24 md:w-28 md:h-28'} rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md`} />
+              <img src={avatar} alt={displayName} className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md" />
             ) : (
-              <div className={`${!isDashboard ? 'w-[72px] h-[72px] md:w-[100px] md:h-[100px]' : 'w-24 h-24 md:w-28 md:h-28'} rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white ${!isDashboard ? 'text-2xl md:text-3xl' : 'text-3xl'} font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none`}>
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white text-xl sm:text-2xl font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none">
                 {displayName?.[0]?.toUpperCase() || 'P'}
               </div>
             )}
             {badge ? (
               <div 
-                className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 bg-white rounded-full p-0.5 shadow-md flex items-center justify-center" 
+                className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 bg-white rounded-full p-0.5 shadow-md flex items-center justify-center z-10" 
                 title={badge.title}
               >
                 <BadgeCheck 
-                  className={`w-5 h-5 md:w-7 md:h-7 ${
+                  className={`w-5 h-5 sm:w-6 sm:h-6 ${
                     badge.level === 'ouro' ? 'text-yellow-500 fill-yellow-500/10' :
                     badge.level === 'prata' ? 'text-slate-400 fill-slate-400/10' :
                     badge.level === 'bronze' ? 'text-amber-700 fill-amber-700/10' :
@@ -321,236 +357,263 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               </div>
             ) : (
               <div 
-                className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 bg-white rounded-full p-0.5 shadow-md flex items-center justify-center text-gray-400 cursor-help" 
+                className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 bg-white rounded-full p-0.5 shadow-md flex items-center justify-center text-gray-400 cursor-help z-10" 
                 title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista."
               >
-                <BadgeCheck className="w-5 h-5 md:w-7 md:h-7 text-gray-400" />
+                <BadgeCheck className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
               </div>
             )}
           </Link>
-        </div>
-
-        {/* LINHA 1 DIREITA: Dados/Textos (Centro) + Banner de Apoio (Direita) */}
-        <div className="flex items-center justify-between gap-3 md:gap-4 w-full min-w-0">
-          <div className="flex flex-col gap-1 min-w-0 justify-center items-start text-left flex-1">
-            <div className="flex justify-between items-start w-full min-w-0 gap-1.5">
-              <Link to={`/profile/${professional.id}`} onClick={handleProfileClick} className="block group-hover:text-primary transition-colors min-w-0 flex-1">
-                <h3 className={`font-bold text-slate-800 ${!isDashboard ? 'text-base md:text-xl' : 'text-lg md:text-xl'} leading-snug truncate block w-full`} title={displayName}>
-                  {displayName}
-                </h3>
-              </Link>
-            </div>
-            
-            <Link 
-              to={`/profile/${professional.id}?tab=avaliacoes`}
-              onClick={handleProfileClick}
-              className="flex flex-row items-center gap-1.5 flex-wrap w-full hover:underline hover:text-primary transition-all cursor-pointer group/rating min-w-0"
-              title="Ver todas as avaliações deste profissional"
-            >
-              <div className="flex items-center gap-0.5 shrink-0">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <Star key={i} size={14} className={i <= rating ? "text-amber-400 fill-amber-400 group-hover/rating:scale-110 transition-transform duration-200" : "text-slate-200 fill-slate-200"} />
-                ))}
-              </div>
-              <div className="flex items-center gap-1 text-xs font-bold text-slate-750 whitespace-nowrap shrink-0">
-                <span>{rating > 0 ? rating.toFixed(1) : 'Novo'}</span>
-                {reviewCount > 0 && (
-                  <span className="text-[11px] text-slate-450 font-normal">({reviewCount} {reviewCount === 1 ? 'avaliação' : 'avaliações'})</span>
-                )}
-              </div>
-            </Link>
-
-            <div className="text-slate-600 text-xs md:text-sm font-medium flex flex-col gap-1 mt-1 items-start w-full min-w-0">
-              {phone && <span className="truncate">{formatPhone(phone)}</span>}
-              <div className="flex items-center gap-1.5 text-slate-500 w-full min-w-0">
-                <span className="truncate flex items-center gap-1 min-w-0">
-                  <MapPin size={14} className="text-slate-400 shrink-0" /> {location}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Banner de Apoio (Patrocinador) posicionado no lado direito em formato retrato (vertical) */}
-          {!showEdit && (
-            (() => {
-              let list = [];
-              try {
-                list = typeof professional.partners === 'string' 
-                  ? JSON.parse(professional.partners) 
-                  : (professional.partners || []);
-              } catch {
-                list = professional.partners || [];
-              }
-              let valid = list.filter(p => p && p.imageUrl);
-              if (valid.length === 0 && professional.fotoAnuncioUrl) {
-                valid = [{ imageUrl: professional.fotoAnuncioUrl }];
-              }
-              if (valid.length === 0) return null;
-
-              return (
-                <div className="flex flex-col items-center gap-1 shrink-0 self-center">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 leading-none">Apoio</span>
-                  <SponsorSlider 
-                    partners={valid} 
-                    layout="portrait" 
-                    onPartnerClick={() => navigate(`/profile/${professional.id}?tab=parceiros`)} 
-                  />
-                </div>
-              );
-            })()
-          )}
-        </div>
-
-        {/* LINHA 2 ESQUERDA: Título da profissão, centralizado, negrito, azul principal */}
-        <div className="flex justify-center items-center text-center px-1">
-          <p className="text-xs md:text-sm font-bold text-primary uppercase tracking-wider leading-tight line-clamp-2">
-            {professional.category || professional.atividadePrincipal || '—'}
+          
+          <p className="text-[11px] sm:text-xs font-black text-primary uppercase tracking-wider leading-tight mt-2.5 max-w-[120px] line-clamp-2">
+            {professional.category || professional.atividadePrincipal || 'Profissional'}
           </p>
         </div>
 
-        {/* LINHA 2 DIREITA: Botão 'Ver Perfil' e botão de Favoritar */}
-        <div className="flex items-center gap-3 justify-center">
+        <div className="flex flex-col items-center gap-1.5 w-full mt-3">
+          <div className="flex flex-wrap justify-center gap-1 w-full">
+            {displayedSocials.map((link, idx) => {
+              const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
+              return (
+                <a 
+                  key={idx} 
+                  href={url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  title={link.platform} 
+                  onClick={(e) => e.stopPropagation()} 
+                  className="w-7 h-7 flex items-center justify-center hover:scale-110 transition-transform shrink-0"
+                >
+                  <div className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors shrink-0 ${
+                    link.platform?.toLowerCase() === 'instagram' ? 'bg-pink-50 text-pink-500 hover:bg-pink-100' :
+                    link.platform?.toLowerCase() === 'facebook' ? 'bg-blue-50 text-blue-600 hover:bg-blue-100' :
+                    link.platform?.toLowerCase() === 'youtube' ? 'bg-red-50 text-red-600 hover:bg-red-100' :
+                    link.platform?.toLowerCase() === 'tiktok' ? 'bg-slate-100 text-slate-800 hover:bg-slate-200' :
+                    'bg-primary/10 text-primary hover:bg-primary/20'
+                  }`}>
+                    <SocialIcon platform={link.platform} />
+                  </div>
+                </a>
+              );
+            })}
+            {[...Array(placeholdersCount)].map((_, idx) => (
+              <div 
+                key={`placeholder-${idx}`} 
+                className="w-7 h-7 rounded-full border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center text-slate-350 shrink-0" 
+                title="Rede não cadastrada"
+              >
+                <Plus size={10} className="stroke-[2.5]" />
+              </div>
+            ))}
+            {showEdit && isDashboard && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsSocialModalOpen(true);
+                  setSocialError('');
+                }}
+                className="w-7 h-7 rounded-full bg-slate-100 hover:bg-primary hover:text-white text-slate-500 flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs shrink-0"
+                title="Adicionar/Editar Rede Social"
+              >
+                <Edit2 size={11} />
+              </button>
+            )}
+          </div>
+          
+          {ownerName && (
+            <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate w-full max-w-[110px] sm:max-w-[130px]">
+              Por {ownerName}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Coluna Direita: flex flex-col h-full gap-3 */}
+      <div className="flex flex-col h-full gap-3 min-w-0">
+        {/* Linha 1 (Info + Patrocinador) */}
+        <div className="flex justify-between items-stretch gap-2 min-w-0">
+          <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+            <Link 
+              to={`/profile/${professional.id}`} 
+              onClick={handleProfileClick} 
+              className="block group-hover:text-primary transition-colors min-w-0 truncate w-full"
+            >
+              <h3 className="font-black text-slate-800 text-base sm:text-lg leading-snug truncate" title={displayName}>
+                {displayName}
+              </h3>
+            </Link>
+            
+            {/* Avaliação */}
+            <Link 
+              to={`/profile/${professional.id}?tab=avaliacoes`}
+              onClick={handleProfileClick}
+              className="flex items-center gap-1 hover:underline hover:text-primary transition-all cursor-pointer group/rating min-w-0"
+              title="Ver todas as avaliações deste profissional"
+            >
+              <div className="flex items-center gap-0.5 shrink-0 text-amber-400">
+                {[1, 2, 3, 4, 5].map(i => (
+                  <Star key={i} size={11} className={i <= rating ? "fill-amber-400 text-amber-400 group-hover/rating:scale-110 transition-transform duration-200" : "text-slate-200 fill-slate-200"} />
+                ))}
+              </div>
+              <span className="text-xs sm:text-sm font-bold text-slate-700 leading-none whitespace-nowrap">
+                {rating > 0 ? rating.toFixed(1) : 'Novo'}
+              </span>
+              {reviewCount > 0 && (
+                <span className="text-[10px] text-slate-400 leading-none">({reviewCount})</span>
+              )}
+            </Link>
+
+            {/* Telefone */}
+            {phone && (
+              <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 font-medium leading-none truncate w-full">
+                <Phone size={12} className="text-slate-400 shrink-0" />
+                <span className="truncate">{formatPhone(phone)}</span>
+              </div>
+            )}
+
+            {/* Local/Bairro */}
+            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 font-medium leading-none truncate w-full">
+              <MapPin size={12} className="text-slate-400 shrink-0" />
+              <span className="truncate">{location}</span>
+            </div>
+          </div>
+
+          {/* Patrocinador / Apoio Banner adaptável */}
+          {!showEdit && (
+            <div className="w-14 sm:w-16 shrink-0 aspect-[3/4] flex items-center justify-center">
+              {validPartners.length > 0 ? (
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/profile/${professional.id}?tab=parceiros`);
+                  }}
+                  className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-0.5 relative overflow-hidden shadow-2xs select-none cursor-pointer hover:border-primary/30 transition-colors shrink-0"
+                >
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center blur-[2px] opacity-15 scale-110 pointer-events-none" 
+                    style={{ backgroundImage: `url(${validPartners[currentSponsorIdx].imageUrl})` }} 
+                  />
+                  <img 
+                    src={validPartners[currentSponsorIdx].imageUrl} 
+                    alt={validPartners[currentSponsorIdx].name || "Patrocinador"} 
+                    className="relative z-10 w-full h-full object-contain shrink-0"
+                  />
+                  <span className="absolute bottom-0 left-0 right-0 text-center bg-slate-900/60 backdrop-blur-[1px] text-white text-[8px] font-bold py-0.5 leading-none z-20">
+                    APOIO
+                  </span>
+                </div>
+              ) : isSponsorPlan ? (
+                <div className="w-full h-full rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-1 select-none text-center shrink-0">
+                  <span className="text-[10px] xl:text-xs font-semibold text-slate-400 text-center leading-tight">
+                    Anuncie
+                  </span>
+                </div>
+              ) : (
+                <div className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-1 select-none text-center shrink-0">
+                  <span className="text-[10px] font-black text-slate-350 tracking-wider leading-none">proITA</span>
+                  <span className="text-[8px] text-slate-400 mt-1 uppercase font-bold tracking-wider">APOIO</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Linha 2 (Ações Perfil) */}
+        <div className="flex items-center gap-2">
           <Link
             to={`/profile/${professional.id}`}
             onClick={handleProfileClick}
-            className={`inline-flex items-center ${!isDashboard ? 'gap-1.5 text-[11px] md:text-sm px-3.5 py-1.5 md:px-4 md:py-2' : 'gap-2 text-xs md:text-sm px-4 py-2'} font-bold text-primary hover:text-primary-hover bg-primary/10 hover:bg-primary/20 rounded-full transition-colors`}
+            className="flex-1 flex items-center gap-1.5 text-sky-600 hover:text-sky-700 font-semibold text-xs sm:text-sm py-1.5"
           >
-            <IdCard size={18} /> Ver Perfil
+            <CircleUser size={18} className="text-sky-600 shrink-0" />
+            <span>Ver Perfil</span>
           </Link>
           
           {!showEdit && (
             <button
               onClick={handleToggleFavorite}
-              className="group/fav p-2.5 rounded-full border border-slate-100 hover:border-primary/20 bg-slate-50/50 hover:bg-primary/5 transition-all duration-200 active:scale-90 shadow-sm"
-              title={isFavorited ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+              className={`p-2 rounded-lg border transition-colors ${
+                isFavorited 
+                  ? 'bg-red-50 text-red-500 border-red-200 hover:bg-red-100' 
+                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+              }`}
+              title={isFavorited ? "Remover dos favoritos" : "Salvar nos favoritos"}
             >
-              <Bookmark
-                size={18}
-                className={`transition-colors duration-200 ${
-                  isFavorited
-                    ? 'fill-primary text-primary'
-                    : 'text-slate-400 group-hover/fav:text-primary'
-                }`}
-              />
+              <Bookmark size={16} className={isFavorited ? "fill-red-500 text-red-500" : ""} />
             </button>
           )}
+
+          <a
+            href={getMapsLink()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded-lg border bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 transition-colors flex items-center justify-center"
+            title="Ver rota no mapa"
+          >
+            <Map size={16} />
+          </a>
         </div>
 
-        {/* LINHA 3 ESQUERDA (DASHBOARD ONLY) */}
-        {isDashboard && (
-          <div className="col-span-2 md:col-span-1 flex flex-col items-center justify-between h-full gap-2 w-full pt-4 md:pt-0 border-t md:border-t-0 border-slate-100">
-            <div className="flex flex-row flex-wrap items-center gap-2 justify-center">
-              {displayedSocials.map((link, idx) => {
-                const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
-                return (
-                  <a key={idx} href={url} target="_blank" rel="noopener noreferrer" title={link.platform} onClick={(e) => e.stopPropagation()} className="w-10 h-10 flex items-center justify-center hover:scale-110 transition-transform shrink-0">
-                    <SocialIconBadge platform={link.platform} />
-                  </a>
-                );
-              })}
-              {[...Array(placeholdersCount)].map((_, idx) => (
-                <div key={`placeholder-${idx}`} className="w-10 h-10 rounded-full border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center text-slate-300 shrink-0" title="Rede não cadastrada">
-                  <Plus size={12} className="stroke-[2.5]" />
-                </div>
-              ))}
+        {/* Linha 3 (Contatos ou Dashboard) */}
+        <div className="flex items-center gap-2 mt-auto">
+          {isDashboard ? (
+            <>
               {showEdit && (
+                <div className="flex flex-row w-full gap-2 items-center">
+                  <button 
+                    onClick={() => onEdit?.(professional)} 
+                    disabled={disableEdit}
+                    className="flex-1 flex justify-center items-center gap-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 py-2.5 rounded-xl font-bold transition-all text-xs sm:text-sm border border-slate-200 shadow-xs cursor-pointer"
+                  >
+                    <Edit2 size={14} /> Editar
+                  </button>
+                  <button 
+                    onClick={() => onDelete?.(professional.id)} 
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-150 py-2.5 rounded-xl font-bold transition-all text-xs sm:text-sm shadow-xs cursor-pointer"
+                  >
+                    <Trash2 size={14} /> Excluir
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="w-full flex items-center justify-between px-4">
+              {/* Botão Ligar */}
+              {phone && (
                 <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsSocialModalOpen(true);
-                    setSocialError('');
-                  }}
-                  className="w-10 h-10 rounded-full bg-slate-100 hover:bg-primary hover:text-white text-slate-500 flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs shrink-0"
-                  title="Adicionar/Editar Rede Social"
+                  onClick={callPhone}
+                  className="w-10 h-10 shrink-0 flex items-center justify-center bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200 rounded-full transition-colors shadow-2xs active:scale-95 cursor-pointer"
+                  title="Ligar"
                 >
-                  <Edit2 size={14} />
+                  <Phone className="w-[18px] h-[18px]" />
                 </button>
               )}
-            </div>
-            <div className="mt-1 flex flex-col items-center gap-1">
-              {ownerName && (
-                <span className="text-[10px] md:text-xs text-slate-500 opacity-70 font-semibold truncate max-w-full select-none">
-                  Por {ownerName}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
 
-        {/* LINHA 3 DIREITA (DASHBOARD ONLY) */}
-        {isDashboard && (
-          <div className="col-span-2 md:col-span-1 flex items-center justify-center w-full mt-2 md:mt-0">
-            {showEdit ? (
-              <div className="flex flex-wrap w-full gap-3 items-center justify-center max-w-sm px-2">
-                <button 
-                  onClick={() => onEdit?.(professional)} 
-                  disabled={disableEdit}
-                  className="flex-1 min-w-[110px] flex justify-center items-center gap-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 py-2.5 px-4 rounded-xl font-bold transition-all text-xs md:text-sm border border-slate-200/50 shadow-xs cursor-pointer"
-                >
-                  <Edit2 size={16} /> Editar
-                </button>
-                <button 
-                  onClick={() => onDelete?.(professional.id)} 
-                  className="flex-1 min-w-[110px] flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-600 px-4 py-2.5 rounded-xl font-bold transition-all text-xs md:text-sm border border-rose-100/50 shadow-xs cursor-pointer"
-                >
-                  <Trash2 size={16} /> Excluir
-                </button>
-              </div>
-            ) : null}
-          </div>
-        )}
-
-        {/* LINHA 3 COMPARTILHADA (PUBLIC CARD ONLY) */}
-        {!isDashboard && (
-          <div className="col-span-2 flex flex-row items-center justify-between gap-4 w-full pt-2.5 border-t border-slate-100/60 mt-0">
-            {/* Left side: Social Links */}
-            <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
-              <div className="flex flex-row flex-nowrap items-center gap-1.5 justify-center">
-                {displayedSocials.map((link, idx) => {
-                  const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
-                  return (
-                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer" title={link.platform} onClick={(e) => e.stopPropagation()} className="w-10 h-10 flex items-center justify-center hover:scale-110 transition-transform shrink-0">
-                      <SocialIconBadge platform={link.platform} />
-                    </a>
-                  );
-                })}
-                {[...Array(placeholdersCount)].map((_, idx) => (
-                  <div key={`placeholder-${idx}`} className="w-10 h-10 rounded-full border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-center text-slate-300 shrink-0" title="Rede não cadastrada">
-                    <Plus size={12} className="stroke-[2.5]" />
-                  </div>
-                ))}
-              </div>
-              {ownerName && (
-                <span className="text-[10px] md:text-xs text-slate-500 opacity-70 font-semibold truncate max-w-[120px] select-none text-center block w-full">
-                  Por {ownerName}
-                </span>
-              )}
-            </div>
-
-            {/* Right side: Action Buttons */}
-            <div className="flex-1 flex items-center justify-center gap-2 md:gap-4 min-w-0">
+              {/* Botão WhatsApp */}
               {phone && (
-                <button onClick={callPhone} title="Ligar" className="w-10 h-10 md:w-12 md:h-12 shrink-0 aspect-square flex items-center justify-center bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-full transition-colors shadow-sm active:scale-95 cursor-pointer">
-                  <Phone className="w-[18px] h-[18px] md:w-5 md:h-5" />
-                </button>
-              )}
-
-              {phone && (
-                <button onClick={openWhatsApp} title="WhatsApp" className="w-12 h-12 md:w-14 md:h-14 shrink-0 aspect-square flex items-center justify-center bg-[#25D366] text-white hover:bg-[#1fb355] rounded-full transition-all shadow-md shadow-green-200 hover:scale-105 active:scale-95 cursor-pointer">
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 md:w-7 md:h-7 shrink-0">
+                <button
+                  onClick={openWhatsApp}
+                  className="w-12 h-12 shrink-0 flex items-center justify-center bg-[#25D366] hover:bg-[#1fb355] text-white rounded-full transition-all shadow-md shadow-green-200/40 hover:scale-105 active:scale-95 cursor-pointer"
+                  title="WhatsApp"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-[26px] h-[26px] shrink-0">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
                   </svg>
                 </button>
               )}
 
-              <button onClick={share} title={copied ? 'Copiado!' : 'Compartilhar link'} className="w-10 h-10 md:w-12 md:h-12 shrink-0 aspect-square flex items-center justify-center bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-full transition-colors shadow-sm active:scale-95 cursor-pointer">
-                {copied ? <CheckCircle className="w-[18px] h-[18px] md:w-5 md:h-5 text-emerald-500" /> : <Share2 className="w-[18px] h-[18px] md:w-5 md:h-5" />}
+              {/* Botão Compartilhar */}
+              <button
+                onClick={share}
+                className="w-10 h-10 shrink-0 flex items-center justify-center bg-slate-50 text-slate-600 border border-slate-200 rounded-full transition-colors shadow-2xs active:scale-95 cursor-pointer"
+                title={copied ? 'Copiado!' : 'Compartilhar link'}
+              >
+                {copied ? <CheckCircle className="w-[18px] h-[18px] text-emerald-500" /> : <Share2 className="w-[18px] h-[18px]" />}
               </button>
             </div>
-          </div>
-        )}
-
+          )}
+        </div>
       </div>
     </div>
   );

@@ -23,6 +23,7 @@ import Faq from './pages/Faq';
 import Denuncias from './pages/Denuncias';
 import TermsAndPrivacy from './pages/TermsAndPrivacy';
 import Mural from './pages/Mural';
+import Sandbox from './pages/Sandbox';
 import ScrollToTop from './components/ScrollToTop';
 
 function App() {
@@ -56,6 +57,7 @@ function App() {
                 <Route path="/denuncias" element={<Denuncias />} />
                 <Route path="/terms" element={<TermsAndPrivacy />} />
                 <Route path="/mural" element={<Mural />} />
+                <Route path="/sandbox" element={<Sandbox />} />
               </Routes>
             </main>
             <BottomNav />

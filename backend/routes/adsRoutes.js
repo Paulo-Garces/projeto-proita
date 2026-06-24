@@ -128,6 +128,7 @@ const publicUserSelect = {
   planStatus: true,
   trialEndsAt: true,
   subscriptionEndsAt: true,
+  planType: true,
 };
 
 module.exports = (prisma) => {

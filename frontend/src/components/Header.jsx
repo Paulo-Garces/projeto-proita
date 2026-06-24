@@ -102,7 +102,7 @@ export default function Header() {
       )}
       <header className={`fixed left-0 w-full z-40 glass border-b border-slate-200 bg-white/90 backdrop-blur-md transition-all duration-150 ${hasAdminToken ? 'top-9' : 'top-0'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="relative flex justify-between items-center h-16">
             {/* Esquerda: Menu Mobile e Logo */}
             <div className="flex items-center gap-4">
               {/* Mobile menu button */}
@@ -114,7 +114,7 @@ export default function Header() {
 
               {/* Logo (Oculto na Home) */}
               {!isHome && (
-                <Link to="/" className="flex items-center">
+                <Link to="/" className="flex items-center md:static absolute left-1/2 md:left-auto -translate-x-1/2 md:translate-x-0">
                   <img src="/logo-proita.svg" alt="proITA Logo" className="h-10 md:h-12" />
                 </Link>
               )}

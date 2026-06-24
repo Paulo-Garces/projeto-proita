@@ -764,8 +764,8 @@ export default function Advertise() {
   const nextStep = () => {
     if (step === 1) {
       if (showExactAddress) {
-        if (!bairro?.trim() || !rua?.trim() || !numero?.trim()) {
-          alert('Por favor, preencha o Bairro, Rua e Número do seu endereço comercial.');
+        if (!bairro?.trim() || !rua?.trim()) {
+          alert('Por favor, preencha o Bairro e Rua do seu endereço comercial.');
           return;
         }
       }
@@ -850,15 +850,15 @@ export default function Advertise() {
           {/* PASSO 1 */}
           {step === 1 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-              <div className="flex items-center gap-3 mb-4 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3 mb-2 md:mb-6 border-b border-slate-100 pb-4">
                 <div className="p-3 bg-primary/10 text-primary rounded-xl"><MapPin size={24} /></div>
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900">Dados, contato e endereço</h2>
+                  <h2 className="text-xl md:text-2xl font-bold text-slate-900">Informações públicas</h2>
                 </div>
               </div>
 
               {/* Banner informativo com destaque */}
-              <div className="mb-6 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 flex items-start gap-3">
+              <div className="mb-6 bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 hidden md:flex items-start gap-3">
                 <Sparkles size={18} className="text-primary shrink-0 mt-0.5" />
                 <p className="text-sm font-semibold text-slate-800">Estes dados aparecerão no seu anúncio. Pode alterá-los se desejar.</p>
               </div>
@@ -873,7 +873,7 @@ export default function Advertise() {
                     placeholder="Ex: Eletricista Silva, Paula Unhas (Opcional)"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
                   />
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 mt-1 hidden md:block">
                     <span className="font-semibold text-primary">Estas são as informações públicas do seu anúncio.</span> Se deixado em branco, o sistema utilizará o seu nome de cadastro pessoal.
                   </p>
                 </div>
@@ -888,7 +888,7 @@ export default function Advertise() {
                     placeholder="Ex: (88) 99999-9999"
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
                   />
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 mt-1 hidden md:block">
                     <span className="font-semibold text-primary">Estas são as informações públicas do seu anúncio.</span> Insira o número de contato profissional do anúncio. O número do seu cadastro continuará privado.
                   </p>
                 </div>
@@ -959,12 +959,11 @@ export default function Advertise() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-semibold text-slate-650 mb-1">Número <span className="text-red-500">*</span></label>
+                        <label className="block text-xs font-semibold text-slate-650 mb-1">Número</label>
                         <input
                           type="text"
                           value={numero}
                           onChange={(e) => setNumero(e.target.value)}
-                          required={showExactAddress}
                           placeholder="Ex: 123"
                           className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary text-slate-800"
                         />
@@ -1021,16 +1020,16 @@ export default function Advertise() {
           {step === 2 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-500">
               <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
-                <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl"><Briefcase size={24} /></div>
+                <div className="p-3 bg-emerald-100 text-emerald-600 rounded-xl hidden md:block"><Briefcase size={24} /></div>
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900">Descrição da atividade</h2>
-                  <p className="text-sm text-slate-500">Preencha as informações para construirmos o melhor perfil para você.</p>
+                  <h2 className="text-lg md:text-2xl font-bold text-slate-900">Descrição da atividade</h2>
+                  <p className="text-sm text-slate-500 hidden md:block">Preencha as informações para construirmos o melhor perfil para você.</p>
                 </div>
               </div>
 
               <div className="space-y-6">
                 <div>
-                  <div className="flex justify-between items-end mb-2">
+                  <div className="flex justify-between items-end mb-2 hidden md:flex">
                     <label className="block text-sm font-medium text-slate-700">Conte-nos como você trabalha (Ex: horários, se atende a domicílio, tempo de experiência)</label>
                   </div>
                   <div className="mb-2 text-left">

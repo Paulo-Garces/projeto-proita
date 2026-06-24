@@ -19,6 +19,63 @@ module.exports = (prisma) => {
     }
   });
 
+  // PUT/PATCH /api/notifications/read-all -> Mark all notifications as read
+  router.put('/read-all', async (req, res) => {
+    try {
+      const userId = req.user.id;
+      await prisma.notification.updateMany({
+        where: { userId, read: false },
+        data: { read: true },
+      });
+      res.status(200).json({ success: true, message: 'Todas as notificações foram marcadas como lidas.' });
+    } catch (error) {
+      console.error('[PUT /api/notifications/read-all] Erro:', error);
+      res.status(500).json({ success: false, message: 'Erro interno ao atualizar notificações.' });
+    }
+  });
+
+  router.patch('/read-all', async (req, res) => {
+    try {
+      const userId = req.user.id;
+      await prisma.notification.updateMany({
+        where: { userId, read: false },
+        data: { read: true },
+      });
+      res.status(200).json({ success: true, message: 'Todas as notificações foram marcadas como lidas.' });
+    } catch (error) {
+      console.error('[PATCH /api/notifications/read-all] Erro:', error);
+      res.status(500).json({ success: false, message: 'Erro interno ao atualizar notificações.' });
+    }
+  });
+
+  // DELETE /api/notifications/clear -> Clear all notifications for user
+  router.delete('/clear', async (req, res) => {
+    try {
+      const userId = req.user.id;
+      await prisma.notification.deleteMany({
+        where: { userId },
+      });
+      res.status(200).json({ success: true, message: 'Todas as notificações foram excluídas.' });
+    } catch (error) {
+      console.error('[DELETE /api/notifications/clear] Erro:', error);
+      res.status(500).json({ success: false, message: 'Erro interno ao limpar notificações.' });
+    }
+  });
+
+  // DELETE /api/notifications -> Clear all notifications for user
+  router.delete('/', async (req, res) => {
+    try {
+      const userId = req.user.id;
+      await prisma.notification.deleteMany({
+        where: { userId },
+      });
+      res.status(200).json({ success: true, message: 'Todas as notificações foram excluídas.' });
+    } catch (error) {
+      console.error('[DELETE /api/notifications] Erro:', error);
+      res.status(500).json({ success: false, message: 'Erro interno ao limpar notificações.' });
+    }
+  });
+
   // PATCH /api/notifications/:id/read -> Mark a notification as read
   router.patch('/:id/read', async (req, res) => {
     try {

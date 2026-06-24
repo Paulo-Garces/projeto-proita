@@ -241,7 +241,6 @@ app.post('/api/login', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    // Busca profileImageUrl diretamente do usuário (salvo pelo upload do Dashboard)
     res.status(200).json({
       success: true,
       token,
@@ -260,7 +259,8 @@ app.post('/api/login', async (req, res) => {
         hasPassword: !!user.senha,
         planStatus: user.planStatus,
         trialEndsAt: user.trialEndsAt,
-        subscriptionEndsAt: user.subscriptionEndsAt
+        subscriptionEndsAt: user.subscriptionEndsAt,
+        planType: user.planType
       }
     });
   } catch (error) {
@@ -450,7 +450,8 @@ app.post('/api/auth/google', async (req, res) => {
         hasPassword: !!user.senha,
         planStatus: user.planStatus,
         trialEndsAt: user.trialEndsAt,
-        subscriptionEndsAt: user.subscriptionEndsAt
+        subscriptionEndsAt: user.subscriptionEndsAt,
+        planType: user.planType
       }
     });
   } catch (error) {
@@ -741,7 +742,8 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
         planStatus: true,
         trialEndsAt: true,
         subscriptionEndsAt: true,
-        createdAt: true
+        createdAt: true,
+        planType: true
       }
     });
     if (!user) {
@@ -766,7 +768,8 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
         planStatus: user.planStatus,
         trialEndsAt: user.trialEndsAt,
         subscriptionEndsAt: user.subscriptionEndsAt,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
+        planType: user.planType
       }
     });
   } catch (error) {
