@@ -180,7 +180,7 @@ export default function AdCardV2({ professional, showEdit = false, onEdit, onDel
             <img
               src={avatar}
               alt={displayName}
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border border-slate-150 shadow-xs"
+              className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border border-slate-150 shadow-xs"
             />
             {professional?.verified && (
               <div className="absolute bottom-0 right-0 bg-white rounded-full p-0.5 shadow-xs flex items-center justify-center">

@@ -154,7 +154,6 @@ export default function Advertise() {
   const [categoryId, setCategoryId] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [bioSugerida, setBioSugerida] = useState('');
-  const [descricaoCurta, setDescricaoCurta] = useState('');
   const [aiFailed, setAiFailed] = useState(false);
   const [aiErrorMsg, setAiErrorMsg] = useState('');
 
@@ -302,7 +301,6 @@ export default function Advertise() {
         setAtividadePrincipal(data.data.subcategory.name || '');
         setCategoryId(data.data.category?.id || '');
         setCategoriaGeral(data.data.category?.name || data.data?.categoriaGeral || '');
-        setDescricaoCurta(data.data?.descricaoCurta || '');
         setBioSugerida(data.data?.biografiaCompleta || data.data?.bioSugerida || '');
         setAiFailed(false);
       } else {
@@ -705,7 +703,6 @@ export default function Advertise() {
           bairro: showExactAddress ? bairro : null,
           atividadePrincipal,
           descricaoTrabalho: descricaoFinal,
-          descricaoCurta,
           bioSugerida,
           socialLinks: buildSocialLinksPayload(),
           avatarUrl: uploadedAvatarUrl || null,
@@ -749,9 +746,6 @@ export default function Advertise() {
           }
         }
         setStep(4);
-        setTimeout(() => {
-          navigate('/dashboard');
-        }, 3000);
       } else {
         alert(data.message || 'Erro ao publicar anúncio.');
       }
@@ -1114,12 +1108,12 @@ export default function Advertise() {
                         </div>
                       )}
                       <textarea
-                        rows={12}
+                        rows={4}
                         value={descricaoTrabalho}
                         disabled={isTranscribing}
                         onChange={(e) => setDescricaoTrabalho(e.target.value)}
                         onBlur={handleAnalyzeDescription}
-                        className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors resize-none pr-24 text-slate-800 placeholder:text-slate-400"
+                        className="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors resize-none pr-24 text-slate-800 placeholder:text-slate-400 overflow-y-auto"
                         placeholder="Sou encanador há 10 anos, atendo todos os dias da semana até as 18h. Faço reparos em vazamentos, instalação de pias..."
                       ></textarea>
 
@@ -1132,7 +1126,6 @@ export default function Advertise() {
                             setDescricaoTrabalho('');
                             setAtividadePrincipal('');
                             setBioSugerida('');
-                            setDescricaoCurta('');
                             setAiFailed(false);
                             setAiErrorMsg('');
                           }}
@@ -1163,21 +1156,17 @@ export default function Advertise() {
                     </div>
                   )}
 
-                  <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200 gap-3">
-                    <p className="text-xs text-slate-500 flex items-center gap-2">
-                      <Sparkles size={16} className="text-primary shrink-0" />
-                      Escreva em detalhes para nossa IA categorizar seu perfil.
-                    </p>
+                  <div className="mt-3 flex justify-end">
                     <button
                       type="button"
                       onClick={handleAnalyzeDescription}
                       disabled={isAnalyzing || !descricaoTrabalho?.trim()}
-                      className="w-full sm:w-auto text-xs font-bold bg-primary text-white hover:bg-primary-hover px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                      className="w-full sm:w-auto text-xs font-bold bg-primary text-white hover:bg-primary-hover px-4 py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     >
                       {isAnalyzing ? (
                         <span className="flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> <span>Analisando Perfil...</span></span>
                       ) : (
-                        <span className="flex items-center gap-2"><Sparkles size={14} /> <span>Clique aqui antes de continuar</span></span>
+                        <span>Clique aqui antes de continuar</span>
                       )}
                     </button>
                   </div>
@@ -1193,11 +1182,6 @@ export default function Advertise() {
                       <span className="text-xs text-slate-500 mt-1">Aguarde um instante.</span>
                     </div>
                   )}
-
-                  <div className="flex items-center gap-2 mb-4">
-                    <Sparkles size={18} className="text-primary animate-pulse" />
-                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Classificação do seu Serviço</h3>
-                  </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Campo Categoria Principal */}
@@ -1284,14 +1268,6 @@ export default function Advertise() {
           {/* PASSO 3 */}
           {step === 3 && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-              <div className="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
-                <div className="p-3 bg-amber-100 text-amber-600 rounded-xl"><AlignLeft size={24} /></div>
-                <div>
-                  <h2 className="text-2xl font-bold text-slate-900">Visual</h2>
-                  <p className="text-sm text-slate-500">Adicione suas fotos e configure as informações visuais do perfil.</p>
-                </div>
-              </div>
-
               <form onSubmit={handleSubmit} className="space-y-8">
 
                 {/* Foto de Perfil */}
@@ -1327,22 +1303,6 @@ export default function Advertise() {
                       Remover foto
                     </button>
                   )}
-                </div>
-
-                {/* Descrição Curta (para Cards) */}
-                <div>
-                  <div className="flex justify-between items-end mb-2">
-                    <label className="block text-sm font-medium text-slate-700">Descrição Curta (para o card)</label>
-                    <span className={`text-xs ${descricaoCurta?.length > 90 ? 'text-red-500' : 'text-slate-400'}`}>{descricaoCurta?.length || 0}/90</span>
-                  </div>
-                  <input
-                    type="text"
-                    value={descricaoCurta || ''}
-                    onChange={(e) => setDescricaoCurta(e.target.value.slice(0, 90))}
-                    placeholder="Ex: Encanador com 10 anos de experiência. Atendo a domicílio."
-                    className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-slate-800"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">Essa descrição curta aparece nos cards de busca. Máximo 90 caracteres.</p>
                 </div>
 
                 {/* Biografia Completa (para o Perfil) */}
@@ -1508,13 +1468,21 @@ export default function Advertise() {
           )}
 
           {step === 4 && (
-            <div className="text-center py-16 animate-in zoom-in duration-500">
-              <div className="w-24 h-24 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle size={48} />
+            <div className="text-center py-12 animate-in zoom-in duration-500 max-w-md mx-auto">
+              <div className="w-20 h-20 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle size={40} />
               </div>
-              <h2 className="text-3xl font-bold text-slate-900 mb-3">Anúncio Publicado!</h2>
-              <p className="text-slate-600 text-lg max-w-md mx-auto">Seu perfil já está visível para milhares de clientes em Itapipoca.</p>
-              <p className="text-sm text-slate-400 mt-8 animate-pulse">Redirecionando para seu painel de controle...</p>
+              <h2 className="text-2xl font-bold text-slate-900 mb-3">Anúncio criado com sucesso!</h2>
+              <p className="text-slate-600 mb-8 leading-relaxed">
+                Seu perfil já está visível para milhares de clientes em Itapipoca.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate('/dashboard?tab=meus-anuncios')}
+                className="w-full flex justify-center py-4 px-4 border border-transparent rounded-xl shadow-md text-base font-bold text-white bg-primary hover:bg-primary-hover transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary cursor-pointer"
+              >
+                Ir para Meus Anúncios
+              </button>
             </div>
           )}
         </div>

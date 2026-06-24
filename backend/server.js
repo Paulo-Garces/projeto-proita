@@ -1033,7 +1033,7 @@ app.post('/api/analyze-description', async (req, res) => {
         1. "categoriaGeral": O nome EXATO de uma das categorias da lista acima. Se não se encaixar em nenhuma, use "Outros Serviços".
         2. "atividadePrincipal": A profissão exata e principal (ex: Encanador, Fisioterapeuta, Vaqueiro, Digital Maker).
         3. "descricaoCurta": Uma frase de impacto com NO MÁXIMO 90 caracteres descrevendo o profissional.
-        4. "biografiaCompleta": O texto de marketing persuasivo completo (cerca de 2 a 3 parágrafos curtos, em primeira pessoa).
+        4. "biografiaCompleta": O texto de marketing persuasivo completo. Ele DEVE ser uma biografia concisa de exatamente e apenas 2 parágrafos curtos, em primeira pessoa.
         
         Apenas retorne o JSON, sem formatação Markdown.
         

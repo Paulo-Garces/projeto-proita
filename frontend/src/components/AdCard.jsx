@@ -321,7 +321,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   const cardContent = (
     <div 
       style={!isDashboard ? style : undefined}
-      className={`grid grid-cols-[105px_minmax(0,1fr)] xl:grid-cols-[130px_minmax(0,1fr)] gap-3 sm:gap-4 p-4 border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full' : ''}`}
+      className={`grid grid-cols-[105px_minmax(0,1fr)] sm:grid-cols-[130px_minmax(0,1fr)] gap-3 sm:gap-4 p-4 border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full' : ''}`}
     >
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-cyan-400 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300 rounded-t-xl" />
 
@@ -335,9 +335,9 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             style={{ width: 'fit-content', height: 'fit-content' }}
           >
             {avatar ? (
-              <img src={avatar} alt={displayName} className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md" />
+              <img src={avatar} alt={displayName} className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md" />
             ) : (
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white text-xl sm:text-2xl font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white text-2xl sm:text-3xl font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none">
                 {displayName?.[0]?.toUpperCase() || 'P'}
               </div>
             )}
