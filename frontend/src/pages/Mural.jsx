@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, Building2, ExternalLink, GraduationCap, Briefcase, FileText } from 'lucide-react';
+import { Calendar, Building2, ExternalLink, GraduationCap, Briefcase, FileText, RefreshCw, Lightbulb, CreditCard } from 'lucide-react';
 import { API_URL } from '../config';
 
 const CATEGORIES = [
   { id: 'all', label: 'Todos', emoji: '📰' },
   { id: 'capacitacao', label: 'Capacitação', emoji: '🎓' },
   { id: 'empregos', label: 'Empregos', emoji: '💼' },
-  { id: 'editais', label: 'Editais', emoji: '🏛️' }
+  { id: 'editais', label: 'Editais', emoji: '🏛️' },
+  { id: 'empreendedorismo', label: 'Empreendedorismo', emoji: '💡' },
+  { id: 'credito', label: 'Crédito', emoji: '💳' }
 ];
 
 export default function Mural() {
@@ -14,6 +16,52 @@ export default function Mural() {
   const [opportunities, setOpportunities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const handleSyncScraper = async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    setToast(null);
+    try {
+      const res = await fetch(`${API_URL}/api/admin/scraper/run`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setToast({
+          message: data.insertedCount > 0 
+            ? `Sincronização concluída! ${data.insertedCount} novas oportunidades adicionadas.` 
+            : 'Mural atualizado! Nenhuma oportunidade nova encontrada.',
+          type: 'success'
+        });
+        fetchOpportunities();
+      } else {
+        setToast({
+          message: data.error || 'Erro ao sincronizar oportunidades.',
+          type: 'error'
+        });
+      }
+    } catch (err) {
+      console.error('Erro ao sincronizar:', err);
+      setToast({
+        message: 'Erro de rede ao tentar sincronizar o mural.',
+        type: 'error'
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const normalizeCategory = (cat) => {
     if (!cat) return 'all';
@@ -21,6 +69,8 @@ export default function Mural() {
     if (normalized.includes('capacita') || normalized.includes('capacitação')) return 'capacitacao';
     if (normalized.includes('emprego')) return 'empregos';
     if (normalized.includes('edital') || normalized.includes('editais')) return 'editais';
+    if (normalized.includes('empreendedor') || normalized.includes('empreendedorismo')) return 'empreendedorismo';
+    if (normalized.includes('credito') || normalized.includes('crédito')) return 'credito';
     return 'all';
   };
 
@@ -84,6 +134,10 @@ export default function Mural() {
         return 'bg-emerald-50 text-emerald-700 border-emerald-100';
       case 'editais':
         return 'bg-violet-50 text-violet-700 border-violet-100';
+      case 'empreendedorismo':
+        return 'bg-amber-50 text-amber-700 border-amber-100';
+      case 'credito':
+        return 'bg-rose-50 text-rose-700 border-rose-100';
       default:
         return 'bg-slate-50 text-slate-700 border-slate-100';
     }
@@ -97,6 +151,10 @@ export default function Mural() {
         return <Briefcase size={14} className="mr-1.5 inline-block align-text-bottom text-emerald-500" />;
       case 'editais':
         return <FileText size={14} className="mr-1.5 inline-block align-text-bottom text-violet-500" />;
+      case 'empreendedorismo':
+        return <Lightbulb size={14} className="mr-1.5 inline-block align-text-bottom text-amber-500" />;
+      case 'credito':
+        return <CreditCard size={14} className="mr-1.5 inline-block align-text-bottom text-rose-500" />;
       default:
         return null;
     }
@@ -170,9 +228,20 @@ export default function Mural() {
       `}} />
 
       <div className="text-center md:text-left mb-8">
-        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight">
-          Mural de Oportunidades
-        </h1>
+        <div className="flex flex-col md:flex-row md:items-center justify-center md:justify-start gap-3">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight">
+            Mural de Oportunidades
+          </h1>
+          <button
+            onClick={handleSyncScraper}
+            disabled={isSyncing}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full border border-slate-200 bg-white text-slate-600 hover:text-primary hover:border-sky-200 transition-all shadow-sm cursor-pointer disabled:opacity-50 mx-auto md:mx-0 w-fit`}
+            title="Atualizar mural de oportunidades"
+          >
+            <RefreshCw size={12} className={`${isSyncing ? 'animate-spin text-primary' : 'text-slate-400'}`} />
+            <span>{isSyncing ? 'Carregando...' : 'Sincronizar'}</span>
+          </button>
+        </div>
         <p className="text-slate-500 mt-2 text-sm md:text-base">
           Fique por dentro das últimas vagas, cursos gratuitos, editais públicos e capacitações em Itapipoca.
         </p>
@@ -248,6 +317,17 @@ export default function Mural() {
       ) : (
         <div className="text-center py-16 bg-white rounded-2xl border border-slate-100 shadow-sm">
           <p className="text-slate-500 font-medium">Nenhuma oportunidade disponível nesta categoria.</p>
+        </div>
+      )}
+      {/* Toast de Feedback */}
+      {toast && (
+        <div className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg border transition-all duration-300 ${
+          toast.type === 'error'
+            ? 'bg-red-50 border-red-100 text-red-800'
+            : 'bg-emerald-50 border-emerald-100 text-emerald-800'
+        }`}>
+          <span className="text-sm font-semibold">{toast.message}</span>
+          <button onClick={() => setToast(null)} className="text-xs font-bold hover:opacity-75 cursor-pointer ml-2">×</button>
         </div>
       )}
     </div>

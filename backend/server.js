@@ -825,6 +825,18 @@ app.delete('/api/users/me', authMiddleware, async (req, res) => {
   }
 });
 
+// Gatilho Manual do Scraper (Temporariamente Público para Testes no Mural)
+app.post('/api/admin/scraper/run', async (req, res) => {
+  try {
+    const { scrapeOpportunities } = require('./services/scraper');
+    const insertedCount = await scrapeOpportunities(prisma);
+    res.status(200).json({ success: true, insertedCount });
+  } catch (error) {
+    console.error('[POST /api/admin/scraper/run] Erro ao rodar scraper manualmente:', error);
+    res.status(500).json({ success: false, error: 'Erro ao rodar o scraper manualmente.' });
+  }
+});
+
 // Rotas Administrativas
 const adminRoutes = require('./routes/adminRoutes')(prisma);
 app.use('/api/admin', authMiddleware, adminRoutes);
