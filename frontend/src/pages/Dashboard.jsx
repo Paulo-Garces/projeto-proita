@@ -83,7 +83,7 @@ function PortfolioSection({ ad, token }) {
     setError('');
     setIsUploading(true);
     try {
-      const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: true, fileType: 'image/jpeg' };
+      const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: false, fileType: 'image/jpeg' };
       const compressed = await imageCompression(file, options);
       const fd = new FormData();
       fd.append('portfolioImage', compressed, 'portfolio.jpg');
@@ -795,7 +795,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1024,
-        useWebWorker: true,
+        useWebWorker: false,
         fileType: 'image/jpeg',
       };
       const compressed = await imageCompression(file, options);
@@ -843,7 +843,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1200,
-        useWebWorker: true,
+        useWebWorker: false,
         fileType: 'image/jpeg',
       };
       const compressed = await imageCompression(file, options);
@@ -2567,21 +2567,33 @@ export default function Dashboard() {
                         let planPrice = '35,90';
                         let planId = 'basico_anual';
 
+                        const now = new Date();
+                        const trialEnds = user?.trialEndsAt ? new Date(user.trialEndsAt) : null;
+
                         if (status === 'ATIVO') {
                           statusBadgeColor = 'bg-emerald-50 border-emerald-200 text-emerald-700';
                           statusText = 'Ativo';
+                          if (trialEnds && now <= trialEnds) {
+                            statusText = 'Ativo (Período de Avaliação)';
+                          }
                           planName = 'Plano Patrocinador Anual';
                           planPrice = '45,90';
                           planId = 'patrocinador_anual';
                         } else if (status === 'BASICO') {
                           statusBadgeColor = 'bg-sky-50 border-sky-200 text-sky-700';
                           statusText = 'Básico Ativo';
+                          if (trialEnds && now <= trialEnds) {
+                            statusText = 'Ativo (Período de Avaliação)';
+                          }
                           planName = 'Plano Básico Anual';
                           planPrice = '35,90';
                           planId = 'basico_anual';
                         } else if (status === 'DEGUSTACAO') {
                           statusBadgeColor = 'bg-amber-50 border-amber-200 text-amber-700';
                           statusText = 'Degustação (30 dias grátis)';
+                          if (trialEnds && now <= trialEnds) {
+                            statusText = 'Ativo (Período de Avaliação)';
+                          }
                           planName = 'Plano Básico Anual';
                           planPrice = '35,90';
                           planId = 'basico_anual';
@@ -2938,6 +2950,14 @@ export default function Dashboard() {
                           const trialEnds = user?.trialEndsAt ? new Date(user.trialEndsAt) : null;
                           const subEnds = user?.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) : null;
 
+                          // Condição prioritária para período de testes ativo
+                          if (trialEnds && now <= trialEnds) {
+                            return {
+                              text: 'Assinar Plano Oficial',
+                              bgClass: 'bg-primary hover:bg-primary-hover text-white shadow-primary/10'
+                            };
+                          }
+
                           const hasPaidPlan = status === 'ATIVO' || status === 'BASICO' || !!subEnds;
 
                           // 1. Fim do Trial
@@ -3039,32 +3059,59 @@ export default function Dashboard() {
                                 </div>
                               </div>
 
-                              <div className="bg-slate-50 border border-slate-200/50 rounded-2xl p-4 space-y-2">
-                                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Benefícios da Assinatura</h4>
-                                <ul className="text-xs text-slate-600 space-y-1.5">
-                                  <li className="flex items-center gap-2">
-                                    <span className="text-emerald-500 font-bold">✓</span> Limite de até 2 anúncios profissionais por conta (Atualmente cadastrados: {myAds.length}/2).
+                              {/* Barra de Progresso do Período de Avaliação */}
+                              {trialEnds && now <= trialEnds && (() => {
+                                const totalTrialDays = 30;
+                                const msPerDay = 1000 * 60 * 60 * 24;
+                                const daysRemaining = Math.max(0, Math.ceil((trialEnds - now) / msPerDay));
+                                const progressPercent = Math.max(0, Math.min(100, (daysRemaining / totalTrialDays) * 100));
+
+                                const getBarColor = (days) => {
+                                  if (days > 15) return 'bg-emerald-500';
+                                  if (days > 7) return 'bg-orange-500';
+                                  return 'bg-red-500 animate-pulse';
+                                };
+
+                                return (
+                                  <div className="space-y-2.5 bg-slate-50 border border-slate-200/60 rounded-2xl p-5 shadow-sm">
+                                    <div className="flex justify-between text-xs font-semibold text-slate-600">
+                                      <span className="flex items-center gap-1.5 text-slate-700">
+                                        <Clock size={14} className="text-slate-400" />
+                                        Tempo de Avaliação Restante
+                                      </span>
+                                      <span className="font-bold text-slate-800">
+                                        {daysRemaining} {daysRemaining === 1 ? 'dia' : 'dias'}
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-slate-200/70 rounded-full h-2.5 overflow-hidden border border-slate-200">
+                                      <div 
+                                        className={`h-full rounded-full transition-all duration-500 ${getBarColor(daysRemaining)}`}
+                                        style={{ width: `${progressPercent}%` }}
+                                      />
+                                    </div>
+                                    <p className="text-[10px] text-slate-400 font-medium">
+                                      Seu acesso aos anúncios é gratuito durante este período. Assine o plano oficial para garantir a continuidade após o término.
+                                    </p>
+                                  </div>
+                                );
+                              })()}
+
+                              <div className="bg-slate-50/70 border border-slate-200 rounded-2xl p-5 space-y-4">
+                                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                                  <Sparkles size={14} className="text-amber-500"/>
+                                  Vantagens do seu Plano
+                                </h4>
+                                <ul className="text-sm text-slate-600 space-y-3">
+                                  <li className="flex items-start gap-2.5">
+                                    <CheckCircle size={18} className="text-emerald-500 shrink-0 mt-0.5"/>
+                                    <span className="leading-relaxed"><strong>Até 2 Anúncios Profissionais:</strong> Crie e gerencie vitrines simultâneas para seus serviços (Usados: {myAds.length}/2).</span>
                                   </li>
-                                  <li className="flex items-center gap-2">
-                                    <span className="text-emerald-500 font-bold">✓</span> {status === 'ATIVO' || status === 'BASICO' ? (
-                                      <span className="text-emerald-600 font-bold">Selos de Reputação ATIVOS e exibidos nos seus anúncios!</span>
-                                    ) : (
-                                      <span>Ative sua conta para exibir seus Selos de Reputação (Bronze, Prata e Ouro).</span>
-                                    )}
+                                  <li className="flex items-start gap-2.5">
+                                    <CheckCircle size={18} className="text-emerald-500 shrink-0 mt-0.5"/>
+                                    <span className="leading-relaxed"><strong>Selos de Reputação:</strong> {(status === 'ATIVO' || status === 'BASICO') ? 'Conquistas ativas e visíveis para aumentar a confiança dos clientes.' : 'Assine para desbloquear e exibir selos de verificação e qualidade.'}</span>
                                   </li>
                                 </ul>
                               </div>
-
-                              {(status === 'ATIVO' || status === 'BASICO') && (
-                                <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
-                                  <div className="flex items-center gap-2 text-indigo-800">
-                                    <span className="text-sm font-medium">Deseja alterar seu plano? Entre em contato com o suporte.</span>
-                                  </div>
-                                  <button onClick={() => navigate('/central-de-ajuda')} className="bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 px-4 py-2 rounded-xl text-xs font-bold transition-colors shrink-0 cursor-pointer">
-                                    Fale com o Suporte
-                                  </button>
-                                </div>
-                              )}
 
                               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                                 {(() => {
@@ -3094,6 +3141,16 @@ export default function Dashboard() {
                                   className="text-xs font-semibold text-primary hover:text-primary-hover hover:underline transition-all cursor-pointer bg-transparent border-none outline-none"
                                 >
                                   Solicitar Nota Fiscal Eletrônica
+                                </button>
+                              </div>
+
+                              <div className="text-center mt-3 pt-3 border-t border-slate-100">
+                                <button
+                                  type="button"
+                                  onClick={() => navigate('/central-de-ajuda')}
+                                  className="text-xs font-medium text-slate-400 hover:text-slate-600 hover:underline transition-all cursor-pointer bg-transparent border-none outline-none"
+                                >
+                                  Solicitar mudança de plano
                                 </button>
                               </div>
                             </div>

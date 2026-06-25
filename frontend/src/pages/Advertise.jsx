@@ -731,7 +731,7 @@ export default function Advertise() {
           setIsUploading(true);
           try {
             for (const item of portfolioQueue) {
-              const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: true, fileType: 'image/jpeg' };
+              const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: false, fileType: 'image/jpeg' };
               const compressed = await imageCompression(item.file, options);
               const fd = new FormData();
               fd.append('portfolioImage', compressed, 'portfolio.jpg');

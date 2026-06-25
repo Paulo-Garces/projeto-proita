@@ -119,7 +119,7 @@ function AdSponsorsManager({ ad, token, onSaved }) {
       const options = {
         maxSizeMB: 1.0,
         maxWidthOrHeight: 1200,
-        useWebWorker: true,
+        useWebWorker: false,
         fileType: 'image/jpeg'
       };
 
