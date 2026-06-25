@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 import imageCompression from 'browser-image-compression';
-import { Briefcase, MapPin, AlignLeft, CheckCircle, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, Square, Send, Pause, Play, Lock } from 'lucide-react';
+import { Briefcase, MapPin, AlignLeft, CheckCircle, Search, Mic, UploadCloud, Camera, Plus, Trash2, Globe, Video, Sparkles, Loader2, Square, Send, Pause, Play, Lock, X } from 'lucide-react';
 import ImageCropperModal from '../components/ImageCropperModal';
 
 const MAX_PORTFOLIO_FILES = 8;
@@ -66,6 +66,89 @@ const blobToBase64 = (blob) => {
     reader.readAsDataURL(blob);
   });
 };
+
+const fileToBlobFallback = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const arr = reader.result.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        resolve(new Blob([u8arr], { type: mime }));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    reader.onerror = (e) => reject(e);
+    reader.readAsDataURL(file);
+  });
+};
+
+function ImageDeleteConfirmModal({ isOpen, onClose, onConfirm, loading }) {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden"
+        style={{ animation: 'modalPop 0.22s cubic-bezier(0.34,1.56,0.64,1) both' }}
+      >
+        <div className="px-6 py-5 flex items-center gap-3 border-b border-slate-100">
+          <div className="p-2.5 bg-red-50 rounded-xl text-red-600">
+            <Trash2 size={20} />
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-900">Excluir Imagem</h3>
+          </div>
+          <button onClick={onClose} className="ml-auto p-2 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer">
+            <X size={16} className="text-slate-400" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Tem certeza de que deseja remover esta imagem do seu portfólio?
+          </p>
+        </div>
+
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="px-4 py-2 border border-slate-200 text-slate-500 hover:bg-slate-100 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <Loader2 size={13} className="animate-spin" /> Excluindo...
+              </>
+            ) : (
+              'Excluir'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Advertise() {
   const { user, token, isAuthenticated, loading: authLoading, logout } = useContext(AuthContext);
@@ -190,6 +273,7 @@ export default function Advertise() {
 
   const [portfolioQueue, setPortfolioQueue] = useState([]);
   const portfolioInputRef = useRef(null);
+  const [deleteItemId, setDeleteItemId] = useState(null);
 
   // Estados do Crop e Parceiros (Sponsors)
   const [cropTarget, setCropTarget] = useState(null); // { type: 'avatar' | 'partner', imageSrc: string }
@@ -253,6 +337,10 @@ export default function Advertise() {
       if (item?.preview) URL.revokeObjectURL(item.preview);
       return prev.filter((p) => p.id !== id);
     });
+  };
+
+  const handleDeleteItemClick = (id) => {
+    setDeleteItemId(id);
   };
 
   const handlePortfolioDragOver = (e) => {
@@ -731,10 +819,16 @@ export default function Advertise() {
           setIsUploading(true);
           try {
             for (const item of portfolioQueue) {
-              const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: false, fileType: 'image/jpeg' };
-              const compressed = await imageCompression(item.file, options);
+              let uploadBlob;
+              try {
+                const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: false, fileType: 'image/jpeg' };
+                uploadBlob = await imageCompression(item.file, options);
+              } catch (err) {
+                console.warn('[PORTFOLIO UPLOAD] Falha na compressão, usando fallback FileReader:', err);
+                uploadBlob = await fileToBlobFallback(item.file);
+              }
               const fd = new FormData();
-              fd.append('portfolioImage', compressed, 'portfolio.jpg');
+              fd.append('portfolioImage', uploadBlob, 'portfolio.jpg');
               const up = await fetch(`${API_URL}/api/upload/portfolio/${profileId}`, {
                 method: 'POST',
                 headers: { Authorization: `Bearer ${token}` },
@@ -1379,7 +1473,9 @@ export default function Advertise() {
 
                 {/* Portfolio Drag & Drop */}
                 <div>
-                  <h4 className="font-medium text-slate-800 mb-2">Portfólio (Fotos do seu trabalho)</h4>
+                  <h4 className="font-medium text-slate-800 mb-2">
+                    Portfólio (Fotos do seu trabalho) <span className="text-xs text-slate-500 font-normal">(Máx. 8 fotos - Atual: {portfolioQueue.length}/8)</span>
+                  </h4>
                   <input
                     ref={portfolioInputRef}
                     type="file"
@@ -1389,30 +1485,34 @@ export default function Advertise() {
                     onChange={handlePortfolioInputChange}
                     onClick={(e) => { e.target.value = null; }}
                   />
-                  <div
-                    role="presentation"
-                    onClick={() => portfolioInputRef.current?.click()}
-                    onDragEnter={handlePortfolioDragEnter}
-                    onDragOver={handlePortfolioDragOver}
-                    onDrop={handlePortfolioDrop}
-                    className="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer flex flex-col items-center justify-center"
-                  >
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm text-primary mb-4 pointer-events-none">
-                      <UploadCloud size={28} />
-                    </div>
-                    <p className="text-slate-700 font-medium text-base mb-1 pointer-events-none">Arraste e solte imagens aqui</p>
-                    <p className="text-slate-500 text-sm pointer-events-none">Adicione até {MAX_PORTFOLIO_FILES} fotos do seu trabalho. Max {MAX_PORTFOLIO_MB}MB por foto.</p>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        portfolioInputRef.current?.click();
-                      }}
-                      className="mt-4 px-6 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                  {portfolioQueue.length < 8 ? (
+                    <div
+                      role="presentation"
+                      onClick={() => portfolioInputRef.current?.click()}
+                      onDragEnter={handlePortfolioDragEnter}
+                      onDragOver={handlePortfolioDragOver}
+                      onDrop={handlePortfolioDrop}
+                      className="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer flex flex-col items-center justify-center"
                     >
-                      Procurar arquivos
-                    </button>
-                  </div>
+                      <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm text-primary mb-4 pointer-events-none">
+                        <UploadCloud size={28} />
+                      </div>
+                      <p className="text-slate-700 font-medium text-base mb-1 pointer-events-none">Arraste e solte imagens aqui</p>
+                      <p className="text-slate-500 text-sm pointer-events-none">Adicione até {MAX_PORTFOLIO_FILES} fotos do seu trabalho. Max {MAX_PORTFOLIO_MB}MB por foto.</p>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          portfolioInputRef.current?.click();
+                        }}
+                        className="mt-4 px-6 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                      >
+                        Procurar arquivos
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-red-500 text-sm mt-2">Portfólio completo. Exclua uma imagem para adicionar outra.</p>
+                  )}
                   {portfolioQueue?.length > 0 && (
                     <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
                       {portfolioQueue?.map((item) => (
@@ -1422,9 +1522,9 @@ export default function Advertise() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              removePortfolioItem(item.id);
+                              handleDeleteItemClick(item.id);
                             }}
-                            className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                            className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shadow"
                             title="Remover"
                           >
                             <Trash2 size={14} />
@@ -1518,6 +1618,15 @@ export default function Advertise() {
           }}
         />
       )}
+
+      <ImageDeleteConfirmModal
+        isOpen={deleteItemId !== null}
+        onClose={() => setDeleteItemId(null)}
+        onConfirm={() => {
+          removePortfolioItem(deleteItemId);
+          setDeleteItemId(null);
+        }}
+      />
     </div>
   );
 }

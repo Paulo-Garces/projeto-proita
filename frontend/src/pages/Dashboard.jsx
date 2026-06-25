@@ -35,6 +35,89 @@ const convertToInternationalPhone = (phone) => {
   return `+55${clean}`;
 };
 
+const fileToBlobFallback = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const arr = reader.result.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        resolve(new Blob([u8arr], { type: mime }));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    reader.onerror = (e) => reject(e);
+    reader.readAsDataURL(file);
+  });
+};
+
+function ImageDeleteConfirmModal({ isOpen, onClose, onConfirm, loading }) {
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden"
+        style={{ animation: 'modalPop 0.22s cubic-bezier(0.34,1.56,0.64,1) both' }}
+      >
+        <div className="px-6 py-5 flex items-center gap-3 border-b border-slate-100">
+          <div className="p-2.5 bg-red-50 rounded-xl text-red-600">
+            <Trash2 size={20} />
+          </div>
+          <div>
+            <h3 className="font-bold text-slate-900">Excluir Imagem</h3>
+          </div>
+          <button onClick={onClose} className="ml-auto p-2 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer">
+            <X size={16} className="text-slate-400" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Tem certeza de que deseja remover esta imagem do seu portfólio? Esta ação não pode ser desfeita.
+          </p>
+        </div>
+
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="px-4 py-2 border border-slate-200 text-slate-500 hover:bg-slate-100 rounded-xl text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <Loader2 size={13} className="animate-spin" /> Excluindo...
+              </>
+            ) : (
+              'Excluir'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Sub-componente: Avatar (foto real ou iniciais) ──────────────
 function AvatarDisplay({ user, sizeClass = 'w-20 h-20', textClass = 'text-2xl' }) {
   return user?.profileImageUrl ? (
@@ -69,6 +152,8 @@ function PortfolioSection({ ad, token }) {
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState('');
   const inputRef = useRef(null);
+  const [deleteUrl, setDeleteUrl] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     urlsRef.current = urls;
@@ -83,10 +168,16 @@ function PortfolioSection({ ad, token }) {
     setError('');
     setIsUploading(true);
     try {
-      const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: false, fileType: 'image/jpeg' };
-      const compressed = await imageCompression(file, options);
+      let uploadBlob;
+      try {
+        const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: false, fileType: 'image/jpeg' };
+        uploadBlob = await imageCompression(file, options);
+      } catch (err) {
+        console.warn('[PORTFOLIO UPLOAD] Falha na compressão, usando fallback FileReader:', err);
+        uploadBlob = await fileToBlobFallback(file);
+      }
       const fd = new FormData();
-      fd.append('portfolioImage', compressed, 'portfolio.jpg');
+      fd.append('portfolioImage', uploadBlob, 'portfolio.jpg');
       const res = await fetch(`${API_URL}/api/upload/portfolio/${ad.id}`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
@@ -105,10 +196,12 @@ function PortfolioSection({ ad, token }) {
   };
 
   const handleUpload = async (e) => {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files || []).filter((f) => f.type.startsWith('image/'));
     e.target.value = '';
-    if (!file) return;
-    await uploadPortfolioFile(file);
+    for (const file of files) {
+      if (urlsRef.current.length >= 8) break;
+      await uploadPortfolioFile(file);
+    }
   };
 
   const handleDrop = async (e) => {
@@ -132,36 +225,59 @@ function PortfolioSection({ ad, token }) {
     e.stopPropagation();
   };
 
-  const handleDelete = async (url) => {
-    if (!confirm('Remover esta foto do portfólio?')) return;
+  const handleDeleteClick = (url) => {
+    setDeleteUrl(url);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteUrl) return;
+    setIsDeleting(true);
     try {
       const res = await fetch(`${API_URL}/api/upload/portfolio/${ad.id}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url: deleteUrl }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setUrls(data.portfolioUrls);
         urlsRef.current = data.portfolioUrls;
       }
-    } catch { }
+    } catch (err) {
+      console.error('[PORTFOLIO DELETE] Erro:', err);
+    } finally {
+      setIsDeleting(false);
+      setDeleteUrl(null);
+    }
   };
 
   return (
     <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
       <div className="flex items-center justify-between mb-4">
-        <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Portfólio</h4>
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={isUploading}
-          className="flex items-center gap-1.5 text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-medium hover:bg-primary-hover transition-colors disabled:opacity-60"
-        >
-          {isUploading ? <Loader2 size={13} className="animate-spin" /> : <UploadCloud size={13} />}
-          {isUploading ? 'Enviando...' : 'Adicionar foto'}
-        </button>
-        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} onClick={(e) => { e.target.value = null; }} />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5">
+          <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Portfólio</h4>
+          <span className="text-xs text-slate-500 font-normal">(Máx. 8 fotos - Atual: {urls.length}/8)</span>
+        </div>
+        {urls.length < 8 && (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={isUploading}
+            className="flex items-center gap-1.5 text-xs bg-primary text-white px-3 py-1.5 rounded-lg font-medium hover:bg-primary-hover transition-colors disabled:opacity-60"
+          >
+            {isUploading ? <Loader2 size={13} className="animate-spin" /> : <UploadCloud size={13} />}
+            {isUploading ? 'Enviando...' : 'Adicionar foto'}
+          </button>
+        )}
+        <input 
+          ref={inputRef} 
+          type="file" 
+          accept="image/*" 
+          multiple
+          className="hidden" 
+          onChange={handleUpload} 
+          onClick={(e) => { e.target.value = null; }} 
+        />
       </div>
 
       {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
@@ -191,25 +307,38 @@ function PortfolioSection({ ad, token }) {
               <img src={url} alt={`Portfólio ${i + 1}`} className="w-full h-full object-cover" />
               <button
                 type="button"
-                onClick={() => handleDelete(url)}
-                className="absolute top-1.5 right-1.5 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                onClick={() => handleDeleteClick(url)}
+                className="absolute top-1.5 right-1.5 bg-red-500 text-white rounded-full p-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
                 title="Remover foto"
               >
                 <Trash2 size={12} />
               </button>
             </div>
           ))}
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            disabled={isUploading}
-            className="aspect-square border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:border-primary/40 hover:text-primary transition-colors"
-          >
-            <UploadCloud size={22} />
-            <span className="text-xs mt-1">Adicionar</span>
-          </button>
+          {urls.length < 8 && (
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={isUploading}
+              className="aspect-square border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:border-primary/40 hover:text-primary transition-colors"
+            >
+              <UploadCloud size={22} />
+              <span className="text-xs mt-1">Adicionar</span>
+            </button>
+          )}
         </div>
       )}
+
+      {urls.length >= 8 && (
+        <p className="text-red-500 text-sm mt-2">Portfólio completo. Exclua uma imagem para adicionar outra.</p>
+      )}
+
+      <ImageDeleteConfirmModal
+        isOpen={!!deleteUrl}
+        onClose={() => setDeleteUrl(null)}
+        onConfirm={handleConfirmDelete}
+        loading={isDeleting}
+      />
     </section>
   );
 }
@@ -792,15 +921,21 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
     setIsUploadingLogo(true);
 
     try {
-      const options = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1024,
-        useWebWorker: false,
-        fileType: 'image/jpeg',
-      };
-      const compressed = await imageCompression(file, options);
+      let uploadBlob;
+      try {
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1024,
+          useWebWorker: false,
+          fileType: 'image/jpeg',
+        };
+        uploadBlob = await imageCompression(file, options);
+      } catch (err) {
+        console.warn('[LOGO UPLOAD] Falha na compressão, usando fallback FileReader:', err);
+        uploadBlob = await fileToBlobFallback(file);
+      }
       const fd = new FormData();
-      fd.append('fotoAnuncio', compressed, 'fotoAnuncio.jpg');
+      fd.append('fotoAnuncio', uploadBlob, 'fotoAnuncio.jpg');
 
       const res = await fetch(`${API_URL}/api/upload/foto-anuncio`, {
         method: 'POST',
@@ -840,15 +975,21 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
     setIsUploadingCapa(true);
 
     try {
-      const options = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1200,
-        useWebWorker: false,
-        fileType: 'image/jpeg',
-      };
-      const compressed = await imageCompression(file, options);
+      let uploadBlob;
+      try {
+        const options = {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1200,
+          useWebWorker: false,
+          fileType: 'image/jpeg',
+        };
+        uploadBlob = await imageCompression(file, options);
+      } catch (err) {
+        console.warn('[CAPA UPLOAD] Falha na compressão, usando fallback FileReader:', err);
+        uploadBlob = await fileToBlobFallback(file);
+      }
       const fd = new FormData();
-      fd.append('fotoAnuncio', compressed, 'capaAnuncio.jpg');
+      fd.append('fotoAnuncio', uploadBlob, 'capaAnuncio.jpg');
 
       const res = await fetch(`${API_URL}/api/upload/foto-anuncio`, {
         method: 'POST',
@@ -1055,7 +1196,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
             />
             {capaError && <p className="text-xs text-red-500">{capaError}</p>}
             <p className="text-xs text-slate-500 max-w-sm">
-              Escolha uma imagem horizontal elegante para o topo do seu perfil público (proporção sugerida 3:1).
+              Escolha uma imagem horizontal elegante para o topo do seu perfil público (proporção sugerida 3:1 - Recomendado: 1200x400 pixels).
             </p>
           </div>
         </div>
