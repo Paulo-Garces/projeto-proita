@@ -1,6 +1,6 @@
 import { useState, useContext, useRef, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard, Sparkles, Clock, Copy, ChevronLeft, ChevronRight, Check, X, Link2, Crop, RefreshCw, Bell } from 'lucide-react';
+import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard, Sparkles, Clock, Copy, ChevronLeft, ChevronRight, Check, X, Link2, Crop, RefreshCw, Bell, Download } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
@@ -161,7 +161,7 @@ function PortfolioSection({ ad, token }) {
           {isUploading ? <Loader2 size={13} className="animate-spin" /> : <UploadCloud size={13} />}
           {isUploading ? 'Enviando...' : 'Adicionar foto'}
         </button>
-        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} onClick={(e) => { e.target.value = null; }} />
       </div>
 
       {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
@@ -995,6 +995,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
               accept="image/*"
               className="hidden"
               onChange={handleLogoUpload}
+              onClick={(e) => { e.target.value = null; }}
             />
             {logoError && <p className="text-xs text-red-500">{logoError}</p>}
             <p className="text-xs text-slate-500 max-w-sm">
@@ -1050,6 +1051,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
               accept="image/*"
               className="hidden"
               onChange={handleCapaUpload}
+              onClick={(e) => { e.target.value = null; }}
             />
             {capaError && <p className="text-xs text-red-500">{capaError}</p>}
             <p className="text-xs text-slate-500 max-w-sm">
@@ -1364,6 +1366,7 @@ export default function Dashboard() {
 
   // Crop de Foto de Perfil Pessoal
   const [cropTarget, setCropTarget] = useState(null); // { type: string, imageSrc: string }
+  const [qrCodeAd, setQrCodeAd] = useState(null);
 
   const [myAds, setMyAds] = useState([]);
   const [adsLoading, setAdsLoading] = useState(false);
@@ -1626,13 +1629,21 @@ export default function Dashboard() {
   }, [activeTab, user?.googleId, token]);
 
   const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    e.target.value = ''; // Previne o bug de 'piscar' e não carregar a mesma foto
     if (!file) return;
-    setCropTarget({
-      type: 'profile',
-      imageSrc: URL.createObjectURL(file)
-    });
-    e.target.value = '';
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropTarget({
+        type: 'profile',
+        imageSrc: reader.result
+      });
+    };
+    reader.onerror = () => {
+      alert('Erro ao processar a imagem do seu celular. Tente novamente.');
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleCroppedProfileImage = async (blob) => {
@@ -2174,7 +2185,7 @@ export default function Dashboard() {
             </div>
           </aside>
 
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} onClick={(e) => { e.target.value = null; }} />
 
           <main ref={contentRef} className="flex-1">
             <div className={(activeTab === 'professional' && editingAd) ? "space-y-6 animate-in fade-in duration-300" : "bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-10"}>
@@ -2373,6 +2384,7 @@ export default function Dashboard() {
 
                               const cardPro = {
                                 id: ad.id,
+                                slug: ad.slug,
                                 name: getProfileDisplayName(ad, user),
                                 category: ad.atividadePrincipal,
                                 shortDescription: ad.descricaoCurta || ad.shortDescription || ad.descricaoTrabalho?.substring(0, 90),
@@ -2397,6 +2409,7 @@ export default function Dashboard() {
                                   disableEdit={isSuspended}
                                   onEdit={() => setEditingAd(ad)}
                                   onDelete={() => handleDeleteAd(ad.id)}
+                                  onQrCode={() => setQrCodeAd(ad)}
                                 />
                               );
                             })}
@@ -3638,6 +3651,99 @@ function DashboardToast({ toast, onClose }) {
         @keyframes toastSlideIn {
           from { opacity: 0; transform: translateY(12px) scale(0.95); }
           to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+      `}</style>
+
+      {qrCodeAd && (
+        <QrCodeModal
+          isOpen={!!qrCodeAd}
+          onClose={() => setQrCodeAd(null)}
+          professional={qrCodeAd}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Componente: Modal de QR Code para Divulgação ───────────────────
+function QrCodeModal({ isOpen, onClose, professional }) {
+  if (!isOpen || !professional) return null;
+
+  const profileUrl = `${window.location.origin}/profile/${professional.slug || professional.id}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(profileUrl)}`;
+
+  const handleDownload = async () => {
+    try {
+      const res = await fetch(qrCodeUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `qrcode-${professional.slug || professional.id}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Erro ao baixar QR Code:', err);
+      window.open(qrCodeUrl, '_blank');
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-6"
+        style={{ animation: 'modalPop 0.22s cubic-bezier(0.34,1.56,0.64,1) both' }}
+      >
+        <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+          <h3 className="font-extrabold text-slate-900 text-lg">QR Code de Divulgação</h3>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer">
+            <X size={16} className="text-slate-400" />
+          </button>
+        </div>
+
+        <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+          Baixe e compartilhe seu QR Code no Instagram, WhatsApp ou imprima para colocar em cartões de visita!
+        </p>
+
+        <div className="bg-slate-50 p-4 rounded-2xl inline-block mx-auto border border-slate-150 shadow-inner">
+          <img
+            src={qrCodeUrl}
+            alt="QR Code do Perfil"
+            className="w-[200px] h-[200px] mx-auto object-contain rounded-lg"
+          />
+        </div>
+
+        <div className="text-xs font-semibold text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 break-all select-all">
+          {profileUrl}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="w-full py-3 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold transition-all text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Download size={16} /> Baixar QR Code (PNG)
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full py-2.5 border border-slate-200 text-slate-500 hover:bg-slate-50 rounded-xl text-xs font-bold transition-all cursor-pointer"
+          >
+            Fechar
+          </button>
+        </div>
+      </div>
+      <style>{`
+        @keyframes modalPop {
+          from { opacity: 0; transform: scale(0.9) translateY(10px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}</style>
     </div>

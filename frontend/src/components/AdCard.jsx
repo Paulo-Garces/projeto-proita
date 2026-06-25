@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect, useContext } from 'react';
-import { Star, Phone, Share2, CheckCircle, Edit2, Trash2, IdCard, Bookmark, Plus, MapPin, Award, ShieldCheck, Eye, MessageCircle, TrendingUp, Loader2, X, BadgeCheck, BarChart3, Map, CircleUser } from 'lucide-react';
+import { Star, Phone, Share2, CheckCircle, Edit2, Trash2, IdCard, Bookmark, Plus, MapPin, Award, ShieldCheck, Eye, MessageCircle, TrendingUp, Loader2, X, BadgeCheck, BarChart3, Map, CircleUser, QrCode } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_URL } from '../config';
 import { getProfileDisplayName } from '../utils/profileDisplayName';
@@ -76,7 +76,7 @@ const SocialIcon = ({ platform }) => {
   return icons[platform?.toLowerCase()] || WEB_SVG;
 };
 
-export default function AdCard({ professional, showEdit = false, onEdit, onDelete, style, disableEdit = false, isDashboard = false }) {
+export default function AdCard({ professional, showEdit = false, onEdit, onDelete, style, disableEdit = false, isDashboard = false, onQrCode }) {
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
@@ -297,7 +297,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
 
   const share = async (e) => {
     e.preventDefault();
-    const url = `${window.location.origin}/profile/${professional.id}`;
+    const url = `${window.location.origin}/profile/${professional.slug || professional.id}`;
 
     fetch(`${API_URL}/api/ads/${professional.id}/track`, {
       method: 'POST',
@@ -329,7 +329,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
       <div className="flex flex-col justify-between items-center h-full text-center border-r border-slate-100 pr-2">
         <div className="flex flex-col items-center w-full">
           <Link 
-            to={`/profile/${professional.id}`} 
+            to={`/profile/${professional.slug || professional.id}`} 
             onClick={handleProfileClick} 
             className="relative cursor-pointer inline-block hover:scale-105 transition-transform rounded-full"
             style={{ width: 'fit-content', height: 'fit-content' }}
@@ -435,7 +435,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         <div className="flex justify-between items-stretch gap-2 min-w-0">
           <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
             <Link 
-              to={`/profile/${professional.id}`} 
+              to={`/profile/${professional.slug || professional.id}`} 
               onClick={handleProfileClick} 
               className="block group-hover:text-primary transition-colors min-w-0 truncate w-full"
             >
@@ -446,7 +446,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             
             {/* Avaliação */}
             <Link 
-              to={`/profile/${professional.id}?tab=avaliacoes`}
+              to={`/profile/${professional.slug || professional.id}?tab=avaliacoes`}
               onClick={handleProfileClick}
               className="flex items-center gap-1 hover:underline hover:text-primary transition-all cursor-pointer group/rating min-w-0"
               title="Ver todas as avaliações deste profissional"
@@ -486,7 +486,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                 <div 
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate(`/profile/${professional.id}?tab=parceiros`);
+                    navigate(`/profile/${professional.slug || professional.id}?tab=parceiros`);
                   }}
                   className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-0.5 relative overflow-hidden shadow-2xs select-none cursor-pointer hover:border-primary/30 transition-colors shrink-0"
                 >
@@ -522,7 +522,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         {/* Linha 2 (Ações Perfil) */}
         <div className="flex items-center gap-2">
           <Link
-            to={`/profile/${professional.id}`}
+            to={`/profile/${professional.slug || professional.id}`}
             onClick={handleProfileClick}
             className="flex-1 flex items-center gap-1.5 text-sky-600 hover:text-sky-700 font-semibold text-xs sm:text-sm py-1.5"
           >
@@ -560,13 +560,20 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
           {isDashboard ? (
             <>
               {showEdit && (
-                <div className="flex flex-row w-full gap-2 items-center">
+                <div className="flex flex-row w-full gap-2 items-center flex-wrap sm:flex-nowrap">
                   <button 
                     onClick={() => onEdit?.(professional)} 
                     disabled={disableEdit}
                     className="flex-1 flex justify-center items-center gap-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 py-2.5 rounded-xl font-bold transition-all text-xs sm:text-sm border border-slate-200 shadow-xs cursor-pointer"
                   >
                     <Edit2 size={14} /> Editar
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => onQrCode?.(professional)}
+                    className="flex-1 flex justify-center items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-bold transition-all text-xs sm:text-sm border border-slate-200 shadow-xs cursor-pointer"
+                  >
+                    <QrCode size={14} /> QR Code
                   </button>
                   <button 
                     onClick={() => onDelete?.(professional.id)} 

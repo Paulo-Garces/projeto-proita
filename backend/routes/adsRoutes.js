@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/authMiddleware');
 const imagekit = require('../config/imagekit');
 const { convertToInternationalPhone } = require('../utils/phoneHelper');
+const { generateSlug } = require('../utils/slugHelper');
 
 // Helper para exclusão assíncrona e segura no ImageKit
 const safeDeleteImageKit = async (fileId) => {
@@ -253,8 +254,9 @@ module.exports = (prisma) => {
     console.log(`[GET /api/ads/:id] Buscando: ${id}`);
     try {
       const userId = getOptionalUserId(req);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
       const ad = await prisma.profile.findUnique({
-        where: { id: String(id) },
+        where: isUuid ? { id: String(id) } : { slug: String(id) },
         include: { 
           user: { select: publicUserSelect },
           ...(userId && {
@@ -335,9 +337,22 @@ module.exports = (prisma) => {
         nextReferenceCode = `PRO-${String(lastNum + 1).padStart(3, '0')}`;
       }
 
+      const nameForSlug = pickOptionalProfileString(nome);
+      const sobForSlug = pickOptionalProfileString(sobrenome);
+      let displayNameForSlug = [nameForSlug, sobForSlug].filter(Boolean).join(' ').trim();
+      
+      if (!displayNameForSlug) {
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (user) {
+          displayNameForSlug = [user.nome, user.sobrenome].filter(Boolean).join(' ').trim();
+        }
+      }
+      const slug = await generateSlug(displayNameForSlug, prisma);
+
       const profile = await prisma.profile.create({
         data: {
           userId,
+          slug,
           atividadePrincipal,
           categoriaGeral: categoriaGeral || null,
           atividadesSecundarias: atividadesSecundarias || [],
@@ -460,9 +475,35 @@ module.exports = (prisma) => {
       const nextServicePhone = pickProfileServicePhone(req.body);
       const nextServiceBairro = pickProfileServiceBairro(req.body);
 
+      let nextSlug = undefined;
+      if (isChangingName) {
+        const nameForSlug = pickOptionalProfileString(nome) ?? existing.nomeExibicao;
+        const sobForSlug = pickOptionalProfileString(sobrenome) ?? existing.sobrenomeExibicao;
+        let displayNameForSlug = [nameForSlug, sobForSlug].filter(Boolean).join(' ').trim();
+        if (!displayNameForSlug) {
+          const user = await prisma.user.findUnique({ where: { id: userId } });
+          if (user) {
+            displayNameForSlug = [user.nome, user.sobrenome].filter(Boolean).join(' ').trim();
+          }
+        }
+        nextSlug = await generateSlug(displayNameForSlug, prisma);
+      } else if (!existing.slug) {
+        const nameForSlug = existing.nomeExibicao;
+        const sobForSlug = existing.sobrenomeExibicao;
+        let displayNameForSlug = [nameForSlug, sobForSlug].filter(Boolean).join(' ').trim();
+        if (!displayNameForSlug) {
+          const user = await prisma.user.findUnique({ where: { id: userId } });
+          if (user) {
+            displayNameForSlug = [user.nome, user.sobrenome].filter(Boolean).join(' ').trim();
+          }
+        }
+        nextSlug = await generateSlug(displayNameForSlug, prisma);
+      }
+
       const updated = await prisma.profile.update({
         where: { id },
         data: {
+          ...(nextSlug !== undefined && { slug: nextSlug }),
           ...(shouldUpdateTimestamp && { lastNamePhoneUpdate: new Date() }),
           ...(atividadePrincipal !== undefined && { atividadePrincipal }),
           ...(categoriaGeral !== undefined && { categoriaGeral }),

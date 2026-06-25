@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs'); // Importado para criptografar a nova senha
 const jwt = require('jsonwebtoken');
 const imagekit = require('../config/imagekit');
 const { convertToInternationalPhone, getPhoneVariations } = require('../utils/phoneHelper');
+const { generateSlug } = require('../utils/slugHelper');
 
 module.exports = (prisma) => {
   const router = express.Router();
@@ -93,6 +94,52 @@ module.exports = (prisma) => {
     } catch (error) {
       console.error('Erro ao buscar stats do admin:', error);
       res.status(500).json({ success: false, message: 'Erro interno ao buscar estatísticas.' });
+    }
+  });
+
+  // Rota Temporária: Migrar perfis antigos gerando Slugs amigáveis
+  router.put('/migrate-slugs', checkAdmin, async (req, res) => {
+    try {
+      const profilesWithoutSlug = await prisma.profile.findMany({
+        where: {
+          OR: [
+            { slug: null },
+            { slug: '' }
+          ]
+        },
+        include: { user: true }
+      });
+
+      console.log(`[MIGRATE SLUGS] Encontrados ${profilesWithoutSlug.length} perfis para migrar.`);
+      const migrated = [];
+
+      for (const profile of profilesWithoutSlug) {
+        const namePart = profile.nomeExibicao;
+        const sobPart = profile.sobrenomeExibicao;
+        let displayName = [namePart, sobPart].filter(Boolean).join(' ').trim();
+        
+        if (!displayName && profile.user) {
+          displayName = [profile.user.nome, profile.user.sobrenome].filter(Boolean).join(' ').trim();
+        }
+
+        const slug = await generateSlug(displayName, prisma);
+        
+        await prisma.profile.update({
+          where: { id: profile.id },
+          data: { slug }
+        });
+
+        migrated.push({ id: profile.id, name: displayName, slug });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: `Migração concluída. ${migrated.length} perfis atualizados.`,
+        migrated
+      });
+    } catch (error) {
+      console.error('[MIGRATE SLUGS] Erro:', error);
+      res.status(500).json({ success: false, message: 'Erro ao migrar slugs.', error: error.message });
     }
   });
 

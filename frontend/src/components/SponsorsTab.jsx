@@ -64,7 +64,7 @@ function AdSponsorsManager({ ad, token, onSaved }) {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        const originalUrl = typeof partnerCropTarget === 'string' ? partnerCropTarget : URL.createObjectURL(partnerCropTarget);
+        const originalUrl = partnerCropTarget;
         if (partnerEditIndex !== null && partnerEditIndex !== undefined && partnerEditIndex >= 0) {
           setAdPartners(prev => prev.map((item, idx) => idx === partnerEditIndex ? {
             ...item,
@@ -182,8 +182,10 @@ function AdSponsorsManager({ ad, token, onSaved }) {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+    input.onclick = (e) => { e.target.value = null; };
     input.onchange = (e) => {
       const file = e.target.files?.[0];
+      e.target.value = '';
       if (!file) return;
       handleImageSelect(file, undefined);
     };
@@ -194,8 +196,10 @@ function AdSponsorsManager({ ad, token, onSaved }) {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+    input.onclick = (e) => { e.target.value = null; };
     input.onchange = (e) => {
       const file = e.target.files?.[0];
+      e.target.value = '';
       if (!file) return;
       handleImageSelect(file, index);
     };

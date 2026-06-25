@@ -63,7 +63,7 @@ export default function ProCard({ professional }) {
 
   const handleShare = (e) => {
     e.preventDefault();
-    navigator.clipboard.writeText(`${window.location.origin}/profile/${professional.id}`);
+    navigator.clipboard.writeText(`${window.location.origin}/profile/${professional.slug || professional.id}`);
     alert('Link copiado!');
   };
 
@@ -74,7 +74,7 @@ export default function ProCard({ professional }) {
   };
 
   return (
-    <Link to={`/profile/${professional.id}`} className="group block h-full">
+    <Link to={`/profile/${professional.slug || professional.id}`} className="group block h-full">
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 h-full flex flex-row p-4 gap-4 overflow-hidden relative">
 
         {/* Barra de destaque no hover */}

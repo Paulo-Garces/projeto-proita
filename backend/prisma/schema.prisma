@@ -87,6 +87,7 @@ model Profile {
   partners                    Json?
   lastNamePhoneUpdate         DateTime? @map("last_name_phone_update")
   referenceCode               String?   @unique
+  slug                        String?   @unique
   user                        User      @relation(fields: [userId], references: [id])
   reports                     Report[]
   reviews                     Review[]

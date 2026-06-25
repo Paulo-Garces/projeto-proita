@@ -212,13 +212,21 @@ export default function Advertise() {
   };
 
   const handleAvatarChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    e.target.value = ''; // Previne o bug de 'piscar' e não carregar a mesma foto
     if (!file) return;
-    setCropTarget({
-      type: 'avatar',
-      imageSrc: URL.createObjectURL(file),
-    });
-    e.target.value = '';
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropTarget({
+        type: 'avatar',
+        imageSrc: reader.result
+      });
+    };
+    reader.onerror = () => {
+      alert('Erro ao processar a imagem do seu celular. Tente novamente.');
+    };
+    reader.readAsDataURL(file);
   };
 
   const appendPortfolioFiles = useCallback((fileList) => {
@@ -1290,6 +1298,7 @@ export default function Advertise() {
                     accept="image/*"
                     className="hidden"
                     onChange={handleAvatarChange}
+                    onClick={(e) => { e.target.value = null; }}
                   />
                   <label htmlFor="avatar-upload" className="text-sm font-medium text-primary mt-3 cursor-pointer hover:underline">
                     {avatarPreview ? 'Trocar foto de perfil' : 'Adicionar foto de perfil'}
@@ -1378,6 +1387,7 @@ export default function Advertise() {
                     multiple
                     className="hidden"
                     onChange={handlePortfolioInputChange}
+                    onClick={(e) => { e.target.value = null; }}
                   />
                   <div
                     role="presentation"

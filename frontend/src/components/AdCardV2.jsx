@@ -106,7 +106,7 @@ export default function AdCardV2({ professional, showEdit = false, onEdit, onDel
   const handleShare = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    navigator.clipboard.writeText(`${window.location.origin}/profile/${professional.id}`);
+    navigator.clipboard.writeText(`${window.location.origin}/profile/${professional.slug || professional.id}`);
     setCopied(true);
     alert('Link do perfil copiado para a área de transferência!');
     setTimeout(() => setCopied(false), 2000);
@@ -287,7 +287,7 @@ export default function AdCardV2({ professional, showEdit = false, onEdit, onDel
         <div className="flex items-center gap-2 mt-auto">
           {/* Botão Ver Perfil */}
           <Link
-            to={`/profile/${professional?.id}`}
+            to={`/profile/${professional?.slug || professional?.id}`}
             className="flex-1 flex items-center justify-center gap-1 py-2 px-3 bg-primary hover:bg-primary-hover text-white font-bold text-xs sm:text-sm rounded-lg transition-colors shadow-xs"
           >
             Ver Perfil
