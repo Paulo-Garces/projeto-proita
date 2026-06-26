@@ -64,8 +64,8 @@ function ImageDeleteConfirmModal({ isOpen, onClose, onConfirm, loading }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
+      style={{ backdropFilter: 'blur(4px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
@@ -161,10 +161,10 @@ function PortfolioSection({ ad, token }) {
   }, [urls]);
 
   const uploadPortfolioFile = async (file) => {
-    if (!file || !file.type.startsWith('image/')) return;
+    if (!file || !file.type.startsWith('image/')) return null;
     if (urlsRef.current.length >= 8) {
       setError('Máximo de 8 fotos no portfólio.');
-      return;
+      return null;
     }
     setError('');
     setIsUploading(true);
@@ -186,11 +186,25 @@ function PortfolioSection({ ad, token }) {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setUrls(data.portfolioUrls);
-        urlsRef.current = data.portfolioUrls;
-      } else setError(data.message || 'Erro ao enviar.');
+        const newUrl = data.url;
+        setUrls(prev => {
+          const next = [...prev, newUrl];
+          urlsRef.current = next;
+          return next;
+        });
+        return newUrl;
+      } else {
+        const msg = data.message || 'Erro ao enviar.';
+        setError(msg);
+        console.error(`[PORTFOLIO UPLOAD] Erro ao enviar ${file.name}:`, msg);
+        alert(`Falha ao enviar a imagem ${file.name}: ${msg}`);
+        return null;
+      }
     } catch (err) {
-      setError('Erro ao processar imagem.');
+      console.error(`[PORTFOLIO UPLOAD] Falha ao processar ${file.name}:`, err);
+      setError(`Erro ao processar ${file.name}.`);
+      alert(`Erro de processamento para a imagem ${file.name}.`);
+      return null;
     } finally {
       setIsUploading(false);
     }
@@ -200,8 +214,15 @@ function PortfolioSection({ ad, token }) {
     const files = Array.from(e.target.files || []).filter((f) => f.type.startsWith('image/'));
     e.target.value = '';
     for (const file of files) {
-      if (urlsRef.current.length >= 8) break;
-      await uploadPortfolioFile(file);
+      if (urlsRef.current.length >= 8) {
+        setError('Máximo de 8 fotos no portfólio.');
+        break;
+      }
+      try {
+        await uploadPortfolioFile(file);
+      } catch (err) {
+        console.error(`[PORTFOLIO UPLOAD] Erro no loop para ${file.name}:`, err);
+      }
     }
   };
 
@@ -210,8 +231,15 @@ function PortfolioSection({ ad, token }) {
     e.stopPropagation();
     const files = [...(e.dataTransfer?.files || [])].filter((f) => f.type.startsWith('image/'));
     for (const file of files) {
-      if (urlsRef.current.length >= 8) break;
-      await uploadPortfolioFile(file);
+      if (urlsRef.current.length >= 8) {
+        setError('Máximo de 8 fotos no portfólio.');
+        break;
+      }
+      try {
+        await uploadPortfolioFile(file);
+      } catch (err) {
+        console.error(`[PORTFOLIO UPLOAD] Erro no loop para ${file.name}:`, err);
+      }
     }
   };
 
@@ -901,6 +929,8 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
   const logoInputRef = useRef(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [logoError, setLogoError] = useState('');
+  const [logoSrc, setLogoSrc] = useState(null);
+  const [isLogoCropperOpen, setIsLogoCropperOpen] = useState(false);
 
   const capaInputRef = useRef(null);
   const [isUploadingCapa, setIsUploadingCapa] = useState(false);
@@ -908,9 +938,8 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
 
   const set = (field) => (e) => setForm(prev => ({ ...prev, [field]: e.target.value }));
 
-  const handleLogoUpload = async (e) => {
+  const handleLogoChange = (e) => {
     const file = e.target.files?.[0];
-    e.target.value = '';
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
@@ -919,7 +948,23 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
     }
 
     setLogoError('');
+    
+    const reader = new FileReader();
+    reader.onload = () => {
+      setLogoSrc(reader.result);
+      setIsLogoCropperOpen(true);
+    };
+    reader.onerror = () => {
+      setLogoError('Erro ao processar imagem.');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoCropComplete = async (blob) => {
+    setIsLogoCropperOpen(false);
+    setLogoSrc(null);
     setIsUploadingLogo(true);
+    setLogoError('');
 
     try {
       let uploadBlob;
@@ -930,10 +975,10 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
           useWebWorker: false,
           fileType: 'image/jpeg',
         };
-        uploadBlob = await imageCompression(file, options);
+        uploadBlob = await imageCompression(blob, options);
       } catch (err) {
-        console.warn('[LOGO UPLOAD] Falha na compressão, usando fallback FileReader:', err);
-        uploadBlob = await fileToBlobFallback(file);
+        console.warn('[LOGO UPLOAD] Falha na compressão do recorte, usando blob original:', err);
+        uploadBlob = blob;
       }
       const fd = new FormData();
       fd.append('fotoAnuncio', uploadBlob, 'fotoAnuncio.jpg');
@@ -1136,7 +1181,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={handleLogoUpload}
+              onChange={handleLogoChange}
               onClick={(e) => { e.target.value = null; }}
             />
             {logoError && <p className="text-xs text-red-500">{logoError}</p>}
@@ -1464,6 +1509,19 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
         </button>
         <button onClick={onCancel} className="text-slate-500 hover:text-slate-700 text-sm font-medium px-4 py-2.5">Cancelar</button>
       </div>
+
+      {isLogoCropperOpen && logoSrc && (
+        <ImageCropperModal
+          imageSrc={logoSrc}
+          aspect={1}
+          cropShape="round"
+          onClose={() => {
+            setIsLogoCropperOpen(false);
+            setLogoSrc(null);
+          }}
+          onCropComplete={handleLogoCropComplete}
+        />
+      )}
     </div>
   );
 }
@@ -3811,6 +3869,14 @@ export default function Dashboard() {
         loading={deletingAdLoading}
       />
 
+      {qrCodeAd && (
+        <QrCodeModal
+          isOpen={!!qrCodeAd}
+          onClose={() => setQrCodeAd(null)}
+          professional={qrCodeAd}
+        />
+      )}
+
       <DashboardToast
         toast={toast}
         onClose={() => setToast(null)}
@@ -3853,14 +3919,6 @@ function DashboardToast({ toast, onClose }) {
           to   { opacity: 1; transform: translateY(0) scale(1); }
         }
       `}</style>
-
-      {qrCodeAd && (
-        <QrCodeModal
-          isOpen={!!qrCodeAd}
-          onClose={() => setQrCodeAd(null)}
-          professional={qrCodeAd}
-        />
-      )}
     </div>
   );
 }
@@ -3956,8 +4014,8 @@ function DeleteAdConfirmModal({ isOpen, onClose, onConfirm, loading }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
+      style={{ backdropFilter: 'blur(4px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
