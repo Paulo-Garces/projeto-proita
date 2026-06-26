@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import AdCard from '../components/AdCard';
+import DashboardAdCard from '../components/DashboardAdCard';
 import ImageCropperModal from '../components/ImageCropperModal';
 import SponsorsTab from '../components/SponsorsTab';
 import PaymentCheckout from '../components/PaymentCheckout';
@@ -1791,9 +1792,8 @@ export default function Dashboard() {
     setPhotoError('');
     setIsUploadingPhoto(true);
     try {
-      const file = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
       const fd = new FormData();
-      fd.append('profileImage', file);
+      fd.append('profileImage', blob, 'profile.jpg');
 
       const res = await fetch(`${API_URL}/api/upload/profile-image`, {
         method: 'PATCH',
@@ -1817,6 +1817,10 @@ export default function Dashboard() {
 
   const handleDeleteAd = (adId) => {
     setDeletingAdId(adId);
+  };
+
+  const openQrModal = (ad) => {
+    setQrCodeAd(ad);
   };
 
   const handleConfirmDeleteAd = async () => {
@@ -2542,15 +2546,13 @@ export default function Dashboard() {
                                 favoritesCount: ad.favoritedBy?.length ?? 0,
                               };
                               return (
-                                <AdCard
+                                <DashboardAdCard
                                   key={ad.id}
                                   professional={cardPro}
-                                  showEdit={true}
-                                  isDashboard={true}
                                   disableEdit={isSuspended}
                                   onEdit={() => setEditingAd(ad)}
                                   onDelete={() => handleDeleteAd(ad.id)}
-                                  onQrCode={() => setQrCodeAd(ad)}
+                                  onOpenQrCode={() => openQrModal(ad)}
                                 />
                               );
                             })}

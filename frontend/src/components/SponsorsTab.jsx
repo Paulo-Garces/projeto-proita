@@ -5,6 +5,29 @@ import ImageCropperModal from './ImageCropperModal';
 import imageCompression from 'browser-image-compression';
 import { API_URL } from '../config';
 
+const fileToBlobFallback = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const arr = reader.result.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        resolve(new Blob([u8arr], { type: mime }));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    reader.onerror = (e) => reject(e);
+    reader.readAsDataURL(file);
+  });
+};
+
 // ── SUBCOMPONENTE INDEPENDENTE DE GERENCIAMENTO DE PATROCINADORES ──────
 function AdSponsorsManager({ ad, token, onSaved }) {
   const [adPartners, setAdPartners] = useState([]);
@@ -52,9 +75,8 @@ function AdSponsorsManager({ ad, token, onSaved }) {
     setIsUploadingPartner(true);
     setPartnerError('');
     try {
-      const file = new File([blob], 'partner.jpg', { type: 'image/jpeg' });
       const fd = new FormData();
-      fd.append('fotoAnuncio', file);
+      fd.append('fotoAnuncio', blob, 'partner.jpg');
 
       const res = await fetch(`${API_URL}/api/upload/foto-anuncio`, {
         method: 'POST',
@@ -116,16 +138,21 @@ function AdSponsorsManager({ ad, token, onSaved }) {
     }
 
     try {
-      const options = {
-        maxSizeMB: 1.0,
-        maxWidthOrHeight: 1200,
-        useWebWorker: false,
-        fileType: 'image/jpeg'
-      };
-
-      console.log('[CROPPER MOBILE] Iniciando compressão...');
-      const compressedFile = await imageCompression(file, options);
-      console.log('[CROPPER MOBILE] Compressão concluída:', compressedFile.size);
+      let uploadBlob;
+      try {
+        const options = {
+          maxSizeMB: 1.0,
+          maxWidthOrHeight: 1200,
+          useWebWorker: false,
+          fileType: 'image/jpeg'
+        };
+        console.log('[CROPPER MOBILE] Iniciando compressão...');
+        uploadBlob = await imageCompression(file, options);
+        console.log('[CROPPER MOBILE] Compressão concluída:', uploadBlob.size);
+      } catch (err) {
+        console.warn('[CROPPER MOBILE] Falha na compressão, usando fallback FileReader:', err);
+        uploadBlob = await fileToBlobFallback(file);
+      }
 
       const reader = new FileReader();
       
@@ -152,29 +179,12 @@ function AdSponsorsManager({ ad, token, onSaved }) {
         setIsUploadingPartner(false);
       };
 
-      reader.readAsDataURL(compressedFile);
+      reader.readAsDataURL(uploadBlob);
 
     } catch (err) {
-      console.error('[CROPPER MOBILE] Erro no fluxo de preparação da imagem:', err);
-      
-      try {
-        console.log('[CROPPER MOBILE] Tentando ler arquivo original como fallback...');
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          setPartnerEditIndex(index);
-          setPartnerCropTarget(event.target.result);
-          setIsUploadingPartner(false);
-        };
-        reader.onerror = () => {
-          setPartnerError('Não foi possível carregar esta imagem no dispositivo móvel.');
-          setIsUploadingPartner(false);
-        };
-        reader.readAsDataURL(file);
-      } catch (fallbackErr) {
-        console.error('[CROPPER MOBILE] Falha total no fallback:', fallbackErr);
-        setPartnerError('Erro crítico ao carregar imagem no celular.');
-        setIsUploadingPartner(false);
-      }
+      console.error('[CROPPER MOBILE] Erro crítico no fluxo:', err);
+      setPartnerError('Erro ao processar imagem no celular.');
+      setIsUploadingPartner(false);
     }
   };
 
