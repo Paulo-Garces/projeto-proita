@@ -36,29 +36,6 @@ const convertToInternationalPhone = (phone) => {
   return `+55${clean}`;
 };
 
-const fileToBlobFallback = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const arr = reader.result.split(',');
-        const mime = arr[0].match(/:(.*?);/)[1];
-        const bstr = atob(arr[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        while (n--) {
-          u8arr[n] = bstr.charCodeAt(n);
-        }
-        resolve(new Blob([u8arr], { type: mime }));
-      } catch (e) {
-        reject(e);
-      }
-    };
-    reader.onerror = (e) => reject(e);
-    reader.readAsDataURL(file);
-  });
-};
-
 function ImageDeleteConfirmModal({ isOpen, onClose, onConfirm, loading }) {
   if (!isOpen) return null;
 
@@ -174,8 +151,8 @@ function PortfolioSection({ ad, token }) {
         const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: false, fileType: 'image/jpeg' };
         uploadBlob = await imageCompression(file, options);
       } catch (err) {
-        console.warn('[PORTFOLIO UPLOAD] Falha na compressão, usando fallback FileReader:', err);
-        uploadBlob = await fileToBlobFallback(file);
+        console.warn('[PORTFOLIO UPLOAD] Falha na compressão, usando fallback arquivo original:', err);
+        uploadBlob = file;
       }
       const fd = new FormData();
       fd.append('portfolioImage', uploadBlob, 'portfolio.jpg');
@@ -1031,8 +1008,8 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
         };
         uploadBlob = await imageCompression(file, options);
       } catch (err) {
-        console.warn('[CAPA UPLOAD] Falha na compressão, usando fallback FileReader:', err);
-        uploadBlob = await fileToBlobFallback(file);
+        console.warn('[CAPA UPLOAD] Falha na compressão, usando fallback arquivo original:', err);
+        uploadBlob = file;
       }
       const fd = new FormData();
       fd.append('fotoAnuncio', uploadBlob, 'capaAnuncio.jpg');

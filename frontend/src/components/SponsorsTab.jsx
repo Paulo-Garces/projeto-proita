@@ -5,28 +5,7 @@ import ImageCropperModal from './ImageCropperModal';
 import imageCompression from 'browser-image-compression';
 import { API_URL } from '../config';
 
-const fileToBlobFallback = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const arr = reader.result.split(',');
-        const mime = arr[0].match(/:(.*?);/)[1];
-        const bstr = atob(arr[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        while (n--) {
-          u8arr[n] = bstr.charCodeAt(n);
-        }
-        resolve(new Blob([u8arr], { type: mime }));
-      } catch (e) {
-        reject(e);
-      }
-    };
-    reader.onerror = (e) => reject(e);
-    reader.readAsDataURL(file);
-  });
-};
+
 
 // ── SUBCOMPONENTE INDEPENDENTE DE GERENCIAMENTO DE PATROCINADORES ──────
 function AdSponsorsManager({ ad, token, onSaved }) {
@@ -150,8 +129,8 @@ function AdSponsorsManager({ ad, token, onSaved }) {
         uploadBlob = await imageCompression(file, options);
         console.log('[CROPPER MOBILE] Compressão concluída:', uploadBlob.size);
       } catch (err) {
-        console.warn('[CROPPER MOBILE] Falha na compressão, usando fallback FileReader:', err);
-        uploadBlob = await fileToBlobFallback(file);
+        console.warn('[CROPPER MOBILE] Falha na compressão, usando fallback arquivo original:', err);
+        uploadBlob = file;
       }
 
       const reader = new FileReader();

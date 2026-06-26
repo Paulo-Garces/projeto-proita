@@ -67,28 +67,7 @@ const blobToBase64 = (blob) => {
   });
 };
 
-const fileToBlobFallback = (file) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const arr = reader.result.split(',');
-        const mime = arr[0].match(/:(.*?);/)[1];
-        const bstr = atob(arr[1]);
-        let n = bstr.length;
-        const u8arr = new Uint8Array(n);
-        while (n--) {
-          u8arr[n] = bstr.charCodeAt(n);
-        }
-        resolve(new Blob([u8arr], { type: mime }));
-      } catch (e) {
-        reject(e);
-      }
-    };
-    reader.onerror = (e) => reject(e);
-    reader.readAsDataURL(file);
-  });
-};
+
 
 function ImageDeleteConfirmModal({ isOpen, onClose, onConfirm, loading }) {
   if (!isOpen) return null;
@@ -824,8 +803,8 @@ export default function Advertise() {
                 const options = { maxSizeMB: 1, maxWidthOrHeight: 1280, useWebWorker: false, fileType: 'image/jpeg' };
                 uploadBlob = await imageCompression(item.file, options);
               } catch (err) {
-                console.warn('[PORTFOLIO UPLOAD] Falha na compressão, usando fallback FileReader:', err);
-                uploadBlob = await fileToBlobFallback(item.file);
+                console.warn('[PORTFOLIO UPLOAD] Falha na compressão, usando arquivo original:', err);
+                uploadBlob = item.file;
               }
               const fd = new FormData();
               fd.append('portfolioImage', uploadBlob, 'portfolio.jpg');
