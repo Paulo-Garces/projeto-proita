@@ -53,9 +53,51 @@ function AdSponsorsManager({ ad, token, onSaved }) {
   const handleSponsorCropComplete = async (blob) => {
     setIsUploadingPartner(true);
     setPartnerError('');
+
+    // Generate local preview URL
+    const localPreviewUrl = URL.createObjectURL(blob);
+    const targetIndex = partnerEditIndex;
+
+    // Instantly save in state for local preview
+    if (targetIndex !== null && targetIndex !== undefined && targetIndex >= 0) {
+      setAdPartners(prev => prev.map((item, idx) => idx === targetIndex ? {
+        ...item,
+        imageUrl: localPreviewUrl,
+      } : item));
+    } else {
+      setAdPartners(prev => [...prev, {
+        imageUrl: localPreviewUrl,
+        fileId: null,
+        originalImageUrl: null,
+        link: '',
+        name: '',
+        partnerAddress: '',
+        partnerPhone: '',
+      }]);
+    }
+
+    const activeIdx = (targetIndex !== null && targetIndex !== undefined && targetIndex >= 0)
+      ? targetIndex 
+      : adPartners.length;
+
     try {
+      // Compress the cropped image in the background
+      let uploadBlob = blob;
+      try {
+        const options = {
+          maxSizeMB: 1.0,
+          maxWidthOrHeight: 1200,
+          useWebWorker: false,
+          fileType: 'image/jpeg'
+        };
+        uploadBlob = await imageCompression(blob, options);
+      } catch (compressErr) {
+        console.warn('[PARTNER COMPRESSION] Falha na compressão do crop, enviando original:', compressErr);
+        uploadBlob = blob;
+      }
+
       const fd = new FormData();
-      fd.append('fotoAnuncio', blob, 'partner.jpg');
+      fd.append('fotoAnuncio', uploadBlob, 'partner.jpg');
 
       const res = await fetch(`${API_URL}/api/upload/foto-anuncio`, {
         method: 'POST',
@@ -65,25 +107,13 @@ function AdSponsorsManager({ ad, token, onSaved }) {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        const originalUrl = partnerCropTarget;
-        if (partnerEditIndex !== null && partnerEditIndex !== undefined && partnerEditIndex >= 0) {
-          setAdPartners(prev => prev.map((item, idx) => idx === partnerEditIndex ? {
-            ...item,
-            imageUrl: data.url,
-            fileId: data.fileId,
-            originalImageUrl: originalUrl,
-          } : item));
-        } else {
-          setAdPartners(prev => [...prev, {
-            imageUrl: data.url,
-            fileId: data.fileId,
-            originalImageUrl: originalUrl,
-            link: '',
-            name: '',
-            partnerAddress: '',
-            partnerPhone: '',
-          }]);
-        }
+        const originalUrl = partnerCropTarget?.imageSrc || partnerCropTarget;
+        setAdPartners(prev => prev.map((item, idx) => idx === activeIdx ? {
+          ...item,
+          imageUrl: data.url,
+          fileId: data.fileId,
+          originalImageUrl: originalUrl,
+        } : item));
       } else {
         setPartnerError(data.message || 'Erro ao carregar parceiro.');
       }
@@ -102,83 +132,44 @@ function AdSponsorsManager({ ad, token, onSaved }) {
     setPartnerError('');
     setIsUploadingPartner(true);
 
-    console.log('[CROPPER MOBILE] Arquivo selecionado:', file.name, file.type, file.size);
-
     const validExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'gif'];
     const fileExt = file.name ? file.name.split('.').pop().toLowerCase() : '';
     const isHEIC = fileExt === 'heic' || fileExt === 'heif' || file.type.includes('heic') || file.type.includes('heif');
     const isImage = file.type.startsWith('image/') || isHEIC;
 
     if (!isImage && !validExtensions.includes(fileExt)) {
-      console.error('[CROPPER MOBILE] Arquivo não é uma imagem válida:', file.type, file.name);
       setPartnerError('Por favor, selecione um arquivo de imagem válido.');
       setIsUploadingPartner(false);
       return;
     }
 
-    try {
-      let uploadBlob;
-      try {
-        const options = {
-          maxSizeMB: 1.0,
-          maxWidthOrHeight: 1200,
-          useWebWorker: false,
-          fileType: 'image/jpeg'
-        };
-        console.log('[CROPPER MOBILE] Iniciando compressão...');
-        uploadBlob = await imageCompression(file, options);
-        console.log('[CROPPER MOBILE] Compressão concluída:', uploadBlob.size);
-      } catch (err) {
-        console.warn('[CROPPER MOBILE] Falha na compressão, usando fallback arquivo original:', err);
-        uploadBlob = file;
-      }
-
-      const reader = new FileReader();
-      
-      reader.onload = (event) => {
-        try {
-          const result = event.target.result;
-          if (!result) {
-            throw new Error('FileReader result is empty');
-          }
-          console.log('[CROPPER MOBILE] Conversão base64 concluída.');
-          setPartnerEditIndex(index);
-          setPartnerCropTarget(result);
-        } catch (err) {
-          console.error('[CROPPER MOBILE] Erro ao obter resultado do FileReader:', err);
-          setPartnerError('Erro ao processar imagem para recorte.');
-        } finally {
-          setIsUploadingPartner(false);
-        }
-      };
-
-      reader.onerror = (err) => {
-        console.error('[CROPPER MOBILE] Erro no FileReader:', err);
-        setPartnerError('Falha ao ler o arquivo de imagem.');
-        setIsUploadingPartner(false);
-      };
-
-      reader.readAsDataURL(uploadBlob);
-
-    } catch (err) {
-      console.error('[CROPPER MOBILE] Erro crítico no fluxo:', err);
-      setPartnerError('Erro ao processar imagem no celular.');
+    // Direct FileReader without pre-compression to avoid mobile silent failures
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPartnerEditIndex(index);
+      setPartnerCropTarget({ index, imageSrc: reader.result });
       setIsUploadingPartner(false);
-    }
+    };
+    reader.onerror = (err) => {
+      console.error('[CROPPER MOBILE] Erro no FileReader:', err);
+      setPartnerError('Falha ao ler o arquivo de imagem.');
+      setIsUploadingPartner(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleAddPartnerClick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onclick = (e) => { e.target.value = null; };
-    input.onchange = (e) => {
-      const file = e.target.files?.[0];
-      e.target.value = '';
-      if (!file) return;
-      handleImageSelect(file, undefined);
-    };
-    input.click();
+    if (adPartners.length >= 3) return;
+    setAdPartners(prev => [...prev, {
+      imageUrl: null,
+      fileId: null,
+      originalImageUrl: null,
+      link: '',
+      name: '',
+      partnerAddress: '',
+      partnerPhone: '',
+    }]);
+    setActiveSlideIndex(adPartners.length); // Focus on the newly added partner
   };
 
   const handleEditPartnerImage = (index) => {
@@ -372,7 +363,7 @@ function AdSponsorsManager({ ad, token, onSaved }) {
                     onClick={() => handleEditPartnerImage(activeSlideIndex)}
                     className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold rounded-lg border border-white/25 flex items-center gap-1.5 w-36 justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm"
                   >
-                    <RefreshCw size={12} /> Trocar Imagem
+                    <RefreshCw size={12} /> {adPartners[activeSlideIndex]?.imageUrl ? 'Trocar Imagem' : 'Subir Imagem'}
                   </button>
 
                   <button
@@ -466,21 +457,37 @@ function AdSponsorsManager({ ad, token, onSaved }) {
                     }`}
                   >
                     {/* Crop Preview Mini Thumbnail */}
-                    <div className="w-12 h-16 bg-slate-200 rounded-lg overflow-hidden border border-slate-200 shrink-0 relative flex items-center justify-center">
+                    {/* Crop Preview Mini Thumbnail */}
+                    <div 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditPartnerImage(idx);
+                      }}
+                      className="w-12 h-16 bg-slate-200 rounded-lg overflow-hidden border border-slate-200 shrink-0 relative flex items-center justify-center cursor-pointer hover:bg-slate-350 transition-colors group"
+                      title="Clique para selecionar imagem"
+                    >
                       {partner.imageUrl ? (
-                        <img src={partner.imageUrl} alt="" className="w-full h-full object-cover" />
+                        <>
+                          <img src={partner.imageUrl} alt="" className="w-full h-full object-cover animate-in fade-in duration-200" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                            <UploadCloud size={14} />
+                          </div>
+                        </>
                       ) : (
-                        <span className="text-[8px] text-slate-400 uppercase font-bold">Foto</span>
+                        <div className="flex flex-col items-center text-slate-500">
+                          <UploadCloud size={14} className="animate-pulse" />
+                          <span className="text-[8px] uppercase font-bold mt-0.5">Subir</span>
+                        </div>
                       )}
                     </div>
-
+ 
                     {/* Info & Link field */}
                     <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-between gap-1 mb-1">
                         <span className="text-[11px] font-bold text-slate-700">Patrocinador {idx + 1}</span>
                         <span className="text-[9px] font-semibold text-slate-400 hidden md:inline">Enquadramento Banner (3:4)</span>
                       </div>
-
+ 
                       <div className="space-y-1.5">
                         {/* Nome do Patrocinador */}
                         <input
@@ -533,7 +540,7 @@ function AdSponsorsManager({ ad, token, onSaved }) {
                         />
                       </div>
                     </div>
-
+ 
                     {/* Remove Button */}
                     <button
                       type="button"
@@ -548,25 +555,25 @@ function AdSponsorsManager({ ad, token, onSaved }) {
                     >
                       <Trash2 size={14} />
                     </button>
-
+ 
                   </div>
                 ))}
               </div>
-
+ 
               {partnerError && <p className="text-xs text-red-500 font-medium">{partnerError}</p>}
               
               <p className="text-[11px] text-slate-400 italic">
                 Dica: Toque/selecione um patrocinador na lista para focar sua visualização no preview e editar suas informações.
               </p>
             </div>
-
+ 
           </div>
         )}
       </div>
-
+ 
       {partnerCropTarget && (
         <ImageCropperModal
-          imageSrc={partnerCropTarget}
+          imageSrc={partnerCropTarget.imageSrc || partnerCropTarget}
           isOpen={true}
           onClose={() => setPartnerCropTarget(null)}
           onComplete={(croppedBlob) => handleSponsorCropComplete(croppedBlob)}

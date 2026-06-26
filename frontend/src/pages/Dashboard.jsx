@@ -1,4 +1,5 @@
 import { useState, useContext, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard, Sparkles, Clock, Copy, ChevronLeft, ChevronRight, Check, X, Link2, Crop, RefreshCw, Bell, Download } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
@@ -39,7 +40,7 @@ const convertToInternationalPhone = (phone) => {
 function ImageDeleteConfirmModal({ isOpen, onClose, onConfirm, loading }) {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
       style={{ backdropFilter: 'blur(4px)' }}
@@ -92,7 +93,8 @@ function ImageDeleteConfirmModal({ isOpen, onClose, onConfirm, loading }) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -336,7 +338,10 @@ function PortfolioSection({ ad, token }) {
       )}
 
       {urls.length >= 8 && (
-        <p className="text-red-500 text-sm mt-2">Portfólio completo. Exclua uma imagem para adicionar outra.</p>
+        <div className="p-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-sm mt-3 font-medium flex items-center gap-2">
+          <AlertCircle size={16}/>
+          <span>Portfólio completo. Exclua uma imagem para adicionar outra.</span>
+        </div>
       )}
 
       <ImageDeleteConfirmModal
@@ -358,6 +363,7 @@ function ServiceCatalogSection({ ad, token }) {
   const [isSavingCatalog, setIsSavingCatalog] = useState(false);
   const [catalogSuccess, setCatalogSuccess] = useState('');
   const [catalogError, setCatalogError] = useState('');
+  const [isAddingService, setIsAddingService] = useState(false);
 
   const handleSaveCatalog = async () => {
     setIsSavingCatalog(true);
@@ -462,6 +468,7 @@ function ServiceCatalogSection({ ad, token }) {
         setPrice('');
         setDescription('');
         setPriceType('FIXO');
+        setIsAddingService(false);
         // Recarregar a lista
         fetchServices();
         setTimeout(() => setSuccess(''), 2000);
@@ -508,88 +515,112 @@ function ServiceCatalogSection({ ad, token }) {
 
   return (
     <section className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-6">
-      <div>
-        <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Meu Catálogo de Serviços</h4>
-        <p className="text-xs text-slate-500 mt-1">
-          Cadastre os principais serviços que você oferece para exibir uma vitrine completa no seu perfil público.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h4 className="font-semibold text-slate-700 text-sm uppercase tracking-wide">Meu Catálogo de Serviços</h4>
+          <p className="text-xs text-slate-500 mt-1">
+            Cadastre os principais serviços que você oferece para exibir uma vitrine completa no seu perfil público.
+          </p>
+        </div>
+        {!isAddingService && (
+          <button
+            type="button"
+            onClick={() => setIsAddingService(true)}
+            className="flex items-center gap-1.5 text-xs bg-slate-900 hover:bg-slate-800 text-white px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer shrink-0"
+          >
+            <Plus size={14} /> Adicionar Novo Serviço
+          </button>
+        )}
       </div>
 
       {/* Formulário de Adição */}
-      <div className="bg-white rounded-xl p-4 border border-slate-200/60 space-y-4">
-        <h5 className="font-medium text-slate-800 text-sm flex items-center gap-1.5">
-          <Plus size={15} className="text-primary" /> Adicionar Novo Serviço
-        </h5>
+      {isAddingService && (
+        <div className="bg-white rounded-xl p-4 border border-slate-200/60 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
+          <h5 className="font-medium text-slate-800 text-sm flex items-center gap-1.5">
+            <Plus size={15} className="text-primary" /> Adicionar Novo Serviço
+          </h5>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2">
-            <label className={labelClass}>Nome do Serviço <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Instalação de Torneira, Limpeza de Pele..."
-              className={inputClass}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Tipo de Preço <span className="text-red-500">*</span></label>
-            <select
-              value={priceType}
-              onChange={(e) => setPriceType(e.target.value)}
-              className={inputClass}
-            >
-              <option value="FIXO">Preço Fixo</option>
-              <option value="A_PARTIR">A partir de</option>
-              <option value="SOB_CONSULTA">Sob Consulta</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {priceType !== 'SOB_CONSULTA' && (
-            <div>
-              <label className={labelClass}>Preço (R$) <span className="text-red-500">*</span></label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <label className={labelClass}>Nome do Serviço <span className="text-red-500">*</span></label>
               <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="Ex: 80.00"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ex: Instalação de Torneira, Limpeza de Pele..."
                 className={inputClass}
               />
             </div>
-          )}
 
-          <div className={priceType === 'SOB_CONSULTA' ? 'md:col-span-3' : 'md:col-span-2'}>
-            <label className={labelClass}>Descrição Curta (opcional)</label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Ex: Incluso material básico, garantia de 3 meses..."
-              className={inputClass + ' resize-none'}
-            />
+            <div>
+              <label className={labelClass}>Tipo de Preço <span className="text-red-500">*</span></label>
+              <select
+                value={priceType}
+                onChange={(e) => setPriceType(e.target.value)}
+                className={inputClass}
+              >
+                <option value="FIXO">Preço Fixo</option>
+                <option value="A_PARTIR">A partir de</option>
+                <option value="SOB_CONSULTA">Sob Consulta</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {priceType !== 'SOB_CONSULTA' && (
+              <div>
+                <label className={labelClass}>Preço (R$) <span className="text-red-500">*</span></label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="Ex: 80.00"
+                  className={inputClass}
+                />
+              </div>
+            )}
+
+            <div className={priceType === 'SOB_CONSULTA' ? 'md:col-span-3' : 'md:col-span-2'}>
+              <label className={labelClass}>Descrição Curta (opcional)</label>
+              <textarea
+                rows={2}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ex: Incluso material básico, garantia de 3 meses..."
+                className={inputClass + ' resize-none'}
+              />
+            </div>
+          </div>
+
+          {error && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={13} /> {error}</p>}
+          {success && <p className="text-xs text-emerald-600 flex items-center gap-1"><CheckCircle size={13} /> {success}</p>}
+
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setIsAddingService(false);
+                setError('');
+                setSuccess('');
+              }}
+              className="px-3 py-2 text-xs border border-slate-200 text-slate-500 hover:bg-slate-100 rounded-lg font-medium transition-colors cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleAddService}
+              disabled={isSubmitting}
+              className="flex items-center gap-1.5 text-xs bg-slate-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-60 cursor-pointer"
+            >
+              {isSubmitting ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
+              Adicionar ao Catálogo
+            </button>
           </div>
         </div>
-
-        {error && <p className="text-xs text-red-500 flex items-center gap-1"><AlertCircle size={13} /> {error}</p>}
-        {success && <p className="text-xs text-emerald-600 flex items-center gap-1"><CheckCircle size={13} /> {success}</p>}
-
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={handleAddService}
-            disabled={isSubmitting}
-            className="flex items-center gap-1.5 text-xs bg-slate-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-slate-800 transition-colors disabled:opacity-60 cursor-pointer"
-          >
-            {isSubmitting ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
-            Adicionar ao Catálogo
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Lista de Gerenciamento */}
       <div className="space-y-3">
@@ -800,6 +831,8 @@ const serializeWeeklyHours = (weeklyHours) => {
 // ── Sub-componente: Formulário de edição de anúncio ─────────────
 function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
   const [declarationChecked, setDeclarationChecked] = useState(false);
+  const [showAddressForm, setShowAddressForm] = useState(!!ad.enderecoComercial);
+  const [isEditingSchedule, setIsEditingSchedule] = useState(false);
 
   const getLockInfo = () => {
     if (!ad.lastNamePhoneUpdate) return { active: false, days: 0 };
@@ -1259,15 +1292,44 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
 
       <section className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border-0 shadow-sm space-y-6">
         <h4 className="font-bold text-slate-800 text-lg border-b border-slate-100 pb-3">Localização</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className={labelClass}>Bairro de Atendimento</label>
-            <input value={form.serviceBairro} onChange={set('serviceBairro')} placeholder="Ex: Centro, Aldeota..." className={inputClass} />
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className={labelClass}>Bairro de Atendimento</label>
+              <input value={form.serviceBairro} onChange={set('serviceBairro')} placeholder="Ex: Centro, Aldeota..." className={inputClass} />
+            </div>
+
+            <div className="flex flex-col justify-center">
+              <span className="block text-sm font-medium text-slate-700 mb-2">Atender em endereço comercial fixo?</span>
+              <div className="flex items-center gap-3">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={showAddressForm}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setShowAddressForm(checked);
+                      if (!checked) {
+                        setForm(prev => ({ ...prev, enderecoComercial: '' }));
+                      }
+                    }}
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+                <span className={`text-xs font-bold ${showAddressForm ? 'text-primary' : 'text-slate-400'}`}>
+                  {showAddressForm ? 'Sim' : 'Não'}
+                </span>
+              </div>
+            </div>
           </div>
-          <div>
-            <label className={labelClass}>Endereço Comercial Dedicado <span className="text-slate-400">(Aparece em destaque no perfil público)</span></label>
-            <input value={form.enderecoComercial} onChange={set('enderecoComercial')} placeholder="Ex: Rua Floriano Peixoto, 123 - Centro" className={inputClass} />
-          </div>
+
+          {showAddressForm && (
+            <div className="pt-2 animate-in fade-in slide-in-from-top-1 duration-200">
+              <label className={labelClass}>Endereço Comercial Dedicado <span className="text-slate-400">(Aparece em destaque no perfil público)</span></label>
+              <input value={form.enderecoComercial} onChange={set('enderecoComercial')} placeholder="Ex: Rua Floriano Peixoto, 123 - Centro" className={inputClass} />
+            </div>
+          )}
         </div>
       </section>
 
@@ -1280,99 +1342,130 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
               <p className="text-xs text-slate-500 mt-0.5">Defina os dias e horários em que você está disponível para atender clientes.</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={replicateMondayHours}
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl transition-all duration-200 border border-indigo-100/50 hover:shadow-sm active:scale-95 self-start sm:self-auto shrink-0"
-          >
-            <Copy size={14} /> Replicar horário para Segunda a Sexta
-          </button>
+          {!isEditingSchedule ? (
+            <button
+              type="button"
+              onClick={() => setIsEditingSchedule(true)}
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all duration-200 hover:shadow-sm active:scale-95 flex items-center gap-1.5 cursor-pointer"
+            >
+              <Edit2 size={14} /> Editar Horários
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={replicateMondayHours}
+                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl transition-all duration-200 border border-indigo-100/50 hover:shadow-sm active:scale-95 self-start sm:self-auto shrink-0 cursor-pointer"
+              >
+                <Copy size={14} /> Replicar Segunda a Sexta
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsEditingSchedule(false)}
+                className="px-3 py-2 text-xs border border-slate-200 text-slate-500 hover:bg-slate-100 rounded-xl font-medium transition-colors cursor-pointer"
+              >
+                Recolher
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="divide-y divide-slate-100">
-          {DAYS_OF_WEEK.map(({ key, label }) => {
-            const day = weeklyHours[key] || { isOpen: false, start: '08:00', end: '18:00' };
-            return (
-              <div key={key} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 first:pt-0 last:pb-0">
-                {/* Day label and Toggle */}
-                <div className="flex items-center justify-between sm:justify-start gap-4 flex-1">
-                  <span className="font-bold text-slate-800 text-sm w-28 text-left">{label}</span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={day.isOpen}
-                      onChange={(e) => {
-                        setWeeklyHours(prev => ({
-                          ...prev,
-                          [key]: { ...prev[key], isOpen: e.target.checked }
-                        }));
-                      }}
-                    />
-                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                  </label>
-                  <span className={`text-xs font-bold ${day.isOpen ? 'text-primary' : 'text-slate-400'}`}>
-                    {day.isOpen ? 'Aberto' : 'Fechado'}
-                  </span>
-                </div>
+        {!isEditingSchedule ? (
+          <div className="p-4 bg-slate-50 rounded-2xl flex items-center justify-between">
+            <span className="text-slate-600 text-sm font-medium">
+              {Object.values(weeklyHours).filter(d => d?.isOpen).length > 0 
+                ? `Horários configurados (${Object.values(weeklyHours).filter(d => d?.isOpen).length} dia(s) com atendimento)` 
+                : 'Nenhum horário configurado.'}
+            </span>
+          </div>
+        ) : (
+          <>
+            <div className="divide-y divide-slate-100">
+              {DAYS_OF_WEEK.map(({ key, label }) => {
+                const day = weeklyHours[key] || { isOpen: false, start: '08:00', end: '18:00' };
+                return (
+                  <div key={key} className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 first:pt-0 last:pb-0">
+                    {/* Day label and Toggle */}
+                    <div className="flex items-center justify-between sm:justify-start gap-4 flex-1">
+                      <span className="font-bold text-slate-800 text-sm w-28 text-left">{label}</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={day.isOpen}
+                          onChange={(e) => {
+                            setWeeklyHours(prev => ({
+                              ...prev,
+                              [key]: { ...prev[key], isOpen: e.target.checked }
+                            }));
+                          }}
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                      </label>
+                      <span className={`text-xs font-bold ${day.isOpen ? 'text-primary' : 'text-slate-400'}`}>
+                        {day.isOpen ? 'Aberto' : 'Fechado'}
+                      </span>
+                    </div>
 
-                {/* Time inputs */}
-                {day.isOpen && (
-                  <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200 shrink-0">
-                    <input
-                      type="time"
-                      value={day.start}
-                      onChange={(e) => {
-                        setWeeklyHours(prev => ({
-                          ...prev,
-                          [key]: { ...prev[key], start: e.target.value }
-                        }));
-                      }}
-                      className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none font-semibold"
-                    />
-                    <span className="text-xs text-slate-400 font-bold">às</span>
-                    <input
-                      type="time"
-                      value={day.end}
-                      onChange={(e) => {
-                        setWeeklyHours(prev => ({
-                          ...prev,
-                          [key]: { ...prev[key], end: e.target.value }
-                        }));
-                      }}
-                      className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none font-semibold"
-                    />
+                    {/* Time inputs */}
+                    {day.isOpen && (
+                      <div className="flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200 shrink-0">
+                        <input
+                          type="time"
+                          value={day.start}
+                          onChange={(e) => {
+                            setWeeklyHours(prev => ({
+                              ...prev,
+                              [key]: { ...prev[key], start: e.target.value }
+                            }));
+                          }}
+                          className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none font-semibold"
+                        />
+                        <span className="text-xs text-slate-400 font-bold">às</span>
+                        <input
+                          type="time"
+                          value={day.end}
+                          onChange={(e) => {
+                            setWeeklyHours(prev => ({
+                              ...prev,
+                              [key]: { ...prev[key], end: e.target.value }
+                            }));
+                          }}
+                          className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-800 focus:ring-2 focus:ring-primary focus:outline-none font-semibold"
+                        />
+                      </div>
+                    )}
                   </div>
+                );
+              })}
+            </div>
+
+            {/* New Save Schedule Block */}
+            <div className="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex-1 text-left">
+                {scheduleSuccess && (
+                  <p className="text-sm font-semibold text-emerald-600 flex items-center gap-1.5 animate-fadeIn">
+                    <CheckCircle size={16} /> {scheduleSuccess}
+                  </p>
+                )}
+                {scheduleError && (
+                  <p className="text-sm font-semibold text-red-650 flex items-center gap-1.5 animate-fadeIn">
+                    <AlertCircle size={16} /> {scheduleError}
+                  </p>
                 )}
               </div>
-            );
-          })}
-        </div>
-
-        {/* New Save Schedule Block */}
-        <div className="pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex-1 text-left">
-            {scheduleSuccess && (
-              <p className="text-sm font-semibold text-emerald-600 flex items-center gap-1.5 animate-fadeIn">
-                <CheckCircle size={16} /> {scheduleSuccess}
-              </p>
-            )}
-            {scheduleError && (
-              <p className="text-sm font-semibold text-red-650 flex items-center gap-1.5 animate-fadeIn">
-                <AlertCircle size={16} /> {scheduleError}
-              </p>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={handleSaveSchedule}
-            disabled={isSavingSchedule}
-            className="px-5 py-2.5 bg-white border border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 text-indigo-700 text-sm font-bold rounded-xl transition-all duration-200 hover:shadow-sm active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSavingSchedule ? <Loader2 size={16} className="animate-spin text-indigo-700" /> : <Clock size={16} />}
-            Salvar Horários
-          </button>
-        </div>
+              <button
+                type="button"
+                onClick={handleSaveSchedule}
+                disabled={isSavingSchedule}
+                className="px-5 py-2.5 bg-white border border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 text-indigo-700 text-sm font-bold rounded-xl transition-all duration-200 hover:shadow-sm active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isSavingSchedule ? <Loader2 size={16} className="animate-spin text-indigo-700" /> : <Clock size={16} />}
+                Salvar Horários
+              </button>
+            </div>
+          </>
+        )}
       </section>
 
       <section className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border-0 shadow-sm space-y-6">
@@ -1416,8 +1509,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
           <div className="flex items-center justify-between mb-3 border-t border-slate-100 pt-4">
             <label className={labelClass + ' mb-0'}>Redes Sociais <span className="text-slate-400">(máx. 3)</span></label>
             {socialLinks.length < 3 && (
-              <button type="button" onClick={addSocialLink}
-                className="text-xs text-primary font-semibold hover:underline flex items-center gap-1">
+              <button type="button" onClick={addSocialLink} className="flex items-center gap-1.5 text-xs bg-slate-900 hover:bg-slate-800 text-white px-3 py-2 rounded-lg font-medium transition-colors shrink-0 cursor-pointer">
                 + Adicionar rede
               </button>
             )}
@@ -3989,7 +4081,7 @@ function QrCodeModal({ isOpen, onClose, professional }) {
 function DeleteAdConfirmModal({ isOpen, onClose, onConfirm, loading }) {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4"
       style={{ backdropFilter: 'blur(4px)' }}
@@ -4048,6 +4140,7 @@ function DeleteAdConfirmModal({ isOpen, onClose, onConfirm, loading }) {
           to   { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 }
