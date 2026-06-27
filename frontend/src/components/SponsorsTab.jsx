@@ -115,30 +115,20 @@ function AdSponsorsManager({ ad, token, onSaved }) {
 
       const data = await res.json();
       if (res.ok && data.success) {
-        const originalUrl = partnerCropTarget?.imageSrc || partnerCropTarget;
         setAdPartners(prev => prev.map((item, idx) => idx === activeIdx ? {
           ...item,
           imageUrl: data.url,
           fileId: data.fileId,
-          originalImageUrl: originalUrl,
+          originalImageUrl: null,
         } : item));
       } else {
         throw new Error(data.message || 'Erro ao carregar parceiro.');
       }
     } catch (err) {
-      console.error('[PARTNER UPLOAD] Erro:', err);
-      setPartnerError(err.message || 'Erro de conexão ao enviar o parceiro.');
-      
-      // If the upload failed, revert the temporary URL to prevent saving it
-      if (isEditing) {
-        setAdPartners(prev => prev.map((item, idx) => idx === activeIdx ? {
-          ...item,
-          imageUrl: previousImageUrl,
-        } : item));
-      } else {
-        // Remove the appended temporary item
-        setAdPartners(prev => prev.filter((_, idx) => idx !== activeIdx));
-      }
+      console.error('Erro no upload do patrocinador:', err);
+      setPartnerError('Falha ao processar a imagem. O arquivo pode ser muito pesado.');
+      // Reverte a imagem defeituosa para null
+      setAdPartners(prev => prev.map((p, i) => i === targetIndex ? { ...p, imageUrl: null } : p));
     } finally {
       setIsUploadingPartner(false);
       setPartnerCropTarget(null);
@@ -216,14 +206,10 @@ function AdSponsorsManager({ ad, token, onSaved }) {
     setSuccessMessage('');
     setErrorMessage('');
 
-    // Check if any partner has a temporary/local URL
-    const hasTemporaryImages = adPartners.some(partner => {
-      const url = partner.imageUrl;
-      return url && typeof url === 'string' && (url.startsWith('blob:') || url.startsWith('data:image/'));
-    });
-
-    if (hasTemporaryImages) {
-      setErrorMessage('Aguarde o upload das imagens terminar ou remova imagens inválidas antes de salvar.');
+    // Check if any partner has an unfinished upload (non-http URL)
+    const hasUnfinishedUpload = adPartners.some(p => p.imageUrl && !p.imageUrl.startsWith('http'));
+    if (hasUnfinishedUpload) {
+      setErrorMessage('O upload da imagem do Patrocinador 2 falhou ou ainda está carregando. Por favor, remova a imagem com erro (clicando na lixeira) ou aguarde antes de salvar.');
       return;
     }
 
@@ -239,7 +225,7 @@ function AdSponsorsManager({ ad, token, onSaved }) {
       .map(partner => ({
         imageUrl: partner.imageUrl.trim(),
         fileId: partner.fileId || null,
-        originalImageUrl: partner.originalImageUrl || null,
+        originalImageUrl: null,
         link: partner.link ? partner.link.trim() : '',
         name: partner.name ? partner.name.trim() : '',
         partnerAddress: partner.partnerAddress ? partner.partnerAddress.trim() : '',
@@ -414,18 +400,7 @@ function AdSponsorsManager({ ad, token, onSaved }) {
                     Banner {activeSlideIndex + 1} de {adPartners.length}
                   </span>
                   
-                  {adPartners[activeSlideIndex]?.originalImageUrl && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPartnerEditIndex(activeSlideIndex);
-                        setPartnerCropTarget(adPartners[activeSlideIndex].originalImageUrl);
-                      }}
-                      className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 text-white text-[11px] font-bold rounded-lg border border-white/25 flex items-center gap-1.5 w-36 justify-center transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-sm animate-in fade-in duration-300"
-                    >
-                      <Crop size={12} /> Reposicionar
-                    </button>
-                  )}
+
 
                   <button
                     type="button"
