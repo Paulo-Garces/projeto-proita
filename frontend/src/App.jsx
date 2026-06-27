@@ -25,6 +25,7 @@ import TermsAndPrivacy from './pages/TermsAndPrivacy';
 import Mural from './pages/Mural';
 import Sandbox from './pages/Sandbox';
 import ScrollToTop from './components/ScrollToTop';
+import PwaUpdateToast from './components/PwaUpdateToast';
 
 function App() {
   console.log('URL da API atual:', import.meta.env.VITE_API_URL);
@@ -62,6 +63,7 @@ function App() {
             </main>
             <BottomNav />
             <Footer />
+            <PwaUpdateToast />
           </div>
         </Router>
       </PwaProvider>

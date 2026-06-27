@@ -94,6 +94,15 @@ export default function Home() {
     navigate(`/search?q=${encodeURIComponent(term)}`);
   };
 
+  const handleSearchFocus = () => {
+    setTimeout(() => {
+      window.scrollTo({ 
+        top: window.scrollY + 180, // Ajuste esse valor entre 150 e 200 pixels
+        behavior: 'smooth' 
+      });
+    }, 300);
+  };
+
   const handleSearch = (e) => {
     e.preventDefault();
     executeSearch(searchTerm);
@@ -121,7 +130,7 @@ export default function Home() {
   const shortcuts = popularSearches.length > 0 ? popularSearches : defaultShortcuts;
 
   return (
-    <div className="h-[calc(100vh-64px)] w-full bg-white flex flex-col justify-between relative overflow-hidden mt-16 select-none">
+    <div className="min-h-[calc(100vh-64px)] md:h-[calc(100vh-64px)] w-full bg-white flex flex-col justify-between relative overflow-y-auto md:overflow-hidden mt-16 select-none pb-24 md:pb-0">
       <style dangerouslySetInnerHTML={{__html: `
         .fil0 { fill: #01A163; }
         .fil1 { fill: #0C61B1; }
@@ -225,7 +234,10 @@ export default function Home() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyDown={handleKeyDown}
-              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+              onFocus={() => {
+                if (suggestions.length > 0) setShowSuggestions(true);
+                handleSearchFocus();
+              }}
               autoComplete="off"
             />
             {/* Dropdown de sugestões */}

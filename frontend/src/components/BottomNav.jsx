@@ -49,6 +49,8 @@ export default function BottomNav() {
     return location.pathname.startsWith(path);
   };
 
+  if (location.pathname === '/') return null;
+
   return (
     <div className={`md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-50 transition-all duration-500 ease-in-out ${
       isVisible 

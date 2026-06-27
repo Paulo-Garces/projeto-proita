@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import SponsorSlider from '../components/SponsorSlider';
 import ReportModal from '../components/ReportModal';
+import { Helmet } from 'react-helmet-async';
 
 const InstagramIcon = ({ size = 24, className }) => (
   <svg
@@ -589,7 +590,10 @@ export default function Profile() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Helmet>
+          <title>Carregando perfil... | proITA</title>
+        </Helmet>
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         <span className="ml-3 text-lg font-medium text-slate-600">Carregando...</span>
       </div>
@@ -598,7 +602,10 @@ export default function Profile() {
 
   if (!professional) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Helmet>
+          <title>Profissional não encontrado | proITA</title>
+        </Helmet>
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Profissional não encontrado</h2>
           <Link to="/search" className="text-primary hover:underline">Voltar para a busca</Link>
@@ -864,6 +871,19 @@ export default function Profile() {
 
   return (
     <div className="bg-slate-50 min-h-screen pb-20 pt-20 md:pt-24">
+      <Helmet>
+        <title>{`${professional.name} - ${professional.category} em ${professional.location} | proITA`}</title>
+        <meta 
+          name="description" 
+          content={`Encontre ${professional.name}, especialista em ${professional.category}. Veja catálogo de serviços, portfólio, horários e entre em contato direto pelo proITA.`} 
+        />
+        <meta property="og:title" content={`${professional.name} - ${professional.category} em ${professional.location} | proITA`} />
+        <meta 
+          property="og:description" 
+          content={`Encontre ${professional.name}, especialista em ${professional.category}. Veja catálogo de serviços, portfólio, horários e entre em contato direto pelo proITA.`} 
+        />
+        {professional.avatar && <meta property="og:image" content={professional.avatar} />}
+      </Helmet>
       <input 
         ref={avatarInputRef} 
         type="file" 
