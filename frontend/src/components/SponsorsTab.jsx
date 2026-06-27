@@ -54,28 +54,7 @@ function AdSponsorsManager({ ad, token, onSaved }) {
     setIsUploadingPartner(true);
     setPartnerError('');
 
-    // Generate local preview URL
-    const localPreviewUrl = URL.createObjectURL(blob);
     const targetIndex = partnerEditIndex;
-
-    // Instantly save in state for local preview
-    if (targetIndex !== null && targetIndex !== undefined && targetIndex >= 0) {
-      setAdPartners(prev => prev.map((item, idx) => idx === targetIndex ? {
-        ...item,
-        imageUrl: localPreviewUrl,
-      } : item));
-    } else {
-      setAdPartners(prev => [...prev, {
-        imageUrl: localPreviewUrl,
-        fileId: null,
-        originalImageUrl: null,
-        link: '',
-        name: '',
-        partnerAddress: '',
-        partnerPhone: '',
-      }]);
-    }
-
     const activeIdx = (targetIndex !== null && targetIndex !== undefined && targetIndex >= 0)
       ? targetIndex 
       : adPartners.length;
@@ -108,12 +87,24 @@ function AdSponsorsManager({ ad, token, onSaved }) {
       const data = await res.json();
       if (res.ok && data.success) {
         const originalUrl = partnerCropTarget?.imageSrc || partnerCropTarget;
-        setAdPartners(prev => prev.map((item, idx) => idx === activeIdx ? {
-          ...item,
-          imageUrl: data.url,
-          fileId: data.fileId,
-          originalImageUrl: originalUrl,
-        } : item));
+        if (targetIndex !== null && targetIndex !== undefined && targetIndex >= 0) {
+          setAdPartners(prev => prev.map((item, idx) => idx === targetIndex ? {
+            ...item,
+            imageUrl: data.url,
+            fileId: data.fileId,
+            originalImageUrl: originalUrl,
+          } : item));
+        } else {
+          setAdPartners(prev => [...prev, {
+            imageUrl: data.url,
+            fileId: data.fileId,
+            originalImageUrl: originalUrl,
+            link: '',
+            name: '',
+            partnerAddress: '',
+            partnerPhone: '',
+          }]);
+        }
       } else {
         setPartnerError(data.message || 'Erro ao carregar parceiro.');
       }
@@ -191,6 +182,24 @@ function AdSponsorsManager({ ad, token, onSaved }) {
     setIsSaving(true);
     setSuccessMessage('');
     setErrorMessage('');
+
+    // Filter before sending: remove empty sponsors and format fields
+    const cleanedPartners = adPartners
+      .filter(partner => {
+        // A partner is valid if they have a non-empty imageUrl that is not a local blob URL
+        const hasImage = partner.imageUrl && typeof partner.imageUrl === 'string' && partner.imageUrl.trim() !== '' && !partner.imageUrl.startsWith('blob:');
+        return hasImage;
+      })
+      .map(partner => ({
+        imageUrl: partner.imageUrl.trim(),
+        fileId: partner.fileId || null,
+        originalImageUrl: partner.originalImageUrl || null,
+        link: partner.link ? partner.link.trim() : '',
+        name: partner.name ? partner.name.trim() : '',
+        partnerAddress: partner.partnerAddress ? partner.partnerAddress.trim() : '',
+        partnerPhone: partner.partnerPhone ? partner.partnerPhone.trim() : '',
+      }));
+
     try {
       const res = await fetch(`${API_URL}/api/ads/${ad.id}`, {
         method: 'PATCH',
@@ -202,12 +211,14 @@ function AdSponsorsManager({ ad, token, onSaved }) {
           id: ad.id,
           adId: ad.id,
           selectedAdId: ad.id,
-          partners: adPartners,
+          partners: cleanedPartners,
         }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setSuccessMessage('Patrocinadores salvos com sucesso!');
+        // Update local state with the cleaned array to ensure no blob URLs or empty items are left in UI state
+        setAdPartners(cleanedPartners);
         if (onSaved) {
           onSaved(data.profile);
         }
@@ -217,7 +228,7 @@ function AdSponsorsManager({ ad, token, onSaved }) {
       }
     } catch (err) {
       console.error('[SAVE PARTNERS] Erro:', err);
-      setErrorMessage('Erro de conexão ao salvar.');
+      setErrorMessage(`Erro de conexão ao salvar: ${err.message || 'Erro de conexão/servidor'}`);
     } finally {
       setIsSaving(false);
     }
@@ -285,7 +296,12 @@ function AdSponsorsManager({ ad, token, onSaved }) {
                 />
 
                 {/* Main Portrait Slide Image */}
-                {adPartners[activeSlideIndex]?.imageUrl ? (
+                {isUploadingPartner && activeSlideIndex === partnerEditIndex ? (
+                  <div className="relative z-10 flex flex-col items-center justify-center p-4 text-center">
+                    <Loader2 className="text-primary animate-spin mb-2" size={28} />
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Enviando imagem...</span>
+                  </div>
+                ) : adPartners[activeSlideIndex]?.imageUrl ? (
                   <img 
                     src={adPartners[activeSlideIndex].imageUrl} 
                     alt={`Mockup Patrocinador ${activeSlideIndex + 1}`} 
@@ -418,16 +434,16 @@ function AdSponsorsManager({ ad, token, onSaved }) {
 
             {/* Lado Direito: Listagem com Links Rápidos */}
             <div className="flex-1 w-full space-y-4">
-              <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+              <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <span className="font-bold text-slate-700 text-sm">
                   Patrocinadores ({adPartners.length}/3)
                 </span>
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
                   {adPartners.length > 0 && (
                     <button
                       type="button"
                       onClick={() => setIsMobilePreviewOpen(true)}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1 border border-slate-200 md:hidden"
+                      className="flex-1 sm:flex-none justify-center px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1 border border-slate-200 md:hidden"
                     >
                       Visualizar Preview
                     </button>
@@ -437,7 +453,7 @@ function AdSponsorsManager({ ad, token, onSaved }) {
                       type="button"
                       onClick={handleAddPartnerClick}
                       disabled={isUploadingPartner}
-                      className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1 border border-primary/20 disabled:opacity-50"
+                      className="flex-1 sm:flex-none justify-center px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1 border border-primary/20 disabled:opacity-50"
                     >
                       <Plus size={12} /> Adicionar
                     </button>
@@ -466,7 +482,12 @@ function AdSponsorsManager({ ad, token, onSaved }) {
                       className="w-12 h-16 bg-slate-200 rounded-lg overflow-hidden border border-slate-200 shrink-0 relative flex items-center justify-center cursor-pointer hover:bg-slate-350 transition-colors group"
                       title="Clique para selecionar imagem"
                     >
-                      {partner.imageUrl ? (
+                      {isUploadingPartner && idx === partnerEditIndex ? (
+                        <div className="flex flex-col items-center text-primary p-1">
+                          <Loader2 size={16} className="animate-spin" />
+                          <span className="text-[7px] uppercase font-bold mt-0.5 text-center leading-tight">Enviando</span>
+                        </div>
+                      ) : partner.imageUrl ? (
                         <>
                           <img src={partner.imageUrl} alt="" className="w-full h-full object-cover animate-in fade-in duration-200" />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
