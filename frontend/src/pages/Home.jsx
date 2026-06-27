@@ -1,11 +1,12 @@
 import { Search as SearchIcon, Wrench, Zap, Paintbrush, Sparkles, Clock, Navigation, PlusCircle } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 
 export default function Home() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, isAuthenticated } = useContext(AuthContext);
   const [searchTerm, setSearchTerm] = useState('');
   const [popularSearches, setPopularSearches] = useState([]);
@@ -130,7 +131,7 @@ export default function Home() {
   const shortcuts = popularSearches.length > 0 ? popularSearches : defaultShortcuts;
 
   return (
-    <div className="min-h-[calc(100vh-64px)] md:h-[calc(100vh-64px)] w-full bg-white flex flex-col justify-between relative overflow-y-auto md:overflow-hidden mt-16 select-none pb-24 md:pb-0">
+    <div className={`min-h-[calc(100vh-64px)] md:h-[calc(100vh-64px)] w-full bg-white flex flex-col justify-between relative overflow-y-auto md:overflow-hidden mt-16 select-none ${location.pathname === '/' ? 'pb-0' : 'pb-24 md:pb-0'}`}>
       <style dangerouslySetInnerHTML={{__html: `
         .fil0 { fill: #01A163; }
         .fil1 { fill: #0C61B1; }
@@ -289,8 +290,8 @@ export default function Home() {
       <div className="h-4 md:h-8 shrink-0"></div>
 
       {/* Footer minimalista colado na base - texto branco sobre as serras verdes */}
-      <footer className="w-full text-center bg-transparent py-6 relative z-20 mt-auto shrink-0">
-        <p className="text-white text-xs font-semibold tracking-wide drop-shadow-md">
+      <footer className="absolute bottom-4 left-0 w-full text-center bg-transparent z-20 shrink-0">
+        <p className="text-white/80 text-xs font-semibold tracking-wide drop-shadow-md">
           &copy; {new Date().getFullYear()} proITA - Guia dos Três Climas. Todos os direitos reservados.
         </p>
       </footer>
