@@ -54,10 +54,33 @@ function AdSponsorsManager({ ad, token, onSaved }) {
     setIsUploadingPartner(true);
     setPartnerError('');
 
+    // Generate local preview URL
+    const localPreviewUrl = URL.createObjectURL(blob);
     const targetIndex = partnerEditIndex;
-    const activeIdx = (targetIndex !== null && targetIndex !== undefined && targetIndex >= 0)
-      ? targetIndex 
-      : adPartners.length;
+    const isEditing = targetIndex !== null && targetIndex !== undefined && targetIndex >= 0;
+
+    // Keep track of the previous image URL to revert if upload fails
+    const previousImageUrl = isEditing ? (adPartners[targetIndex]?.imageUrl || null) : null;
+
+    // Instantly save in state for local preview
+    if (isEditing) {
+      setAdPartners(prev => prev.map((item, idx) => idx === targetIndex ? {
+        ...item,
+        imageUrl: localPreviewUrl,
+      } : item));
+    } else {
+      setAdPartners(prev => [...prev, {
+        imageUrl: localPreviewUrl,
+        fileId: null,
+        originalImageUrl: null,
+        link: '',
+        name: '',
+        partnerAddress: '',
+        partnerPhone: '',
+      }]);
+    }
+
+    const activeIdx = isEditing ? targetIndex : adPartners.length;
 
     try {
       // Compress the cropped image in the background
@@ -84,37 +107,48 @@ function AdSponsorsManager({ ad, token, onSaved }) {
         body: fd,
       });
 
+      // Prevention of parse error: check content-type
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("O servidor retornou um erro inesperado. A imagem pode ser muito grande ou a rota falhou.");
+      }
+
       const data = await res.json();
       if (res.ok && data.success) {
         const originalUrl = partnerCropTarget?.imageSrc || partnerCropTarget;
-        if (targetIndex !== null && targetIndex !== undefined && targetIndex >= 0) {
-          setAdPartners(prev => prev.map((item, idx) => idx === targetIndex ? {
-            ...item,
-            imageUrl: data.url,
-            fileId: data.fileId,
-            originalImageUrl: originalUrl,
-          } : item));
-        } else {
-          setAdPartners(prev => [...prev, {
-            imageUrl: data.url,
-            fileId: data.fileId,
-            originalImageUrl: originalUrl,
-            link: '',
-            name: '',
-            partnerAddress: '',
-            partnerPhone: '',
-          }]);
-        }
+        setAdPartners(prev => prev.map((item, idx) => idx === activeIdx ? {
+          ...item,
+          imageUrl: data.url,
+          fileId: data.fileId,
+          originalImageUrl: originalUrl,
+        } : item));
       } else {
-        setPartnerError(data.message || 'Erro ao carregar parceiro.');
+        throw new Error(data.message || 'Erro ao carregar parceiro.');
       }
     } catch (err) {
       console.error('[PARTNER UPLOAD] Erro:', err);
-      setPartnerError('Erro de conexão ao enviar o parceiro.');
+      setPartnerError(err.message || 'Erro de conexão ao enviar o parceiro.');
+      
+      // If the upload failed, revert the temporary URL to prevent saving it
+      if (isEditing) {
+        setAdPartners(prev => prev.map((item, idx) => idx === activeIdx ? {
+          ...item,
+          imageUrl: previousImageUrl,
+        } : item));
+      } else {
+        // Remove the appended temporary item
+        setAdPartners(prev => prev.filter((_, idx) => idx !== activeIdx));
+      }
     } finally {
       setIsUploadingPartner(false);
       setPartnerCropTarget(null);
       setPartnerEditIndex(null);
+      // Revoke the blob URL to free resources
+      try {
+        URL.revokeObjectURL(localPreviewUrl);
+      } catch (e) {
+        console.warn('Erro ao revogar URL local:', e);
+      }
     }
   };
 
@@ -179,9 +213,21 @@ function AdSponsorsManager({ ad, token, onSaved }) {
 
   const handleSave = async () => {
     if (!ad.id) return;
-    setIsSaving(true);
     setSuccessMessage('');
     setErrorMessage('');
+
+    // Check if any partner has a temporary/local URL
+    const hasTemporaryImages = adPartners.some(partner => {
+      const url = partner.imageUrl;
+      return url && typeof url === 'string' && (url.startsWith('blob:') || url.startsWith('data:image/'));
+    });
+
+    if (hasTemporaryImages) {
+      setErrorMessage('Aguarde o upload das imagens terminar ou remova imagens inválidas antes de salvar.');
+      return;
+    }
+
+    setIsSaving(true);
 
     // Filter before sending: remove empty sponsors and format fields
     const cleanedPartners = adPartners
@@ -214,6 +260,13 @@ function AdSponsorsManager({ ad, token, onSaved }) {
           partners: cleanedPartners,
         }),
       });
+
+      // Prevention of parse error: check content-type
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("O servidor retornou um erro inesperado. A imagem pode ser muito grande ou a rota falhou.");
+      }
+
       const data = await res.json();
       if (res.ok && data.success) {
         setSuccessMessage('Patrocinadores salvos com sucesso!');
@@ -735,7 +788,13 @@ export default function SponsorsTab({ token, onSaved }) {
     fetch(`${API_URL}/api/ads/me`, {
       headers: { 'Authorization': `Bearer ${token}` },
     })
-      .then(r => r.json())
+      .then(res => {
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("O servidor retornou um erro inesperado ao carregar seus anúncios.");
+        }
+        return res.json();
+      })
       .then(d => {
         if (d.success) {
           setAds(d.data || []);
@@ -745,7 +804,7 @@ export default function SponsorsTab({ token, onSaved }) {
       })
       .catch(err => {
         console.error('[FETCH ADS] Erro:', err);
-        setErrorMessage('Erro de conexão ao carregar seus anúncios.');
+        setErrorMessage(err.message || 'Erro de conexão ao carregar seus anúncios.');
       })
       .finally(() => setLoadingAds(false));
   }, [token]);
