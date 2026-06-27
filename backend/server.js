@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
@@ -1273,6 +1275,151 @@ app.get('/api/mural', async (req, res) => {
     console.error('Erro ao buscar oportunidades do mural:', err);
     res.status(500).json({ error: 'Erro ao buscar oportunidades' });
   }
+});
+
+// Servir arquivos estáticos do frontend (Vite build) em produção
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+// Rota específica para /profile/:idOrSlug com Server-Side HTML Injection para SEO
+app.get('/profile/:idOrSlug', async (req, res) => {
+  const { idOrSlug } = req.params;
+  const indexPath = path.join(__dirname, '../frontend/dist/index.html');
+
+  try {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(idOrSlug);
+    
+    // Busca o profissional no banco pelo ID ou Slug
+    const ad = await prisma.profile.findUnique({
+      where: isUuid ? { id: String(idOrSlug) } : { slug: String(idOrSlug) },
+      include: { user: true }
+    });
+
+    let html = await fs.promises.readFile(indexPath, 'utf8');
+
+    if (ad) {
+      // Reconstrói o nome de exibição
+      const hasNomeExibicao = ad.nomeExibicao != null && String(ad.nomeExibicao).trim() !== '';
+      const hasSobrenomeExibicao = ad.sobrenomeExibicao != null && String(ad.sobrenomeExibicao).trim() !== '';
+      let displayName = 'Profissional';
+      
+      if (hasNomeExibicao || hasSobrenomeExibicao) {
+        const nome = hasNomeExibicao ? String(ad.nomeExibicao).trim() : '';
+        const sob = hasSobrenomeExibicao ? String(ad.sobrenomeExibicao).trim() : '';
+        displayName = [nome, sob].filter(Boolean).join(' ').trim();
+      } else {
+        const nome = ad.user?.nome != null ? String(ad.user.nome).trim() : '';
+        const sob = ad.user?.sobrenome != null ? String(ad.user.sobrenome).trim() : '';
+        displayName = [nome, sob].filter(Boolean).join(' ').trim() || 'Profissional';
+      }
+
+      const category = ad.atividadePrincipal || 'Profissional';
+      const locationName = ad.serviceBairro || ad.user?.bairro || 'Itapipoca';
+      const avatar = (ad.fotoAnuncioUrl && ad.fotoAnuncioUrl.trim() !== '')
+        ? ad.fotoAnuncioUrl.trim()
+        : (ad.user?.profileImageUrl || ad.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0ea5e9&color=fff&bold=true`);
+      const capa = ad.capaUrl || avatar;
+
+      const title = `${displayName} - ${category} em ${locationName} | proITA`;
+      const description = `Encontre ${displayName}, especialista em ${category}. Veja catálogo de serviços, portfólio, horários e entre em contato direto pelo proITA.`;
+
+      // Injeta as meta tags de redes sociais no <head>
+      const metaTags = `
+    <title>${title}</title>
+    <meta name="description" content="${description}" />
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${description}" />
+    <meta property="og:image" content="${capa}" />
+    <meta property="og:type" content="profile" />
+      `.trim();
+
+      html = html.replace(/<title>.*?<\/title>/i, metaTags);
+    }
+
+    res.send(html);
+  } catch (err) {
+    console.error('[SEO MIDDLEWARE] Erro:', err);
+    res.sendFile(indexPath);
+  }
+});
+
+// Rota do sitemap.xml dinâmico para SEO
+app.get('/sitemap.xml', async (req, res) => {
+  res.header('Content-Type', 'application/xml');
+  const now = new Date();
+
+  let ads = [];
+  try {
+    ads = await prisma.profile.findMany({
+      where: {
+        user: {
+          OR: [
+            {
+              planStatus: { in: ['ATIVO', 'BASICO'] },
+              subscriptionEndsAt: { gte: now }
+            },
+            {
+              planStatus: 'DEGUSTACAO',
+              trialEndsAt: { gte: now }
+            }
+          ]
+        }
+      },
+      select: {
+        id: true,
+        slug: true
+      }
+    });
+  } catch (err) {
+    console.error('[SITEMAP GENERATION] Erro ao buscar anúncios:', err);
+  }
+
+  // Constrói o XML
+  let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://www.proita.com.br/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.proita.com.br/search</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://www.proita.com.br/planos</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.proita.com.br/faq</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.proita.com.br/sobre</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>`;
+
+  // Adiciona as URLs dinâmicas dos perfis
+  ads.forEach(ad => {
+    const idOrSlug = ad.slug || ad.id;
+    xml += `
+  <url>
+    <loc>https://www.proita.com.br/profile/${idOrSlug}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+  });
+
+  xml += '\n</urlset>';
+  res.send(xml);
+});
+
+// Qualquer outra rota do cliente carrega a SPA
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 // Iniciando o servidor
