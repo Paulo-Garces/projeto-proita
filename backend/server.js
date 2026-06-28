@@ -1277,9 +1277,6 @@ app.get('/api/mural', async (req, res) => {
   }
 });
 
-// Servir arquivos estáticos do frontend (Vite build) em produção
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
-
 // Rota específica para /profile/:idOrSlug com Server-Side HTML Injection para SEO
 app.get('/profile/:idOrSlug', async (req, res) => {
   const { idOrSlug } = req.params;
@@ -1320,19 +1317,27 @@ app.get('/profile/:idOrSlug', async (req, res) => {
       const capa = ad.capaUrl || avatar;
 
       const title = `${displayName} - ${category} em ${locationName} | proITA`;
-      const description = `Encontre ${displayName}, especialista em ${category}. Veja catálogo de serviços, portfólio, horários e entre em contato direto pelo proITA.`;
 
-      // Injeta as meta tags de redes sociais no <head>
+      // Garante que a foto do profissional seja uma URL absoluta http...
+      let absoluteImageUrl = capa;
+      if (capa && !capa.startsWith('http://') && !capa.startsWith('https://')) {
+        const relativePath = capa.startsWith('/') ? capa : `/${capa}`;
+        const requestHost = req.get('host') || 'www.proita.com.br';
+        const protocol = req.protocol || 'https';
+        absoluteImageUrl = `${protocol}://${requestHost}${relativePath}`;
+      }
+
+      // Atualiza o título da página no HTML
+      html = html.replace(/<title>.*?<\/title>/i, `<title>${title}</title>`);
+
+      // Injeta as meta tags de redes sociais exatamente antes do fechamento da tag </head>
       const metaTags = `
-    <title>${title}</title>
-    <meta name="description" content="${description}" />
-    <meta property="og:title" content="${title}" />
-    <meta property="og:description" content="${description}" />
-    <meta property="og:image" content="${capa}" />
-    <meta property="og:type" content="profile" />
+    <meta property="og:title" content="${displayName} | proITA">
+    <meta property="og:description" content="Confira os serviços e entre em contato!">
+    <meta property="og:image" content="${absoluteImageUrl}">
       `.trim();
 
-      html = html.replace(/<title>.*?<\/title>/i, metaTags);
+      html = html.replace('</head>', `${metaTags}\n</head>`);
     }
 
     res.send(html);
@@ -1341,6 +1346,9 @@ app.get('/profile/:idOrSlug', async (req, res) => {
     res.sendFile(indexPath);
   }
 });
+
+// Servir arquivos estáticos do frontend (Vite build) em produção
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // Rota do sitemap.xml dinâmico para SEO
 app.get('/sitemap.xml', async (req, res) => {
@@ -1418,7 +1426,7 @@ app.get('/sitemap.xml', async (req, res) => {
 });
 
 // Qualquer outra rota do cliente carrega a SPA
-app.get('*', (req, res) => {
+app.get('*any', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
