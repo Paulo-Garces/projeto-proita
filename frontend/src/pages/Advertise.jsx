@@ -177,6 +177,13 @@ export default function Advertise() {
     }
   }, [user, isAuthenticated, token, navigate, authLoading]);
 
+  // Rola para o topo ao alcançar a tela de sucesso (step 4)
+  useEffect(() => {
+    if (step === 4) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [step]);
+
   // Step 1 states
   const [nomeExibicao, setNomeExibicao] = useState('');
   const [telefoneComercial, setTelefoneComercial] = useState('');

@@ -5,6 +5,21 @@ import { AuthContext } from '../context/AuthContext';
 import { PwaContext } from '../context/PwaContext';
 import NotificationBell from './NotificationBell';
 
+const formatPhone = (phone) => {
+  if (!phone) return '';
+  const cleaned = String(phone).replace(/\D/g, '');
+  if (cleaned.length === 13) {
+    return `+${cleaned.substring(0, 2)} (${cleaned.substring(2, 4)}) ${cleaned.substring(4, 9)}-${cleaned.substring(9)}`;
+  }
+  if (cleaned.length === 11) {
+    return `(${cleaned.substring(0, 2)}) ${cleaned.substring(2, 7)}-${cleaned.substring(7)}`;
+  }
+  if (cleaned.length === 10) {
+    return `(${cleaned.substring(0, 2)}) ${cleaned.substring(2, 6)}-${cleaned.substring(6)}`;
+  }
+  return phone;
+};
+
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -192,7 +207,7 @@ export default function Header() {
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-2 z-50">
                         <div className="px-4 py-2 border-b border-slate-100 mb-2">
                           <p className="text-sm font-medium text-slate-800">{user?.nome}</p>
-                          <p className="text-xs text-slate-500 truncate">{user?.telefone}</p>
+                          <p className="text-xs text-slate-500 truncate">{formatPhone(user?.telefone)}</p>
                         </div>
                         {user?.role === 'ADMIN' && (
                           <Link
@@ -275,22 +290,22 @@ export default function Header() {
 
         <div className="px-4 py-6 overflow-y-auto flex-1 space-y-1 bg-white">
           {!isHome && (
-            <Link to="/" className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
+            <Link to="/" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
               <Home size={20} className="text-slate-400" /> Início
             </Link>
           )}
-          <Link to="/search" className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
+          <Link to="/search" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
             <Search size={20} className="text-slate-400" /> Explorar Profissionais
           </Link>
-          <Link to="/mural" className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
+          <Link to="/mural" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
             <Newspaper size={20} className="text-slate-400" /> Mural de Oportunidades
           </Link>
           {isAuthenticated ? (
-            <Link to="/central-de-ajuda" className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
+            <Link to="/central-de-ajuda" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
               <HelpCircle size={20} className="text-slate-400" /> Suporte
             </Link>
           ) : (
-            <Link to="/sobre" className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
+            <Link to="/sobre" onClick={() => setIsOpen(false)} className="block px-3 py-4 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md border-b border-slate-100 flex items-center gap-3">
               <Info size={20} className="text-slate-400" /> Sobre
             </Link>
           )}
@@ -327,18 +342,18 @@ export default function Header() {
                   )}
                   <div>
                     <p className="text-base font-bold text-slate-900 leading-tight">{user?.nome} {user?.sobrenome}</p>
-                    <p className="text-sm text-slate-500 mt-0.5">{user?.telefone}</p>
+                    <p className="text-sm text-slate-500 mt-0.5">{formatPhone(user?.telefone)}</p>
                   </div>
                 </div>
                 {user?.role === 'ADMIN' && (
-                  <Link to="/admin" className="block px-3 py-3 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md flex items-center gap-3">
+                  <Link to="/admin" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md flex items-center gap-3">
                     <Shield size={20} className="text-slate-400" /> Administração
                   </Link>
                 )}
-                <Link to="/dashboard" className="block px-3 py-3 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md flex items-center gap-3">
+                <Link to="/dashboard" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md flex items-center gap-3">
                   <User size={20} className="text-slate-400" /> Minha Conta
                 </Link>
-                <Link to="/search?favoritos=true" className="block px-3 py-3 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md flex items-center gap-3">
+                <Link to="/search?favoritos=true" onClick={() => setIsOpen(false)} className="block px-3 py-3 text-base font-medium text-slate-800 hover:bg-slate-50 rounded-md flex items-center gap-3">
                   <Heart size={20} className="text-slate-400" /> Favoritos
                 </Link>
                 <div className="border-t border-slate-100 mt-2 pt-2">

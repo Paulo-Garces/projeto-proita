@@ -1,7 +1,7 @@
 import { useState, useContext, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard, Sparkles, Clock, Copy, ChevronLeft, ChevronRight, Check, X, Link2, Crop, RefreshCw, Bell, Download } from 'lucide-react';
+import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard, Sparkles, Clock, Copy, ChevronLeft, ChevronRight, Check, X, Link2, Crop, RefreshCw, Bell, Download, Share2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
@@ -2443,7 +2443,18 @@ export default function Dashboard() {
               </div>
               <nav className="p-2">
                 {tabs.map(({ key, label, Icon }) => (
-                  <button key={key} onClick={() => { setActiveTab(key); setEditingAd(null); }}
+                  <button key={key} onClick={() => {
+                    setActiveTab(key);
+                    setEditingAd(null);
+                    setTimeout(() => {
+                      const element = document.getElementById(key);
+                      if (element) {
+                        element.scrollIntoView({ behavior: 'smooth' });
+                      } else if (contentRef.current) {
+                        contentRef.current.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }, 50);
+                  }}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors cursor-pointer ${activeTab === key ? 'bg-primary/10 text-primary' : 'text-slate-600 hover:bg-slate-50'}`}>
                     <Icon size={18} /> {label}
                   </button>
@@ -2463,7 +2474,7 @@ export default function Dashboard() {
             <div className={(activeTab === 'professional' && editingAd) ? "space-y-6 animate-in fade-in duration-300" : "bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-10"}>
 
               {activeTab === 'profile' && (
-                <div className="animate-in fade-in duration-300">
+                <div id="profile" className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-slate-900 mb-8">Meus Dados</h2>
                   <form onSubmit={handleUpdateProfile} className="space-y-6 max-w-2xl">
                     {profileSuccess && (
@@ -2535,7 +2546,7 @@ export default function Dashboard() {
               )}
 
               {activeTab === 'favorites' && (
-                <div className="animate-in fade-in duration-300">
+                <div id="favorites" className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-slate-900 mb-6">Profissionais Favoritos</h2>
                   {favoritesLoading ? (
                     <div className="flex justify-center py-20">
@@ -2589,7 +2600,7 @@ export default function Dashboard() {
               )}
 
               {activeTab === 'professional' && (
-                <div className="animate-in fade-in duration-300">
+                <div id="professional" className="animate-in fade-in duration-300">
                   {editingAd ? (
                     <AdEditForm ad={editingAd} token={token} user={user} isSecondAd={myAds.length >= 2} onSaved={handleAdSaved} onCancel={() => setEditingAd(null)} />
                   ) : (
@@ -2705,7 +2716,7 @@ export default function Dashboard() {
               )}
 
               {activeTab === 'sponsors' && (
-                <div className="space-y-8 animate-in fade-in duration-300">
+                <div id="sponsors" className="space-y-8 animate-in fade-in duration-300">
                   <div className="border-b border-slate-100 pb-4">
                     <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
                       <Sparkles className="text-primary animate-pulse hidden md:inline-block" size={24} />
@@ -2726,7 +2737,7 @@ export default function Dashboard() {
               )}
 
               {activeTab === 'notifications' && (
-                <div className="space-y-6 animate-in fade-in duration-300">
+                <div id="notifications" className="space-y-6 animate-in fade-in duration-300">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4">
                     <div>
                       <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -2810,7 +2821,7 @@ export default function Dashboard() {
               )}
 
               {activeTab === 'subscription' && (
-                <div className="animate-in fade-in duration-300">
+                <div id="subscription" className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-slate-900 mb-6">Assinatura e Anuidade</h2>
 
                   {myAds.length === 0 ? (
@@ -3446,7 +3457,7 @@ export default function Dashboard() {
               )}
 
               {activeTab === 'security' && (
-                <div className="animate-in fade-in duration-300">
+                <div id="security" className="animate-in fade-in duration-300">
                   <h2 className="text-2xl font-bold text-slate-900 mb-6">Segurança e Senha</h2>
 
                   {securityError && (
@@ -3996,6 +4007,7 @@ function DashboardToast({ toast, onClose }) {
 function QrCodeModal({ isOpen, onClose, professional }) {
   if (!isOpen || !professional) return null;
 
+  const [copied, setCopied] = useState(false);
   const profileUrl = `${window.location.origin}/profile/${professional.slug || professional.id}`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(profileUrl)}`;
 
@@ -4017,53 +4029,85 @@ function QrCodeModal({ isOpen, onClose, professional }) {
     }
   };
 
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Meu Perfil proITA',
+          text: `Confira meu perfil profissional no proITA: ${professional.nomeExibicao || 'Profissional'}`,
+          url: profileUrl
+        });
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Erro ao compartilhar:', err);
+        }
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(profileUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Erro ao copiar link:', err);
+      }
+    }
+  };
+
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center space-y-6"
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-xs overflow-hidden p-5 text-center space-y-4"
         style={{ animation: 'modalPop 0.22s cubic-bezier(0.34,1.56,0.64,1) both' }}
       >
         <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-          <h3 className="font-extrabold text-slate-900 text-lg">QR Code de Divulgação</h3>
+          <h3 className="font-extrabold text-slate-900 text-base">QR Code de Divulgação</h3>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer">
             <X size={16} className="text-slate-400" />
           </button>
         </div>
 
-        <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+        <p className="text-[11px] text-slate-500 max-w-xs mx-auto leading-relaxed">
           Baixe e compartilhe seu QR Code no Instagram, WhatsApp ou imprima para colocar em cartões de visita!
         </p>
 
-        <div className="bg-slate-50 p-4 rounded-2xl inline-block mx-auto border border-slate-150 shadow-inner">
+        <div className="bg-slate-50 p-3 rounded-2xl inline-block mx-auto border border-slate-150 shadow-inner">
           <img
             src={qrCodeUrl}
             alt="QR Code do Perfil"
-            className="w-[200px] h-[200px] mx-auto object-contain rounded-lg"
+            className="w-[180px] h-[180px] mx-auto object-contain rounded-lg"
           />
         </div>
 
-        <div className="text-xs font-semibold text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100 break-all select-all">
+        <div className="text-[10px] font-semibold text-slate-600 bg-slate-50 p-2 rounded-xl border border-slate-100 break-all select-all">
           {profileUrl}
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 pt-1">
           <button
             type="button"
             onClick={handleDownload}
-            className="w-full py-3 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold transition-all text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold transition-all text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer"
           >
-            <Download size={16} /> Baixar QR Code (PNG)
+            <Download size={14} /> Baixar QR Code (PNG)
           </button>
           <button
             type="button"
-            onClick={onClose}
-            className="w-full py-2.5 border border-slate-200 text-slate-500 hover:bg-slate-50 rounded-xl text-xs font-bold transition-all cursor-pointer"
+            onClick={handleShare}
+            className="w-full py-2.5 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
-            Fechar
+            {copied ? (
+              <>
+                <Check size={14} className="text-green-500 animate-bounce" /> Link Copiado!
+              </>
+            ) : (
+              <>
+                <Share2 size={14} className="text-slate-500" /> Compartilhar Perfil
+              </>
+            )}
           </button>
         </div>
       </div>

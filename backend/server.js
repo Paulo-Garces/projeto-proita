@@ -1293,6 +1293,11 @@ app.get('/profile/:idOrSlug', async (req, res) => {
 
     let html = await fs.promises.readFile(indexPath, 'utf8');
 
+    // Remove as meta tags genéricas antigas para evitar duplicidade
+    html = html.replace(/<meta property="og:title" [^>]+>/gi, '');
+    html = html.replace(/<meta property="og:description" [^>]+>/gi, '');
+    html = html.replace(/<meta property="og:image" [^>]+>/gi, '');
+
     if (ad) {
       // Reconstrói o nome de exibição
       const hasNomeExibicao = ad.nomeExibicao != null && String(ad.nomeExibicao).trim() !== '';
