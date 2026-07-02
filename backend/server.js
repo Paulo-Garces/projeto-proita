@@ -1011,8 +1011,7 @@ app.post('/api/analyze-description', authMiddleware, async (req, res) => {
     }
 
     let parsedResult = null;
-    const clientApiKey = req.headers['x-gemini-key'];
-    const apiKey = clientApiKey || process.env.GEMINI_API_KEY || '';
+    const apiKey = process.env.GEMINI_API_KEY;
 
     try {
       if (apiKey) {
