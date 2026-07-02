@@ -960,7 +960,7 @@ function localKeywordClassifier(description) {
 }
 
 // Configuração do Gemini (Chave inicializada dinamicamente por requisição)
-const genAI = new GoogleGenerativeAI(process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '');
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // ─────────────────────────────────────────────────────────────
 // POST /api/reports — Central de Moderação: Registrar Denúncia
@@ -1003,7 +1003,7 @@ app.post('/api/reports', async (req, res) => {
 
 // Rota de Análise de Descrição com IA
 
-app.post('/api/analyze-description', async (req, res) => {
+app.post('/api/analyze-description', authMiddleware, async (req, res) => {
   try {
     const { description } = req.body;
     if (!description) {
@@ -1012,7 +1012,7 @@ app.post('/api/analyze-description', async (req, res) => {
 
     let parsedResult = null;
     const clientApiKey = req.headers['x-gemini-key'];
-    const apiKey = clientApiKey || process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || '';
+    const apiKey = clientApiKey || process.env.GEMINI_API_KEY || '';
 
     try {
       if (apiKey) {
