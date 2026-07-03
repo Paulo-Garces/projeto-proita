@@ -162,7 +162,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   const badge = getReputationBadge(professional);
   const planStatus = professional.user?.planStatus || professional.planStatus || 'DEGUSTACAO';
   const planType = professional.user?.planType || professional.planType || '';
-  const showSponsor = planStatus === 'DEGUSTACAO' || planType.includes('PATROCINADOR');
+  const showSponsor = planStatus === 'DEGUSTACAO' || planType === 'TESTE' || planType.includes('PATROCINADOR');
   const getMapsLink = () => {
     const address = professional.enderecoComercial || professional.endereco || location;
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${address}, Itapipoca, CE`)}`;
@@ -322,7 +322,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   const cardContent = (
     <div 
       style={!isDashboard ? style : undefined}
-      className={`grid grid-cols-[115px_1fr_56px] sm:grid-cols-[125px_1fr_64px] gap-3 sm:gap-4 p-4 border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full' : ''} min-w-[290px]`}
+      className={`grid grid-cols-[82px_1fr_56px] sm:grid-cols-[120px_1fr_64px] gap-2.5 sm:gap-4 p-3 sm:p-4 border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full' : ''} min-w-[290px]`}
     >
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-cyan-400 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300 rounded-t-xl" />
 
@@ -336,9 +336,9 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             style={{ width: 'fit-content', height: 'fit-content' }}
           >
             {avatar ? (
-              <img src={avatar} alt={displayName} className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md" />
+              <img src={avatar} alt={displayName} className="w-[72px] h-[72px] sm:w-24 sm:h-24 rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md" />
             ) : (
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white text-2xl sm:text-3xl font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none">
+              <div className="w-[72px] h-[72px] sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white text-2xl sm:text-3xl font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none">
                 {displayName?.[0]?.toUpperCase() || 'P'}
               </div>
             )}
@@ -618,7 +618,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
           )}
         </div>
       ) : (
-        <div className="w-full" />
+        <div className="w-full h-full pointer-events-none" />
       )}
     </div>
   );
