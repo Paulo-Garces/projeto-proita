@@ -159,7 +159,19 @@ module.exports = (prisma) => {
           }
         },
         include: { 
-          user: { select: publicUserSelect },
+          user: {
+            select: {
+              nome: true,
+              sobrenome: true,
+              bairro: true,
+              telefone: true,
+              profileImageUrl: true,
+              planStatus: true,
+              planType: true,
+              trialEndsAt: true,
+              subscriptionEndsAt: true
+            }
+          },
           ...(userId && {
             favoritedBy: {
               where: { id: userId },
@@ -202,6 +214,19 @@ module.exports = (prisma) => {
       const ads = await prisma.profile.findMany({
         where: { userId },
         include: {
+          user: {
+            select: {
+              nome: true,
+              sobrenome: true,
+              bairro: true,
+              telefone: true,
+              profileImageUrl: true,
+              planStatus: true,
+              planType: true,
+              trialEndsAt: true,
+              subscriptionEndsAt: true
+            }
+          },
           favoritedBy: { select: { id: true } }
         },
         orderBy: { createdAt: 'desc' },
@@ -224,7 +249,19 @@ module.exports = (prisma) => {
         include: {
           favoriteProfiles: {
             include: {
-              user: { select: publicUserSelect }
+              user: {
+                select: {
+                  nome: true,
+                  sobrenome: true,
+                  bairro: true,
+                  telefone: true,
+                  profileImageUrl: true,
+                  planStatus: true,
+                  planType: true,
+                  trialEndsAt: true,
+                  subscriptionEndsAt: true
+                }
+              }
             }
           }
         }
@@ -258,7 +295,19 @@ module.exports = (prisma) => {
       const ad = await prisma.profile.findUnique({
         where: isUuid ? { id: String(id) } : { slug: String(id) },
         include: { 
-          user: { select: publicUserSelect },
+          user: {
+            select: {
+              nome: true,
+              sobrenome: true,
+              bairro: true,
+              telefone: true,
+              profileImageUrl: true,
+              planStatus: true,
+              planType: true,
+              trialEndsAt: true,
+              subscriptionEndsAt: true
+            }
+          },
           ...(userId && {
             favoritedBy: {
               where: { id: userId },

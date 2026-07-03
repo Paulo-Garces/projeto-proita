@@ -161,7 +161,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   const badge = getReputationBadge(professional);
   const planStatus = professional.user?.planStatus || professional.planStatus || 'DEGUSTACAO';
   const planType = professional.user?.planType || professional.planType || '';
-  const showSponsor = professional.user?.planStatus === 'DEGUSTACAO' || professional.user?.planType?.includes('PATROCINADOR');
+  const showSponsor = planStatus === 'DEGUSTACAO' || planType.includes('PATROCINADOR');
   const getMapsLink = () => {
     const address = professional.enderecoComercial || professional.endereco || location;
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${address}, Itapipoca, CE`)}`;
