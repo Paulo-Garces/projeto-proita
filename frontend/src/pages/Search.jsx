@@ -566,7 +566,7 @@ export default function Search() {
             <p className="mt-2 text-slate-500">Os mais bem avaliados pelos clientes proITA</p>
           </div>
           <div className="w-full max-w-3xl mx-auto md:max-w-none">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full items-start">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full items-start">
               {destaques.map(pro => (
                 <AdCard key={pro.id} professional={pro} />
               ))}

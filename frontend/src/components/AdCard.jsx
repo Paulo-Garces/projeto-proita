@@ -480,7 +480,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
           </div>
 
           {/* Patrocinador / Apoio Banner adaptável */}
-          {!showEdit && (
+          {!showEdit && isSponsorPlan && (
             <div className="w-14 sm:w-16 md:w-12 lg:w-14 xl:w-16 shrink-0 aspect-[3/4] flex items-center justify-center">
               {validPartners.length > 0 ? (
                 <div 
@@ -503,16 +503,11 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                     APOIO
                   </span>
                 </div>
-              ) : isSponsorPlan ? (
+              ) : (
                 <div className="w-full h-full rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-1 select-none text-center shrink-0">
                   <span className="text-[10px] xl:text-xs font-semibold text-slate-400 text-center leading-tight">
                     Anuncie
                   </span>
-                </div>
-              ) : (
-                <div className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-1 select-none text-center shrink-0">
-                  <span className="text-[10px] font-black text-slate-350 tracking-wider leading-none">proITA</span>
-                  <span className="text-[8px] text-slate-400 mt-1 uppercase font-bold tracking-wider">APOIO</span>
                 </div>
               )}
             </div>
