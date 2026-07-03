@@ -161,7 +161,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   const badge = getReputationBadge(professional);
   const planStatus = professional.user?.planStatus || professional.planStatus || 'DEGUSTACAO';
   const planType = professional.user?.planType || professional.planType || '';
-  const isSponsorPlan = planStatus === 'DEGUSTACAO' || planType.startsWith('PATROCINADOR');
+  const showSponsor = professional.user?.planStatus === 'DEGUSTACAO' || professional.user?.planType?.includes('PATROCINADOR');
   const getMapsLink = () => {
     const address = professional.enderecoComercial || professional.endereco || location;
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${address}, Itapipoca, CE`)}`;
@@ -480,7 +480,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
           </div>
 
           {/* Patrocinador / Apoio Banner adaptável */}
-          {!showEdit && isSponsorPlan && (
+          {!showEdit && showSponsor && (
             <div className="w-14 sm:w-16 md:w-12 lg:w-14 xl:w-16 shrink-0 aspect-[3/4] flex items-center justify-center">
               {validPartners.length > 0 ? (
                 <div 
