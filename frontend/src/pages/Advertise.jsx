@@ -235,6 +235,7 @@ export default function Advertise() {
   const timerIntervalRef = useRef(null);
   const canvasRef = useRef(null);
   const recordingStateRef = useRef('idle');
+  const maxRecordingTimeoutRef = useRef(null);
 
   const changeRecordingState = (state) => {
     setRecordingState(state);
@@ -420,6 +421,10 @@ export default function Advertise() {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
+    if (maxRecordingTimeoutRef.current) {
+      clearTimeout(maxRecordingTimeoutRef.current);
+      maxRecordingTimeoutRef.current = null;
+    }
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(track => track.stop());
       mediaStreamRef.current = null;
@@ -506,7 +511,7 @@ export default function Advertise() {
 
   const startRecording = async () => {
     isCancelledRef.current = false;
-    setRecordingTime(0);
+    setRecordingTime(59);
     setAudioError(''); // Limpa erros anteriores
     changeRecordingState('starting');
     setIsRecording(true);
@@ -602,8 +607,20 @@ export default function Advertise() {
       mediaRecorder.start(1000); // Coleta fatias de áudio de 1 segundo de forma assíncrona
 
       timerIntervalRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+        setRecordingTime(prev => {
+          if (prev <= 1) {
+            clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
+
+      maxRecordingTimeoutRef.current = setTimeout(() => {
+        console.log('Limite de 59 segundos atingido. Parando gravação automaticamente.');
+        stopAndSendRecording();
+      }, 59000);
 
       changeRecordingState('recording');
 
@@ -648,13 +665,32 @@ export default function Advertise() {
         clearInterval(timerIntervalRef.current);
         timerIntervalRef.current = null;
       }
+      if (maxRecordingTimeoutRef.current) {
+        clearTimeout(maxRecordingTimeoutRef.current);
+        maxRecordingTimeoutRef.current = null;
+      }
     } else if (recordingState === 'paused') {
       mediaRecorderRef.current.resume();
       changeRecordingState('recording');
       setIsPaused(false);
+
       timerIntervalRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+        setRecordingTime(prev => {
+          if (prev <= 1) {
+            clearInterval(timerIntervalRef.current);
+            timerIntervalRef.current = null;
+            return 0;
+          }
+          return prev - 1;
+        });
       }, 1000);
+
+      const remainingMs = recordingTime * 1000;
+      maxRecordingTimeoutRef.current = setTimeout(() => {
+        console.log('Limite de 59 segundos atingido após retomar. Parando gravação automaticamente.');
+        stopAndSendRecording();
+      }, remainingMs);
+
       setTimeout(() => {
         startVisualizerLoop();
       }, 50);
