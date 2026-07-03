@@ -2573,6 +2573,7 @@ export default function Dashboard() {
                           : (ad.user?.telefone || ad.servicePhone || ad.whatsapp || '');
 
                         const cardPro = {
+                          ...ad,
                           id: ad.id,
                           name: getProfileDisplayName(ad, ad.user),
                           category: ad.atividadePrincipal,

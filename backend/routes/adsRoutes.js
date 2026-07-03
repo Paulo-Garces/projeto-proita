@@ -160,17 +160,7 @@ module.exports = (prisma) => {
         },
         include: { 
           user: {
-            select: {
-              nome: true,
-              sobrenome: true,
-              bairro: true,
-              telefone: true,
-              profileImageUrl: true,
-              planStatus: true,
-              planType: true,
-              trialEndsAt: true,
-              subscriptionEndsAt: true
-            }
+            select: publicUserSelect
           },
           ...(userId && {
             favoritedBy: {
@@ -215,17 +205,7 @@ module.exports = (prisma) => {
         where: { userId },
         include: {
           user: {
-            select: {
-              nome: true,
-              sobrenome: true,
-              bairro: true,
-              telefone: true,
-              profileImageUrl: true,
-              planStatus: true,
-              planType: true,
-              trialEndsAt: true,
-              subscriptionEndsAt: true
-            }
+            select: publicUserSelect
           },
           favoritedBy: { select: { id: true } }
         },
@@ -250,17 +230,7 @@ module.exports = (prisma) => {
           favoriteProfiles: {
             include: {
               user: {
-                select: {
-                  nome: true,
-                  sobrenome: true,
-                  bairro: true,
-                  telefone: true,
-                  profileImageUrl: true,
-                  planStatus: true,
-                  planType: true,
-                  trialEndsAt: true,
-                  subscriptionEndsAt: true
-                }
+                select: publicUserSelect
               }
             }
           }
@@ -296,17 +266,7 @@ module.exports = (prisma) => {
         where: isUuid ? { id: String(id) } : { slug: String(id) },
         include: { 
           user: {
-            select: {
-              nome: true,
-              sobrenome: true,
-              bairro: true,
-              telefone: true,
-              profileImageUrl: true,
-              planStatus: true,
-              planType: true,
-              trialEndsAt: true,
-              subscriptionEndsAt: true
-            }
+            select: publicUserSelect
           },
           ...(userId && {
             favoritedBy: {

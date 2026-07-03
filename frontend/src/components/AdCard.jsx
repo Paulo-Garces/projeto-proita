@@ -77,6 +77,7 @@ const SocialIcon = ({ platform }) => {
 };
 
 export default function AdCard({ professional, showEdit = false, onEdit, onDelete, style, disableEdit = false, isDashboard = false, onQrCode }) {
+  console.log('Ad User Data:', professional?.user);
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
@@ -321,7 +322,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   const cardContent = (
     <div 
       style={!isDashboard ? style : undefined}
-      className={`grid grid-cols-[100px_minmax(0,1fr)] sm:grid-cols-[120px_minmax(0,1fr)] md:grid-cols-[105px_minmax(0,1fr)] lg:grid-cols-[110px_minmax(0,1fr)] xl:grid-cols-[120px_minmax(0,1fr)] gap-3 sm:gap-4 p-4 border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full' : ''} min-w-[290px]`}
+      className={`grid grid-cols-[115px_1fr_56px] sm:grid-cols-[125px_1fr_64px] gap-3 sm:gap-4 p-4 border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full' : ''} min-w-[290px]`}
     >
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-cyan-400 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300 rounded-t-xl" />
 
@@ -371,7 +372,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         </div>
 
         <div className="flex flex-col items-center gap-1.5 w-full mt-3">
-          <div className="flex flex-wrap justify-center gap-1 w-full">
+          <div className="flex flex-row flex-nowrap justify-center items-center gap-1 w-full">
             {displayedSocials.map((link, idx) => {
               const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
               return (
@@ -429,9 +430,9 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         </div>
       </div>
 
-      {/* Coluna Direita: flex flex-col h-full gap-3 */}
+      {/* Coluna Centro (Name/Info): flex flex-col h-full gap-3 */}
       <div className="flex flex-col h-full gap-3 min-w-0">
-        {/* Linha 1 (Info + Patrocinador) */}
+        {/* Linha 1 (Info) */}
         <div className="flex justify-between items-stretch gap-2 min-w-0">
           <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
             <Link 
@@ -478,40 +479,6 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               <span className="truncate">{location}</span>
             </div>
           </div>
-
-          {/* Patrocinador / Apoio Banner adaptável */}
-          {!showEdit && showSponsor && (
-            <div className="w-14 sm:w-16 md:w-12 lg:w-14 xl:w-16 shrink-0 aspect-[3/4] flex items-center justify-center">
-              {validPartners.length > 0 ? (
-                <div 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/profile/${professional.slug || professional.id}?tab=parceiros`);
-                  }}
-                  className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-0.5 relative overflow-hidden shadow-2xs select-none cursor-pointer hover:border-primary/30 transition-colors shrink-0"
-                >
-                  <div 
-                    className="absolute inset-0 bg-cover bg-center blur-[2px] opacity-15 scale-110 pointer-events-none" 
-                    style={{ backgroundImage: `url(${validPartners[currentSponsorIdx].imageUrl})` }} 
-                  />
-                  <img 
-                    src={validPartners[currentSponsorIdx].imageUrl} 
-                    alt={validPartners[currentSponsorIdx].name || "Patrocinador"} 
-                    className="relative z-10 w-full h-full object-contain shrink-0"
-                  />
-                  <span className="absolute bottom-0 left-0 right-0 text-center bg-slate-900/60 backdrop-blur-[1px] text-white text-[8px] font-bold py-0.5 leading-none z-20">
-                    APOIO
-                  </span>
-                </div>
-              ) : (
-                <div className="w-full h-full rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-1 select-none text-center shrink-0">
-                  <span className="text-[10px] xl:text-xs font-semibold text-slate-400 text-center leading-tight">
-                    Anuncie
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Linha 2 (Ações Perfil) */}
@@ -617,6 +584,42 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
           )}
         </div>
       </div>
+
+      {/* Coluna Direita (Patrocinador / Apoio) */}
+      {!showEdit && showSponsor ? (
+        <div className="w-14 sm:w-16 md:w-12 lg:w-14 xl:w-16 shrink-0 aspect-[3/4] flex items-center justify-center">
+          {validPartners.length > 0 ? (
+            <div 
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/profile/${professional.slug || professional.id}?tab=parceiros`);
+              }}
+              className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-0.5 relative overflow-hidden shadow-2xs select-none cursor-pointer hover:border-primary/30 transition-colors shrink-0"
+            >
+              <div 
+                className="absolute inset-0 bg-cover bg-center blur-[2px] opacity-15 scale-110 pointer-events-none" 
+                style={{ backgroundImage: `url(${validPartners[currentSponsorIdx].imageUrl})` }} 
+              />
+              <img 
+                src={validPartners[currentSponsorIdx].imageUrl} 
+                alt={validPartners[currentSponsorIdx].name || "Patrocinador"} 
+                className="relative z-10 w-full h-full object-contain shrink-0"
+              />
+              <span className="absolute bottom-0 left-0 right-0 text-center bg-slate-900/60 backdrop-blur-[1px] text-white text-[8px] font-bold py-0.5 leading-none z-20">
+                APOIO
+              </span>
+            </div>
+          ) : (
+            <div className="w-full h-full rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-1 select-none text-center shrink-0">
+              <span className="text-[10px] xl:text-xs font-semibold text-slate-400 text-center leading-tight">
+                Anuncie
+              </span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="w-full" />
+      )}
     </div>
   );
 
