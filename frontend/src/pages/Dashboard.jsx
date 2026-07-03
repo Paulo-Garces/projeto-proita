@@ -2383,15 +2383,17 @@ export default function Dashboard() {
     }
   };
 
+  const showSponsors = user?.planStatus === 'DEGUSTACAO' || (user?.planType && user.planType.includes('PATROCINADOR'));
+
   const tabs = [
     { key: 'profile', label: 'Meus Dados', Icon: User },
     { key: 'favorites', label: 'Favoritos', Icon: Heart },
     { key: 'professional', label: 'Meus Anúncios', Icon: LayoutDashboard },
-    { key: 'sponsors', label: 'Meus Patrocínios', Icon: Sparkles },
+    showSponsors ? { key: 'sponsors', label: 'Meus Patrocínios', Icon: Sparkles } : null,
     { key: 'notifications', label: 'Notificações', Icon: Bell },
     { key: 'subscription', label: 'Assinatura e Anuidade', Icon: CreditCard },
     { key: 'security', label: 'Segurança', Icon: Settings },
-  ];
+  ].filter(Boolean);
 
   const isSuspended = (() => {
     const now = new Date();
@@ -2844,7 +2846,7 @@ export default function Dashboard() {
                         const status = user?.planStatus || 'DEGUSTACAO';
                         let statusBadgeColor = '';
                         let statusText = '';
-                        let planName = 'Plano Básico Anual';
+                        let planName = 'Plano Profissional Anual';
                         let planPrice = '35,90';
                         let planId = 'basico_anual';
 
@@ -2853,20 +2855,27 @@ export default function Dashboard() {
 
                         if (status === 'ATIVO') {
                           statusBadgeColor = 'bg-emerald-50 border-emerald-200 text-emerald-700';
-                          statusText = 'Ativo';
+                          const isPatrocinador = user?.planType?.includes('PATROCINADOR');
+                          const isBienal = user?.planType?.includes('BIENAL');
+                          
+                          if (isPatrocinador) {
+                            planName = isBienal ? 'Plano Patrocinador Bienal' : 'Plano Patrocinador Anual';
+                            planPrice = isBienal ? '79,90' : '45,90';
+                            planId = isBienal ? 'patrocinador_bienal' : 'patrocinador_anual';
+                            statusText = isBienal ? 'Patrocinador Ativo (Bienal)' : 'Patrocinador Ativo (Anual)';
+                          } else {
+                            planName = isBienal ? 'Plano Profissional Bienal' : 'Plano Profissional Anual';
+                            planPrice = isBienal ? '59,90' : '35,90';
+                            planId = isBienal ? 'basico_bienal' : 'basico_anual';
+                            statusText = isBienal ? 'Profissional Ativo (Bienal)' : 'Profissional Ativo (Anual)';
+                          }
                           if (trialEnds && now <= trialEnds) {
                             statusText = 'Ativo (Período de Avaliação)';
                           }
-                          planName = 'Plano Patrocinador Anual';
-                          planPrice = '45,90';
-                          planId = 'patrocinador_anual';
                         } else if (status === 'BASICO') {
                           statusBadgeColor = 'bg-sky-50 border-sky-200 text-sky-700';
-                          statusText = 'Básico Ativo';
-                          if (trialEnds && now <= trialEnds) {
-                            statusText = 'Ativo (Período de Avaliação)';
-                          }
-                          planName = 'Plano Básico Anual';
+                          statusText = 'Profissional Ativo';
+                          planName = 'Plano Profissional Anual';
                           planPrice = '35,90';
                           planId = 'basico_anual';
                         } else if (status === 'DEGUSTACAO') {
@@ -2875,7 +2884,7 @@ export default function Dashboard() {
                           if (trialEnds && now <= trialEnds) {
                             statusText = 'Ativo (Período de Avaliação)';
                           }
-                          planName = 'Plano Básico Anual';
+                          planName = 'Plano Profissional Anual';
                           planPrice = '35,90';
                           planId = 'basico_anual';
                         } else {

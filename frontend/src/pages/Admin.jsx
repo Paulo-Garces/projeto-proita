@@ -2610,14 +2610,15 @@ function FinanceTab({ token }) {
                           ? new Date(new Date(u.subscriptionEndsAt).getTime() - 30 * 24 * 60 * 60 * 1000)
                           : new Date(u.createdAt);
                         const method = i % 2 === 0 ? 'PIX' : 'Cartão';
-                        const price = u.planStatus === 'ATIVO' ? 99.90 : 49.90;
-                        const planLabel = u.planStatus === 'ATIVO' ? 'Patrocinador' : 'Básico';
+                        const isPatrocinador = u.planType?.includes('PATROCINADOR') || (u.planStatus === 'ATIVO' && !u.planType);
+                        const planLabel = isPatrocinador ? 'Patrocinador' : 'Profissional';
+                        const price = isPatrocinador ? 45.90 : 35.90;
 
                         return (
                           <tr key={u.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                             <td className="py-3 px-4 font-semibold text-slate-800">{u.nome}</td>
                             <td className="py-3 px-4 text-slate-600">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${u.planStatus === 'ATIVO' ? 'bg-violet-50 text-violet-700' : 'bg-blue-50 text-blue-700'}`}>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isPatrocinador ? 'bg-violet-50 text-violet-700' : 'bg-blue-50 text-blue-700'}`}>
                                 {planLabel}
                               </span>
                             </td>

@@ -321,7 +321,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   const cardContent = (
     <div 
       style={!isDashboard ? style : undefined}
-      className={`grid grid-cols-[105px_minmax(0,1fr)] sm:grid-cols-[130px_minmax(0,1fr)] md:grid-cols-[110px_minmax(0,1fr)] lg:grid-cols-[115px_minmax(0,1fr)] xl:grid-cols-[130px_minmax(0,1fr)] gap-3 sm:gap-4 p-4 border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full' : ''}`}
+      className={`grid grid-cols-[100px_minmax(0,1fr)] sm:grid-cols-[120px_minmax(0,1fr)] md:grid-cols-[105px_minmax(0,1fr)] lg:grid-cols-[110px_minmax(0,1fr)] xl:grid-cols-[120px_minmax(0,1fr)] gap-3 sm:gap-4 p-4 border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full' : ''} min-w-[290px]`}
     >
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-cyan-400 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300 rounded-t-xl" />
 

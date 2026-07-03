@@ -12,14 +12,14 @@ import PaymentCheckout from '../components/PaymentCheckout';
 
 // ─── Configuração dos planos ────────────────────────────────────────────────
 const PLAN_CONFIG = {
-  basico_anual:        { name: 'Plano Básico Anual',        price: '35,90' },
-  basico_bienal:       { name: 'Plano Básico Bienal',       price: '59,90' },
+  basico_anual:        { name: 'Plano Profissional Anual',        price: '35,90' },
+  basico_bienal:       { name: 'Plano Profissional Bienal',       price: '59,90' },
   patrocinador_anual:  { name: 'Plano Patrocinador Anual',  price: '45,90' },
   patrocinador_bienal: { name: 'Plano Patrocinador Bienal', price: '79,90' },
   trial:               { name: 'Degustação Gratuita',        price: '0,00'  },
 };
 
-// ─── Benefícios base (compartilhados entre Básico e Patrocinador) ───────────
+// ─── Benefícios base (compartilhados entre Profissional e Patrocinador) ───────────
 const BASE_BENEFITS = [
   'Perfil completo no proITA',
   'Avaliações e notas completas',
@@ -279,7 +279,7 @@ export default function Planos() {
               <div className="inline-block bg-slate-100 text-slate-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-3">
                 Essencial · Anual
               </div>
-              <h3 className="text-xl font-black text-slate-900 mb-1">Plano Básico</h3>
+              <h3 className="text-xl font-black text-slate-900 mb-1">Plano Profissional</h3>
               <p className="text-xs text-slate-500 leading-relaxed mb-6">
                 Divulgue seus serviços com qualidade, avaliações e portfólio.
               </p>
@@ -322,7 +322,7 @@ export default function Planos() {
               <div className="inline-block bg-blue-50 text-blue-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest mb-3">
                 Essencial · Bienal
               </div>
-              <h3 className="text-xl font-black text-slate-900 mb-1">Plano Básico</h3>
+              <h3 className="text-xl font-black text-slate-900 mb-1">Plano Profissional</h3>
               <p className="text-xs text-slate-500 leading-relaxed mb-6">
                 Dois anos de presença profissional com o maior custo-benefício.
               </p>
@@ -364,7 +364,7 @@ export default function Planos() {
               </div>
               <h3 className="text-xl font-black text-white mb-1">Patrocinador</h3>
               <p className="text-xs text-slate-400 leading-relaxed mb-6">
-                Todos os benefícios do Básico + o poder de monetizar seu perfil.
+                Todos os benefícios do Profissional + o poder de monetizar seu perfil.
               </p>
               <div className="mb-6">
                 <div className="flex items-baseline gap-1 text-white">

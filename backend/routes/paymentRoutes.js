@@ -31,8 +31,8 @@ module.exports = (prisma) => {
   };
 
   const PLAN_LABELS = {
-    basico_anual:        'Plano Básico Anual proITA',
-    basico_bienal:       'Plano Básico Bienal proITA',
+    basico_anual:        'Plano Profissional Anual proITA',
+    basico_bienal:       'Plano Profissional Bienal proITA',
     patrocinador_anual:  'Plano Patrocinador Anual proITA',
     patrocinador_bienal: 'Plano Patrocinador Bienal proITA',
   };
@@ -378,9 +378,6 @@ module.exports = (prisma) => {
             let planType = 'PRO_ANUAL';
 
             if (user.pendingPlanId) {
-              if (user.pendingPlanId.includes('basico')) {
-                planStatus = 'BASICO';
-              }
               if (user.pendingPlanId.includes('bienal')) {
                 durationDays = 730;
               }
@@ -397,7 +394,7 @@ module.exports = (prisma) => {
 
             // Cálculo de assinatura cumulativa
             let baseDate = new Date();
-            if ((user.planStatus === 'ATIVO' || user.planStatus === 'BASICO') && user.subscriptionEndsAt && user.subscriptionEndsAt > baseDate) {
+            if (user.planStatus === 'ATIVO' && user.subscriptionEndsAt && user.subscriptionEndsAt > baseDate) {
               baseDate = new Date(user.subscriptionEndsAt);
             }
             const subscriptionEndsAt = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);

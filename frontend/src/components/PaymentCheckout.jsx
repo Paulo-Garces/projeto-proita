@@ -54,7 +54,7 @@ const PLANS = {
  */
 const PaymentCheckout = ({
   planId = 'basico_anual',
-  planName = 'Plano Básico Anual',
+  planName = 'Plano Profissional Anual',
   planPrice = '35,90',
   userStatus = 'first_subscription',
   onClose = null,
@@ -79,6 +79,11 @@ const PaymentCheckout = ({
   );
   const [copiedText, setCopiedText] = useState(false);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+
+  const isSelectedPlanPro = selectedPlanId.includes('basico');
+  const isUserPatrocinador = user?.planStatus === 'ATIVO' && user?.planType?.includes('PATROCINADOR');
+  const isUserInTrial = user?.planStatus === 'DEGUSTACAO';
+  const isPurchaseDisabled = isSelectedPlanPro && isUserPatrocinador;
 
   // Polling para checar status do pagamento PIX
   useEffect(() => {
@@ -455,6 +460,20 @@ const PaymentCheckout = ({
             <>
               <h2 className="text-2xl font-bold text-slate-800 mb-6">Finalizar Pagamento</h2>
 
+              {isPurchaseDisabled && (
+                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs flex items-start gap-2.5 animate-in slide-in-from-top-2">
+                  <AlertTriangle className="text-amber-600 shrink-0 mt-0.5" size={16} />
+                  <span>Para assinar o plano Profissional, aguarde o fim da sua vigência atual.</span>
+                </div>
+              )}
+
+              {!isPurchaseDisabled && isSelectedPlanPro && isUserInTrial && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl text-xs flex items-start gap-2.5 animate-in slide-in-from-top-2">
+                  <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={16} />
+                  <span>Atenção: Ao assinar o plano Profissional, você abrirá mão imediatamente dos dias restantes dos recursos de Patrocinador do seu período de teste.</span>
+                </div>
+              )}
+
               {/* Mensagem de Erro (Sem emojis, usando AlertTriangle) */}
               {errorMsg && (
                 <div className="mb-6 p-4 bg-red-50/80 border border-red-100 text-red-700 rounded-xl text-xs flex items-start gap-2.5 animate-in slide-in-from-top-2">
@@ -534,7 +553,7 @@ const PaymentCheckout = ({
                       </p>
                       <button
                         onClick={handleGeneratePix}
-                        disabled={loading}
+                        disabled={loading || isPurchaseDisabled}
                         className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
                       >
                         {loading && <Loader2 size={16} className="animate-spin" />}
@@ -614,7 +633,7 @@ const PaymentCheckout = ({
                       </div>
                       <button
                         onClick={handleGenerateBoleto}
-                        disabled={loading}
+                        disabled={loading || isPurchaseDisabled}
                         className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
                       >
                         {loading && <Loader2 size={16} className="animate-spin" />}
@@ -713,7 +732,7 @@ const PaymentCheckout = ({
                   </div>
                   <button
                     onClick={handleCreditCardCheckout}
-                    disabled={loading}
+                    disabled={loading || isPurchaseDisabled}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
                   >
                     {loading && <Loader2 size={16} className="animate-spin" />}

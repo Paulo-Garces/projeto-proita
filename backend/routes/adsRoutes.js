@@ -737,15 +737,19 @@ module.exports = (prisma) => {
     try {
       const { planId } = req.body || {};
       
+      const user = await prisma.user.findUnique({
+        where: { id: userId }
+      });
+
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+      }
+
       let planStatus = 'ATIVO';
       let durationDays = 365;
       let planType = 'PRO_ANUAL';
       
       if (planId) {
-        if (String(planId).toLowerCase().includes('basico')) {
-          planStatus = 'BASICO';
-        }
-        
         if (String(planId).toLowerCase().includes('bienal')) {
           durationDays = 730;
         }
@@ -761,7 +765,12 @@ module.exports = (prisma) => {
         }
       }
 
-      const subscriptionEndsAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+      // Cálculo de assinatura cumulativa
+      let baseDate = new Date();
+      if (user.planStatus === 'ATIVO' && user.subscriptionEndsAt && user.subscriptionEndsAt > baseDate) {
+        baseDate = new Date(user.subscriptionEndsAt);
+      }
+      const subscriptionEndsAt = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
       const updatedUser = await prisma.user.update({
         where: { id: userId },
