@@ -116,7 +116,12 @@ module.exports = (prisma) => {
               }
             }
 
-            const subscriptionEndsAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+            // Cálculo de assinatura cumulativa
+            let baseDate = new Date();
+            if ((user.planStatus === 'ATIVO' || user.planStatus === 'BASICO') && user.subscriptionEndsAt && user.subscriptionEndsAt > baseDate) {
+              baseDate = new Date(user.subscriptionEndsAt);
+            }
+            const subscriptionEndsAt = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
             // Atualiza status do usuário no banco de dados
             await prisma.user.update({
@@ -181,7 +186,12 @@ module.exports = (prisma) => {
               }
             }
 
-            const subscriptionEndsAt = new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000);
+            // Cálculo de assinatura cumulativa
+            let baseDate = new Date();
+            if ((user.planStatus === 'ATIVO' || user.planStatus === 'BASICO') && user.subscriptionEndsAt && user.subscriptionEndsAt > baseDate) {
+              baseDate = new Date(user.subscriptionEndsAt);
+            }
+            const subscriptionEndsAt = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
             // Atualiza status do usuário no banco de dados
             await prisma.user.update({
@@ -222,6 +232,89 @@ module.exports = (prisma) => {
       return res.status(500).json({
         success: false,
         error: 'Erro interno ao processar o webhook.'
+      });
+    }
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // POST /api/webhooks/infinitepay  (webhook público para a InfinitePay)
+  // ──────────────────────────────────────────────────────────────────────────────
+  router.post('/infinitepay', async (req, res) => {
+    try {
+      const payload = req.body;
+      console.log('[Webhook InfinitePay] Notificação recebida:', JSON.stringify(payload));
+
+      const txid = payload.order_nsu || payload.metadata?.order_nsu || payload.id;
+
+      if (!txid) {
+        console.warn('[Webhook InfinitePay] ❌ Nenhum identificador/order_nsu encontrado no payload.');
+        return res.status(400).json({ success: false, error: 'Identificador do pedido (order_nsu) não encontrado.' });
+      }
+
+      // Busca o usuário que possui esta transação pendente
+      const user = await prisma.user.findUnique({
+        where: { pendingTxid: txid }
+      });
+
+      if (!user) {
+        console.log(`[Webhook InfinitePay] txid/order_nsu "${txid}" não associado a nenhum usuário pendente.`);
+        return res.status(200).json({ success: true, message: 'Pedido processado ou ignorado.' });
+      }
+
+      console.log(`[Webhook InfinitePay] Usuário encontrado: ${user.nome} (id: ${user.id}) para order_nsu: ${txid}`);
+
+      // Determina as propriedades do plano com base no pendingPlanId
+      let planStatus = 'ATIVO'; // Default: Patrocinador
+      let durationDays = 365;
+      let planType = 'PRO_ANUAL';
+
+      if (user.pendingPlanId) {
+        if (user.pendingPlanId.includes('basico')) {
+          planStatus = 'BASICO';
+        }
+        if (user.pendingPlanId.includes('bienal')) {
+          durationDays = 730;
+        }
+        if (user.pendingPlanId === 'basico_anual') {
+          planType = 'PRO_ANUAL';
+        } else if (user.pendingPlanId === 'basico_bienal') {
+          planType = 'PRO_BIENAL';
+        } else if (user.pendingPlanId === 'patrocinador_anual') {
+          planType = 'PATROCINADOR_ANUAL';
+        } else if (user.pendingPlanId === 'patrocinador_bienal') {
+          planType = 'PATROCINADOR_BIENAL';
+        }
+      }
+
+      // Cálculo de assinatura cumulativa
+      let baseDate = new Date();
+      if ((user.planStatus === 'ATIVO' || user.planStatus === 'BASICO') && user.subscriptionEndsAt && user.subscriptionEndsAt > baseDate) {
+        baseDate = new Date(user.subscriptionEndsAt);
+      }
+      const subscriptionEndsAt = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+      // Atualiza status do usuário no banco de dados
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          planStatus,
+          subscriptionEndsAt,
+          planType,
+          trialEndsAt: null, // Encerra degustação
+          pendingTxid: null, // Limpa pendências
+          pendingPlanId: null,
+          pendingNossoNumero: null
+        }
+      });
+
+      console.log(`[Webhook InfinitePay] 🎉 Plano ${planStatus} ativado para ${user.nome} até ${subscriptionEndsAt.toLocaleDateString('pt-BR')}`);
+      return res.status(200).json({ success: true, message: 'Plano ativado com sucesso.' });
+
+    } catch (err) {
+      console.error('[POST /api/webhooks/infinitepay] Erro no processamento:', err.message);
+      return res.status(500).json({
+        success: false,
+        error: 'Erro interno ao processar o webhook da InfinitePay.'
       });
     }
   });

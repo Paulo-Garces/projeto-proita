@@ -340,6 +340,120 @@ module.exports = (prisma) => {
   });
 
   // ──────────────────────────────────────────────────────────────────────────────
+  // ROTA 4b: GET /api/payments/status/:id  (consulta status de cobrança PIX/Boleto e sincroniza)
+  // ──────────────────────────────────────────────────────────────────────────────
+  router.get('/status/:id', authMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // 1. Busca o usuário atual no banco local
+      const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+      if (IS_MOCK) {
+        // Modo mock: se o plano já foi ativado, consideramos pago
+        if (user && user.planStatus !== 'INATIVO') {
+          return res.status(200).json({
+            success: true,
+            status: 'CONCLUIDA',
+            planStatus: user.planStatus,
+            user
+          });
+        }
+        return res.status(200).json({
+          success: true,
+          status: 'ATIVA',
+          message: 'Aguardando simulação de ativação de pagamento no modo mock.'
+        });
+      }
+
+      // 2. Produção: consulta no Inter
+      try {
+        const cobranca = await interService.consultarCobrancaPix(id);
+
+        if (cobranca && (cobranca.status === 'CONCLUIDA' || cobranca.status === 'PAGO')) {
+          // Ativa o plano se a transação do usuário for a mesma e ainda estiver pendente
+          if (user && user.pendingTxid === id) {
+            let planStatus = 'ATIVO';
+            let durationDays = 365;
+            let planType = 'PRO_ANUAL';
+
+            if (user.pendingPlanId) {
+              if (user.pendingPlanId.includes('basico')) {
+                planStatus = 'BASICO';
+              }
+              if (user.pendingPlanId.includes('bienal')) {
+                durationDays = 730;
+              }
+              if (user.pendingPlanId === 'basico_anual') {
+                planType = 'PRO_ANUAL';
+              } else if (user.pendingPlanId === 'basico_bienal') {
+                planType = 'PRO_BIENAL';
+              } else if (user.pendingPlanId === 'patrocinador_anual') {
+                planType = 'PATROCINADOR_ANUAL';
+              } else if (user.pendingPlanId === 'patrocinador_bienal') {
+                planType = 'PATROCINADOR_BIENAL';
+              }
+            }
+
+            // Cálculo de assinatura cumulativa
+            let baseDate = new Date();
+            if ((user.planStatus === 'ATIVO' || user.planStatus === 'BASICO') && user.subscriptionEndsAt && user.subscriptionEndsAt > baseDate) {
+              baseDate = new Date(user.subscriptionEndsAt);
+            }
+            const subscriptionEndsAt = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+            const updatedUser = await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                planStatus,
+                subscriptionEndsAt,
+                planType,
+                trialEndsAt: null,
+                pendingTxid: null,
+                pendingPlanId: null,
+                pendingNossoNumero: null
+              }
+            });
+
+            return res.status(200).json({
+              success: true,
+              status: 'CONCLUIDA',
+              planStatus,
+              user: updatedUser
+            });
+          }
+        }
+
+        return res.status(200).json({
+          success: true,
+          status: cobranca.status,
+          cobranca
+        });
+      } catch (interErr) {
+        console.error(`[GET /api/payments/status/:id] Falha ao consultar Inter:`, interErr.message);
+
+        // Fallback de segurança: se o plano local já estiver ativo de alguma forma, retorna sucesso
+        if (user && user.planStatus !== 'INATIVO' && user.pendingTxid !== id) {
+          return res.status(200).json({
+            success: true,
+            status: 'CONCLUIDA',
+            planStatus: user.planStatus,
+            user
+          });
+        }
+
+        throw interErr;
+      }
+    } catch (err) {
+      console.error('[GET /api/payments/status/:id] Erro:', err.message);
+      return res.status(500).json({
+        success: false,
+        message: 'Erro ao consultar status da cobrança.',
+      });
+    }
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────────
   // ROTA 5: POST /api/payments/credit-card
   // ──────────────────────────────────────────────────────────────────────────────
   router.post('/credit-card', authMiddleware, async (req, res) => {
@@ -398,7 +512,11 @@ module.exports = (prisma) => {
           }
         ],
         order_nsu,
-        redirect_url
+        redirect_url,
+        callback_url: `${process.env.API_URL}/api/webhooks/infinitepay`,
+        metadata: {
+          webhook_url: `${process.env.API_URL}/api/webhooks/infinitepay`
+        }
       };
 
       console.log(`[Credit Card] Solicitando link de pagamento para planId="${planId}", valor=${valorCentavos} centavos`);
