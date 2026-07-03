@@ -514,7 +514,7 @@ export default function Search() {
               </div>
             ) : displayResults.length > 0 ? (
               <div className="w-full max-w-3xl mx-auto lg:max-w-none">
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 w-full items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full items-start">
                   {displayResults.map((pro, index) => (
                     <AdCard key={pro.id} professional={pro} style={{ animationDelay: `${index * 80}ms` }} />
                   ))}

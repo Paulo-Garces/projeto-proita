@@ -437,9 +437,9 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             <Link 
               to={`/profile/${professional.slug || professional.id}`} 
               onClick={handleProfileClick} 
-              className="block group-hover:text-primary transition-colors min-w-0 truncate w-full"
+              className="block group-hover:text-primary transition-colors min-w-0 w-full"
             >
-              <h3 className="font-black text-slate-800 text-base sm:text-lg leading-snug truncate" title={displayName}>
+              <h3 className="font-black text-slate-800 text-base sm:text-lg leading-snug line-clamp-2 break-words" title={displayName}>
                 {displayName}
               </h3>
             </Link>
