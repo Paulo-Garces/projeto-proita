@@ -1290,10 +1290,10 @@ export default function Advertise() {
                 <div className="mt-6 p-5 bg-slate-50 border border-slate-200 rounded-2xl relative overflow-hidden text-left shadow-sm">
                   {/* Efeito visual de carregamento da IA */}
                   {isAnalyzing && (
-                    <div className="absolute inset-0 bg-white/90 backdrop-blur-[1.5px] flex flex-col items-center justify-center z-10 animate-in fade-in duration-200">
+                    <div className="absolute inset-0 bg-white/90 backdrop-blur-[1.5px] flex flex-col items-center justify-center px-6 z-10 animate-in fade-in duration-200">
                       <Loader2 className="animate-spin text-primary mb-2" size={28} />
-                      <span className="text-sm font-bold text-slate-800 animate-pulse">Inteligência Artificial categorizando seu perfil...</span>
-                      <span className="text-xs text-slate-500 mt-1">Aguarde um instante.</span>
+                      <span className="text-sm font-bold text-slate-800 animate-pulse text-center break-words max-w-full">Inteligência Artificial categorizando seu perfil...</span>
+                      <span className="text-xs text-slate-500 mt-1 text-center">Aguarde um instante.</span>
                     </div>
                   )}
 
