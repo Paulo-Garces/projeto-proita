@@ -9,6 +9,7 @@ const { Pool } = require('pg');
 const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const axios = require('axios');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -1116,6 +1117,43 @@ app.post('/api/analyze-description', authMiddleware, async (req, res) => {
   } catch (error) {
     console.error('Erro na análise da descrição:', error);
     res.status(500).json({ error: 'Erro interno ao processar a requisição com IA.' });
+  }
+});
+
+// Rota para Transcrever Áudio usando Google Speech-to-Text
+app.post('/api/transcribe', authMiddleware, async (req, res) => {
+  try {
+    const { audioContent } = req.body;
+    if (!audioContent) {
+      return res.status(400).json({ error: 'Conteúdo do áudio é obrigatório.' });
+    }
+
+    const apiKey = process.env.GOOGLE_SPEECH_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Chave de API do Google Speech-to-Text não configurada no servidor.' });
+    }
+
+    const response = await axios.post(`https://speech.googleapis.com/v1/speech:recognize?key=${apiKey}`, {
+      config: {
+        encoding: 'WEBM_OPUS',
+        languageCode: 'pt-BR'
+      },
+      audio: {
+        content: audioContent
+      }
+    }, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const transcript = response.data.results?.[0]?.alternatives?.[0]?.transcript || '';
+    res.status(200).json({ success: true, transcript });
+  } catch (error) {
+    console.error('Erro na transcrição de áudio:', error.response?.data || error.message);
+    const status = error.response?.status || 500;
+    const errMsg = error.response?.data?.error?.message || error.message || 'Erro ao transcrever áudio.';
+    res.status(status).json({ error: errMsg });
   }
 });
 

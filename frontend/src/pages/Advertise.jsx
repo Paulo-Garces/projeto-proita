@@ -558,41 +558,31 @@ export default function Advertise() {
           setAudioError('');
 
           const base64Content = await blobToBase64(blob);
-          const apiKey = import.meta.env.VITE_GOOGLE_SPEECH_API_KEY;
 
-          if (!apiKey) {
-            throw new Error('Chave de API do Google Speech-to-Text (VITE_GOOGLE_SPEECH_API_KEY) não configurada.');
-          }
-
-          const response = await fetch(`https://speech.googleapis.com/v1/speech:recognize?key=${apiKey}`, {
+          const response = await fetch(`${API_URL}/api/transcribe`, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-              config: {
-                encoding: 'WEBM_OPUS',
-                languageCode: 'pt-BR'
-              },
-              audio: {
-                content: base64Content
-              }
+              audioContent: base64Content
             })
           });
 
           if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
-            throw new Error(errData?.error?.message || `Erro na API do Google Speech: ${response.status}`);
+            throw new Error(errData?.error || `Erro no servidor: ${response.status}`);
           }
 
           const data = await response.json();
-          const transcript = data.results?.[0]?.alternatives?.[0]?.transcript;
+          const transcript = data.transcript;
 
           if (transcript && transcript.trim()) {
             let finalDescription = '';
             setDescricaoTrabalho(prev => {
               const trimmed = prev.trim();
-              finalDescription = trimmed.length > 0 ? trimmed + ' ' + transcript.trim() : transcript.trim();
+              finalDescription = trimmed.length > 0 ? prev + ' ' + transcript.trim() : transcript.trim();
               return finalDescription;
             });
             setTimeout(() => {
@@ -602,7 +592,7 @@ export default function Advertise() {
             console.warn('Nenhuma transcrição retornada ou áudio silencioso.');
           }
         } catch (err) {
-          console.error('Erro na transcrição Google Cloud:', err);
+          console.error('Erro na transcrição:', err);
           setAudioError(`Falha na transcrição: ${err.message}`);
         } finally {
           setIsTranscribing(false);
