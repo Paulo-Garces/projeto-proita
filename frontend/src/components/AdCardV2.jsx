@@ -224,7 +224,7 @@ export default function AdCardV2({ professional, showEdit = false, onEdit, onDel
         {/* Linha 1: Cinza Escuro + Cinza Claro (Lado esquerdo: informações básicas, Lado direito: Banner Apoio) */}
         <div className="flex justify-between items-start gap-2 min-w-0">
           {/* Lado esquerdo: Nome, Estrelas, Telefone, Local */}
-          <div className="flex-1 min-w-0 flex flex-col gap-1 sm:gap-1.5">
+          <div className="flex-1 min-w-0 flex flex-col gap-2 sm:gap-2.5">
             <h3 className="text-base sm:text-lg font-black text-slate-800 leading-tight truncate" title={displayName}>
               {displayName}
             </h3>
@@ -341,7 +341,7 @@ export default function AdCardV2({ professional, showEdit = false, onEdit, onDel
           {phone ? (
             <button
               onClick={handleWhatsApp}
-              className="flex-[2] flex items-center justify-center gap-1.5 py-2 bg-green-500 hover:bg-green-600 text-white font-bold text-xs sm:text-sm rounded-lg transition-colors shadow-xs"
+              className="flex-[2] flex items-center justify-center gap-1.5 py-2 bg-green-500 hover:bg-green-600 text-white font-bold text-xs sm:text-sm rounded-lg transition-all shadow-md hover:scale-105 active:scale-95 scale-110 sm:scale-115"
               title="Conversar pelo WhatsApp"
             >
               {WA_SVG}
