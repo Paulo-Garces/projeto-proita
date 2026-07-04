@@ -322,7 +322,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   const cardContent = (
     <div 
       style={!isDashboard ? style : undefined}
-      className={`grid grid-cols-[82px_1fr_56px] sm:grid-cols-[120px_1fr_64px] gap-2.5 sm:gap-4 p-3 sm:p-4 border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full' : ''} min-w-[290px]`}
+      className={`grid grid-cols-[85px_1fr_65px] sm:grid-cols-[115px_1fr_75px] gap-3 sm:gap-4 p-3 sm:p-4 border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full' : ''} min-w-[290px]`}
     >
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-cyan-400 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300 rounded-t-xl" />
 
@@ -366,12 +366,12 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             )}
           </Link>
           
-          <p className="text-[11px] sm:text-xs font-black text-primary uppercase tracking-wider leading-tight mt-2.5 max-w-[120px] line-clamp-2">
+          <p className="text-[11px] sm:text-xs font-black text-primary uppercase tracking-wider leading-tight mt-3.5 max-w-[120px] line-clamp-2">
             {professional.category || professional.atividadePrincipal || 'Profissional'}
           </p>
         </div>
 
-        <div className="flex flex-col items-center gap-1.5 w-full mt-3">
+        <div className="flex flex-col items-center gap-2 sm:gap-2.5 w-full mt-4 sm:mt-5">
           <div className="flex flex-row flex-nowrap justify-center items-center gap-1 w-full">
             {displayedSocials.map((link, idx) => {
               const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
@@ -423,7 +423,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
           </div>
           
           {ownerName && (
-            <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate w-full max-w-[110px] sm:max-w-[130px]">
+            <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate w-full max-w-[110px] sm:max-w-[130px] mt-2 sm:mt-2.5">
               Por {ownerName}
             </p>
           )}
@@ -449,7 +449,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             <Link 
               to={`/profile/${professional.slug || professional.id}?tab=avaliacoes`}
               onClick={handleProfileClick}
-              className="flex items-center gap-1 hover:underline hover:text-primary transition-all cursor-pointer group/rating min-w-0"
+              className="flex items-center gap-1 hover:underline hover:text-primary transition-all cursor-pointer group/rating min-w-0 mt-2.5 sm:mt-3"
               title="Ver todas as avaliações deste profissional"
             >
               <div className="flex items-center gap-0.5 shrink-0 text-amber-400">
@@ -461,20 +461,20 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                 {rating > 0 ? rating.toFixed(1) : 'Novo'}
               </span>
               {reviewCount > 0 && (
-                <span className="text-[10px] text-slate-400 leading-none">({reviewCount})</span>
+                <span className="text-[10px] text-slate-450 leading-none">({reviewCount})</span>
               )}
             </Link>
 
             {/* Telefone */}
             {phone && (
-              <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 font-medium leading-none truncate w-full min-w-0">
+              <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 font-medium leading-none truncate w-full min-w-0 mt-1">
                 <Phone size={12} className="text-slate-400 shrink-0" />
                 <span className="truncate">{formatPhone(phone)}</span>
               </div>
             )}
 
             {/* Local/Bairro */}
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 font-medium leading-none truncate w-full min-w-0">
+            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 font-medium leading-none truncate w-full min-w-0 mt-1">
               <MapPin size={12} className="text-slate-400 shrink-0" />
               <span className="truncate">{location}</span>
             </div>
@@ -482,39 +482,15 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         </div>
 
         {/* Linha 2 (Ações Perfil) */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center w-full">
           <Link
             to={`/profile/${professional.slug || professional.id}`}
             onClick={handleProfileClick}
-            className="flex-1 flex items-center gap-1.5 text-sky-600 hover:text-sky-700 font-semibold text-xs sm:text-sm py-1.5"
+            className="w-full flex items-center justify-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-600 hover:text-sky-700 font-bold text-xs sm:text-sm py-2 rounded-xl transition-all border border-sky-100/50"
           >
             <CircleUser size={18} className="text-sky-600 shrink-0" />
             <span>Ver Perfil</span>
           </Link>
-          
-          {!showEdit && (
-            <button
-              onClick={handleToggleFavorite}
-              className={`p-2 rounded-lg border transition-colors ${
-                isFavorited 
-                  ? 'bg-red-50 text-red-500 border-red-200 hover:bg-red-100' 
-                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-              }`}
-              title={isFavorited ? "Remover dos favoritos" : "Salvar nos favoritos"}
-            >
-              <Bookmark size={16} className={isFavorited ? "fill-red-500 text-red-500" : ""} />
-            </button>
-          )}
-
-          <a
-            href={getMapsLink()}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-2 rounded-lg border bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 transition-colors flex items-center justify-center"
-            title="Ver rota no mapa"
-          >
-            <Map size={16} />
-          </a>
         </div>
 
         {/* Linha 3 (Contatos ou Dashboard) */}
@@ -547,7 +523,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               )}
             </>
           ) : (
-            <div className="w-full flex items-center justify-between px-4">
+            <div className="w-full flex items-center justify-center gap-4 sm:gap-6 mt-1">
               {/* Botão Ligar */}
               {phone && (
                 <button
@@ -585,41 +561,83 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         </div>
       </div>
 
-      {/* Coluna Direita (Patrocinador / Apoio) */}
-      {!showEdit && showSponsor ? (
-        <div className="w-14 sm:w-16 md:w-12 lg:w-14 xl:w-16 shrink-0 aspect-[3/4] flex items-center justify-center">
-          {validPartners.length > 0 ? (
-            <div 
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/profile/${professional.slug || professional.id}?tab=parceiros`);
-              }}
-              className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-0.5 relative overflow-hidden shadow-2xs select-none cursor-pointer hover:border-primary/30 transition-colors shrink-0"
-            >
+      {/* Coluna Direita (Patrocinador + Ações Secundárias) */}
+      <div className="flex flex-col justify-between items-center h-full min-w-0">
+        {/* Banner do Patrocinador */}
+        {!showEdit && showSponsor ? (
+          <div className="w-full aspect-[3/4] flex items-center justify-center">
+            {validPartners.length > 0 ? (
               <div 
-                className="absolute inset-0 bg-cover bg-center blur-[2px] opacity-15 scale-110 pointer-events-none" 
-                style={{ backgroundImage: `url(${validPartners[currentSponsorIdx].imageUrl})` }} 
-              />
-              <img 
-                src={validPartners[currentSponsorIdx].imageUrl} 
-                alt={validPartners[currentSponsorIdx].name || "Patrocinador"} 
-                className="relative z-10 w-full h-full object-contain shrink-0"
-              />
-              <span className="absolute bottom-0 left-0 right-0 text-center bg-slate-900/60 backdrop-blur-[1px] text-white text-[8px] font-bold py-0.5 leading-none z-20">
-                APOIO
-              </span>
-            </div>
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/profile/${professional.slug || professional.id}?tab=parceiros`);
+                }}
+                className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-0.5 relative overflow-hidden shadow-2xs select-none cursor-pointer hover:border-primary/30 transition-colors shrink-0"
+              >
+                <div 
+                  className="absolute inset-0 bg-cover bg-center blur-[2px] opacity-15 scale-110 pointer-events-none" 
+                  style={{ backgroundImage: `url(${validPartners[currentSponsorIdx].imageUrl})` }} 
+                />
+                <img 
+                  src={validPartners[currentSponsorIdx].imageUrl} 
+                  alt={validPartners[currentSponsorIdx].name || "Patrocinador"} 
+                  className="relative z-10 w-full h-full object-contain shrink-0"
+                />
+                <span className="absolute bottom-0 left-0 right-0 text-center bg-slate-900/60 backdrop-blur-[1px] text-white text-[8px] font-bold py-0.5 leading-none z-20">
+                  APOIO
+                </span>
+              </div>
+            ) : (
+              <div className="w-full h-full rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-1 select-none text-center shrink-0">
+                <span className="text-[10px] xl:text-xs font-semibold text-slate-400 text-center leading-tight">
+                  Anuncie
+                </span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="w-full h-0 pointer-events-none" />
+        )}
+
+        {/* Botões Secundários (Favoritar + Mapa) */}
+        <div className="flex justify-between gap-1 w-full mt-2">
+          {!showEdit ? (
+            <>
+              <button
+                onClick={handleToggleFavorite}
+                className={`flex-1 p-1 sm:p-2 rounded-lg border transition-colors flex items-center justify-center ${
+                  isFavorited 
+                    ? 'bg-red-50 text-red-500 border-red-200 hover:bg-red-100' 
+                    : 'bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100'
+                }`}
+                title={isFavorited ? "Remover dos favoritos" : "Salvar nos favoritos"}
+              >
+                <Bookmark size={16} className={isFavorited ? "fill-red-500 text-red-500" : ""} />
+              </button>
+              
+              <a
+                href={getMapsLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 p-1 sm:p-2 rounded-lg border bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100 transition-colors flex items-center justify-center"
+                title="Ver rota no mapa"
+              >
+                <Map size={16} />
+              </a>
+            </>
           ) : (
-            <div className="w-full h-full rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-1 select-none text-center shrink-0">
-              <span className="text-[10px] xl:text-xs font-semibold text-slate-400 text-center leading-tight">
-                Anuncie
-              </span>
-            </div>
+            <a
+              href={getMapsLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full p-1 sm:p-2 rounded-lg border bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100 transition-colors flex items-center justify-center"
+              title="Ver rota no mapa"
+            >
+              <Map size={16} />
+            </a>
           )}
         </div>
-      ) : (
-        <div className="w-full h-full pointer-events-none" />
-      )}
+      </div>
     </div>
   );
 
