@@ -1231,6 +1231,7 @@ export default function Profile() {
 
                   {/* Quadro de Parceiros (Desktop Sidebar) */}
                   {(() => {
+                    const hasSponsorRights = professional.planStatus === 'DEGUSTACAO' || professional.planType === 'TESTE' || professional.planType?.includes('PATROCINADOR');
                     let list = [];
                     try {
                       list = typeof professional.partners === 'string'
@@ -1239,8 +1240,8 @@ export default function Profile() {
                     } catch {
                       list = professional.partners || [];
                     }
-                    let valid = list.filter(p => p && p.imageUrl);
-                    if (valid.length === 0 && professional.fotoAnuncioUrl) {
+                    let valid = hasSponsorRights ? list.filter(p => p && p.imageUrl) : [];
+                    if (hasSponsorRights && valid.length === 0 && professional.fotoAnuncioUrl) {
                       valid = [{
                         imageUrl: professional.fotoAnuncioUrl,
                         partnerAddress: professional.enderecoComercial || 'Itapipoca - CE',
@@ -1564,6 +1565,7 @@ export default function Profile() {
             {activeTab === 'parceiros' && (
               <div className="animate-in fade-in duration-300 space-y-6">
                 {(() => {
+                  const hasSponsorRights = professional.planStatus === 'DEGUSTACAO' || professional.planType === 'TESTE' || professional.planType?.includes('PATROCINADOR');
                   let list = [];
                   try {
                     list = typeof professional.partners === 'string'
@@ -1572,7 +1574,7 @@ export default function Profile() {
                   } catch {
                     list = professional.partners || [];
                   }
-                  const valid = list.filter(p => p && p.imageUrl);
+                  const valid = hasSponsorRights ? list.filter(p => p && p.imageUrl) : [];
                   if (valid.length === 0) {
                     return (
                       <div className="bg-slate-50 rounded-3xl p-12 border border-slate-100 text-center flex flex-col items-center justify-center space-y-4">

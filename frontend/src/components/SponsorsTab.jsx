@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, UploadCloud, Loader2, Plus, ChevronLeft, ChevronRight, Crop, RefreshCw, Link2, Trash2, Check, X, Save, FileText } from 'lucide-react';
 import ImageCropperModal from './ImageCropperModal';
 import imageCompression from 'browser-image-compression';
 import { API_URL } from '../config';
-
+import { AuthContext } from '../context/AuthContext';
 
 
 // ── SUBCOMPONENTE INDEPENDENTE DE GERENCIAMENTO DE PATROCINADORES ──────
 function AdSponsorsManager({ ad, token, onSaved }) {
+  const { user } = useContext(AuthContext);
   const [adPartners, setAdPartners] = useState([]);
   const [isUploadingPartner, setIsUploadingPartner] = useState(false);
   const [partnerError, setPartnerError] = useState('');
@@ -273,8 +274,40 @@ function AdSponsorsManager({ ad, token, onSaved }) {
     }
   };
 
+  const hasSponsorRights = user?.planStatus === 'DEGUSTACAO' || user?.planType === 'TESTE' || user?.planType?.includes('PATROCINADOR');
+
+  if (!hasSponsorRights && adPartners.length === 0) {
+    return (
+      <div className="bg-white border border-slate-200/85 rounded-3xl p-8 md:p-12 text-center max-w-2xl mx-auto shadow-xs space-y-6 animate-in zoom-in-95 duration-200">
+        <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto text-amber-500">
+          <Sparkles size={32} className="animate-pulse" />
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-xl font-bold text-slate-800">Monetize seu Perfil</h3>
+          <p className="text-sm text-slate-500 leading-relaxed">
+            Sabia que você pode vender espaços publicitários dentro do seu próprio perfil para comércios locais? O <strong>Espaço Parceiro</strong> é uma área de patrocínio que permite exibir até 3 logomarcas de apoiadores locais.
+          </p>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Este recurso é exclusivo do <strong>Plano Patrocinador</strong>. Faça o upgrade do seu plano agora para habilitar o gerenciador de patrocínios e começar a gerar renda extra!
+          </p>
+        </div>
+        <Link
+          to="/planos"
+          className="inline-flex items-center justify-center bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-xl font-bold shadow-md shadow-primary/20 transition-all hover:scale-105 active:scale-95 text-xs cursor-pointer mx-auto"
+        >
+          Conhecer Plano Patrocinador
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-2xl md:rounded-3xl p-6 md:p-8 border border-slate-200/85 shadow-sm space-y-6">
+      {!hasSponsorRights && adPartners.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl mb-4 font-medium flex items-center gap-2">
+          ⚠️ <div><strong>Volte a monetizar!</strong> Seus patrocinadores estão salvos, mas estão ocultos para o público. Faça o upgrade para o Plano Patrocinador para reativar sua vitrine.</div>
+        </div>
+      )}
       <div className="border-b border-slate-100 pb-4">
         <h2 className="text-xl font-bold text-slate-800 mb-1 flex items-center gap-2">
           <Sparkles className="text-primary animate-pulse hidden md:inline-block" size={20} />

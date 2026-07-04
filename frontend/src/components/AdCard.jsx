@@ -163,6 +163,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   const planStatus = professional.user?.planStatus || professional.planStatus || 'DEGUSTACAO';
   const planType = professional.user?.planType || professional.planType || '';
   const showSponsor = planStatus === 'DEGUSTACAO' || planType === 'TESTE' || planType.includes('PATROCINADOR');
+  const hasSponsorRights = planStatus === 'DEGUSTACAO' || planType === 'TESTE' || planType?.includes('PATROCINADOR');
   const getMapsLink = () => {
     const address = professional.enderecoComercial || professional.endereco || location;
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${address}, Itapipoca, CE`)}`;
@@ -416,39 +417,33 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
 
         {/* Right (Block 3 - Sponsor Banner) */}
         <div className="w-[68px] h-[90px] shrink-0">
-          {!showEdit && showSponsor ? (
-            <div className="w-full h-full">
-              {validPartners.length > 0 ? (
-                <div 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/profile/${professional.slug || professional.id}?tab=parceiros`);
-                  }}
-                  className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-0.5 relative overflow-hidden shadow-2xs select-none cursor-pointer hover:border-primary/30 transition-colors"
-                >
-                  <div 
-                    className="absolute inset-0 bg-cover bg-center blur-[2px] opacity-15 scale-110 pointer-events-none" 
-                    style={{ backgroundImage: `url(${validPartners[currentSponsorIdx].imageUrl})` }} 
-                  />
-                  <img 
-                    src={validPartners[currentSponsorIdx].imageUrl} 
-                    alt={validPartners[currentSponsorIdx].name || "Patrocinador"} 
-                    className="relative z-10 w-full h-full object-contain"
-                  />
-                  <span className="absolute bottom-0 left-0 right-0 text-center bg-slate-900/60 backdrop-blur-[1px] text-white text-[8px] font-bold py-0.5 leading-none z-20">
-                    APOIO
-                  </span>
-                </div>
-              ) : (
-                <div className="w-full h-full rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-1 select-none text-center">
-                  <span className="text-[10px] font-semibold text-slate-400 leading-tight">
-                    Anuncie
-                  </span>
-                </div>
-              )}
+          {hasSponsorRights && validPartners.length > 0 ? (
+            <div 
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/profile/${professional.slug || professional.id}?tab=parceiros`);
+              }}
+              className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-0.5 relative overflow-hidden shadow-2xs select-none cursor-pointer hover:border-primary/30 transition-colors"
+            >
+              <div 
+                className="absolute inset-0 bg-cover bg-center blur-[2px] opacity-15 scale-110 pointer-events-none" 
+                style={{ backgroundImage: `url(${validPartners[currentSponsorIdx].imageUrl})` }} 
+              />
+              <img 
+                src={validPartners[currentSponsorIdx].imageUrl} 
+                alt={validPartners[currentSponsorIdx].name || "Patrocinador"} 
+                className="relative z-10 w-full h-full object-contain"
+              />
+              <span className="absolute bottom-0 left-0 right-0 text-center bg-slate-900/60 backdrop-blur-[1px] text-white text-[8px] font-bold py-0.5 leading-none z-20">
+                APOIO
+              </span>
             </div>
           ) : (
-            <div className="w-full h-full pointer-events-none" />
+            <div className="w-full h-full rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-1 select-none text-center">
+              <span className="text-[10px] font-semibold text-slate-400 leading-tight">
+                Anuncie
+              </span>
+            </div>
           )}
         </div>
       </div>

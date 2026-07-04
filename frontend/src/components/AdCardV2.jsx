@@ -146,6 +146,9 @@ export default function AdCardV2({ professional, showEdit = false, onEdit, onDel
   };
 
   const reviewCount = professional?.reviewCount || 0;
+  const planStatus = professional?.user?.planStatus || professional?.planStatus || 'DEGUSTACAO';
+  const planType = professional?.user?.planType || professional?.planType || '';
+  const hasSponsorRights = planStatus === 'DEGUSTACAO' || planType === 'TESTE' || planType?.includes('PATROCINADOR');
 
   // Redes sociais
   let socialLinks = [];
@@ -259,7 +262,7 @@ export default function AdCardV2({ professional, showEdit = false, onEdit, onDel
 
           {/* Lado direito: Banner do Patrocinador (Apoio) fixo 3/4 */}
           <div className="shrink-0 aspect-[3/4] w-20 rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-1 relative overflow-hidden shadow-2xs select-none">
-            {validPartners.length > 0 ? (
+            {hasSponsorRights && validPartners.length > 0 ? (
               <>
                 <div 
                   className="absolute inset-0 bg-cover bg-center blur-[2px] opacity-15 scale-110 pointer-events-none" 
@@ -275,9 +278,10 @@ export default function AdCardV2({ professional, showEdit = false, onEdit, onDel
                 </span>
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center p-1">
-                <span className="text-[10px] font-black text-slate-300 tracking-wider leading-none">proITA</span>
-                <span className="text-[8px] text-slate-400 mt-1 uppercase font-bold tracking-wider">APOIO</span>
+              <div className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-1 select-none text-center">
+                <span className="text-[10px] font-semibold text-slate-400 leading-tight">
+                  Anuncie
+                </span>
               </div>
             )}
           </div>

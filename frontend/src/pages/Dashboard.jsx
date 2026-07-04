@@ -2727,39 +2727,13 @@ export default function Dashboard() {
                       Monetize seu perfil de prestador vendendo espaços publicitários para comerciantes ou parceiros locais de Itapipoca.
                     </p>
                   </div>
-                  {user?.planStatus === 'DEGUSTACAO' || user?.planType?.includes('PATROCINADOR') ? (
-                    <SponsorsTab
-                      token={token}
-                      onSaved={(updatedProfile) => {
-                        // Atualizar o anúncio local na lista do Dashboard
-                        setMyAds(prev => prev.map(item => item.id === updatedProfile.id ? updatedProfile : item));
-                      }}
-                    />
-                  ) : (
-                    <div className="bg-white border border-slate-200/85 rounded-3xl p-8 md:p-12 text-center max-w-2xl mx-auto shadow-xs space-y-6 animate-in zoom-in-95 duration-200">
-                      <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto text-amber-500">
-                        <Sparkles size={32} className="animate-pulse" />
-                      </div>
-                      <div className="space-y-2">
-                        <h3 className="text-xl font-bold text-slate-800">Monetize seu Perfil</h3>
-                        <p className="text-sm text-slate-500 leading-relaxed">
-                          Sabia que você pode vender espaços publicitários dentro do seu próprio perfil para comércios locais? O <strong>Espaço Parceiro</strong> é uma área de patrocínio que permite exibir até 3 logomarcas de apoiadores locais.
-                        </p>
-                        <p className="text-xs text-slate-400 leading-relaxed">
-                          Este recurso é exclusivo do <strong>Plano Patrocinador</strong>. Faça o upgrade do seu plano agora para habilitar o gerenciador de patrocínios e começar a gerar renda extra!
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setActiveTab('subscription');
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        className="bg-primary hover:bg-primary-hover text-white font-bold px-6 py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 text-sm mx-auto cursor-pointer"
-                      >
-                        Conhecer o Plano Patrocinador
-                      </button>
-                    </div>
-                  )}
+                  <SponsorsTab
+                    token={token}
+                    onSaved={(updatedProfile) => {
+                      // Atualizar o anúncio local na lista do Dashboard
+                      setMyAds(prev => prev.map(item => item.id === updatedProfile.id ? updatedProfile : item));
+                    }}
+                  />
                 </div>
               )}
 
