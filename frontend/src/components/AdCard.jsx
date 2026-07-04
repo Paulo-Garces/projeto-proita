@@ -322,23 +322,23 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   const cardContent = (
     <div 
       style={!isDashboard ? style : undefined}
-      className={`grid grid-cols-[85px_1fr_65px] sm:grid-cols-[115px_1fr_75px] gap-3 sm:gap-4 p-3 sm:p-4 border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full' : ''} min-w-[290px]`}
+      className={`flex flex-col gap-y-[10px] p-[10px] border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full' : ''} min-w-[290px]`}
     >
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-cyan-400 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300 rounded-t-xl" />
 
-      {/* Coluna Esquerda: flex flex-col justify-between h-full */}
-      <div className="flex flex-col justify-between items-center h-full text-center border-r border-slate-100 pr-2">
-        <div className="flex flex-col items-center w-full">
+      {/* Row 1 (Avatar, Info, Sponsor) */}
+      <div className="flex flex-row items-start gap-x-[10px] w-full">
+        {/* Left (Block 1 - Avatar) */}
+        <div className="w-[90px] h-[90px] shrink-0 flex items-center justify-center">
           <Link 
             to={`/profile/${professional.slug || professional.id}`} 
             onClick={handleProfileClick} 
-            className="relative cursor-pointer inline-block hover:scale-105 transition-transform rounded-full"
-            style={{ width: 'fit-content', height: 'fit-content' }}
+            className="relative cursor-pointer hover:scale-105 transition-transform rounded-full w-[82px] h-[82px]"
           >
             {avatar ? (
-              <img src={avatar} alt={displayName} className="w-[72px] h-[72px] sm:w-24 sm:h-24 rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md" />
+              <img src={avatar} alt={displayName} className="w-[82px] h-[82px] rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md" />
             ) : (
-              <div className="w-[72px] h-[72px] sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white text-2xl sm:text-3xl font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none">
+              <div className="w-[82px] h-[82px] rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white text-2xl font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none">
                 {displayName?.[0]?.toUpperCase() || 'P'}
               </div>
             )}
@@ -348,7 +348,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                 title={badge.title}
               >
                 <BadgeCheck 
-                  className={`w-5 h-5 sm:w-6 sm:h-6 ${
+                  className={`w-5 h-5 ${
                     badge.level === 'ouro' ? 'text-yellow-500 fill-yellow-500/10' :
                     badge.level === 'prata' ? 'text-slate-400 fill-slate-400/10' :
                     badge.level === 'bronze' ? 'text-amber-700 fill-amber-700/10' :
@@ -361,17 +361,163 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                 className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 bg-white rounded-full p-0.5 shadow-md flex items-center justify-center text-gray-400 cursor-help z-10" 
                 title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista."
               >
-                <BadgeCheck className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />
+                <BadgeCheck className="w-5 h-5 text-gray-400" />
               </div>
             )}
           </Link>
+        </div>
+
+        {/* Middle (Block 2 - Name, Stars, Phone, Location) */}
+        <div className="flex-1 min-w-0 flex flex-col justify-center h-[90px] gap-0.5">
+          <Link 
+            to={`/profile/${professional.slug || professional.id}`} 
+            onClick={handleProfileClick} 
+            className="block group-hover:text-primary transition-colors min-w-0 w-full"
+          >
+            <h3 className="font-black text-slate-800 text-sm sm:text-base leading-tight truncate" title={displayName}>
+              {displayName}
+            </h3>
+          </Link>
           
-          <p className="text-[11px] sm:text-xs font-black text-primary uppercase tracking-wider leading-tight mt-3.5 max-w-[120px] line-clamp-2">
+          {/* Avaliação */}
+          <Link 
+            to={`/profile/${professional.slug || professional.id}?tab=avaliacoes`}
+            onClick={handleProfileClick}
+            className="flex items-center gap-1 hover:underline hover:text-primary transition-all cursor-pointer group/rating min-w-0"
+            title="Ver todas as avaliações deste profissional"
+          >
+            <div className="flex items-center gap-0.5 shrink-0 text-amber-400">
+              {[1, 2, 3, 4, 5].map(i => (
+                <Star key={i} size={10} className={i <= rating ? "fill-amber-400 text-amber-400 group-hover/rating:scale-110 transition-transform duration-200" : "text-slate-200 fill-slate-200"} />
+              ))}
+            </div>
+            <span className="text-[11px] sm:text-xs font-bold text-slate-700 leading-none whitespace-nowrap">
+              {rating > 0 ? rating.toFixed(1) : 'Novo'}
+            </span>
+            {reviewCount > 0 && (
+              <span className="text-[9px] text-slate-450 leading-none">({reviewCount})</span>
+            )}
+          </Link>
+
+          {/* Telefone */}
+          {phone && (
+            <div className="flex items-center gap-1 text-[11px] sm:text-xs text-slate-500 font-medium leading-none truncate w-full min-w-0">
+              <Phone size={10} className="text-slate-400 shrink-0" />
+              <span className="truncate">{formatPhone(phone)}</span>
+            </div>
+          )}
+
+          {/* Local/Bairro */}
+          <div className="flex items-center gap-1 text-[11px] sm:text-xs text-slate-500 font-medium leading-none truncate w-full min-w-0">
+            <MapPin size={10} className="text-slate-400 shrink-0" />
+            <span className="truncate">{location}</span>
+          </div>
+        </div>
+
+        {/* Right (Block 3 - Sponsor Banner) */}
+        <div className="w-[68px] h-[90px] shrink-0">
+          {!showEdit && showSponsor ? (
+            <div className="w-full h-full">
+              {validPartners.length > 0 ? (
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/profile/${professional.slug || professional.id}?tab=parceiros`);
+                  }}
+                  className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-0.5 relative overflow-hidden shadow-2xs select-none cursor-pointer hover:border-primary/30 transition-colors"
+                >
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center blur-[2px] opacity-15 scale-110 pointer-events-none" 
+                    style={{ backgroundImage: `url(${validPartners[currentSponsorIdx].imageUrl})` }} 
+                  />
+                  <img 
+                    src={validPartners[currentSponsorIdx].imageUrl} 
+                    alt={validPartners[currentSponsorIdx].name || "Patrocinador"} 
+                    className="relative z-10 w-full h-full object-contain"
+                  />
+                  <span className="absolute bottom-0 left-0 right-0 text-center bg-slate-900/60 backdrop-blur-[1px] text-white text-[8px] font-bold py-0.5 leading-none z-20">
+                    APOIO
+                  </span>
+                </div>
+              ) : (
+                <div className="w-full h-full rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-1 select-none text-center">
+                  <span className="text-[10px] font-semibold text-slate-400 leading-tight">
+                    Anuncie
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="w-full h-full pointer-events-none" />
+          )}
+        </div>
+      </div>
+
+      {/* Row 2 (Category, View Profile, Sec. Actions) */}
+      <div className="flex flex-row items-center gap-x-[10px] w-full h-[31px]">
+        {/* Left (Block 4 - Category) */}
+        <div className="w-[90px] shrink-0 flex items-center justify-center">
+          <p className="text-[10px] sm:text-[11px] font-black text-primary uppercase tracking-wider leading-none text-center line-clamp-2 max-w-full">
             {professional.category || professional.atividadePrincipal || 'Profissional'}
           </p>
         </div>
 
-        <div className="flex flex-col items-center gap-2 sm:gap-2.5 w-full mt-4 sm:mt-5">
+        {/* Middle (Block 5 - View Profile Btn) */}
+        <div className="flex-1 min-w-0 flex items-center justify-center h-full">
+          <Link
+            to={`/profile/${professional.slug || professional.id}`}
+            onClick={handleProfileClick}
+            className="w-full h-full flex items-center justify-center gap-1 bg-sky-50 hover:bg-sky-100 text-sky-600 hover:text-sky-700 font-bold text-[11px] sm:text-xs rounded-lg transition-colors border border-sky-100/30"
+          >
+            <CircleUser size={14} className="text-sky-600 shrink-0" />
+            <span>Ver Perfil</span>
+          </Link>
+        </div>
+
+        {/* Right (Block 6 - Fav & Map Btns) */}
+        <div className="w-[69px] shrink-0 flex justify-between items-center gap-[10px] h-full">
+          {!showEdit ? (
+            <>
+              <button
+                onClick={handleToggleFavorite}
+                className={`flex-1 h-full rounded-lg border transition-colors flex items-center justify-center ${
+                  isFavorited 
+                    ? 'bg-red-50 text-red-500 border-red-200 hover:bg-red-100' 
+                    : 'bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100'
+                }`}
+                title={isFavorited ? "Remover dos favoritos" : "Salvar nos favoritos"}
+              >
+                <Bookmark size={14} className={isFavorited ? "fill-red-500 text-red-500" : ""} />
+              </button>
+              
+              <a
+                href={getMapsLink()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 h-full rounded-lg border bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100 transition-colors flex items-center justify-center"
+                title="Ver rota no mapa"
+              >
+                <Map size={14} />
+              </a>
+            </>
+          ) : (
+            <a
+              href={getMapsLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full h-full rounded-lg border bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100 transition-colors flex items-center justify-center"
+              title="Ver rota no mapa"
+            >
+              <Map size={14} />
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* Row 3 (Socials, Primary Actions) */}
+      <div className="flex flex-row items-center gap-x-[10px] w-full h-[60px] mt-1">
+        {/* Left (Block 7 - Social Icons + 'Por Fulano') */}
+        <div className="w-[127px] shrink-0 flex flex-col items-center justify-center gap-y-1">
           <div className="flex flex-row flex-nowrap justify-center items-center gap-1 w-full">
             {displayedSocials.map((link, idx) => {
               const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
@@ -423,112 +569,46 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
           </div>
           
           {ownerName && (
-            <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate w-full max-w-[110px] sm:max-w-[130px] mt-2 sm:mt-2.5">
+            <p className="text-[9px] text-slate-400 font-medium truncate w-full max-w-[127px] text-center">
               Por {ownerName}
             </p>
           )}
         </div>
-      </div>
 
-      {/* Coluna Centro (Name/Info): flex flex-col h-full gap-3 */}
-      <div className="flex flex-col h-full gap-3 min-w-0">
-        {/* Linha 1 (Info) */}
-        <div className="flex justify-between items-stretch gap-2 min-w-0">
-          <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
-            <Link 
-              to={`/profile/${professional.slug || professional.id}`} 
-              onClick={handleProfileClick} 
-              className="block group-hover:text-primary transition-colors min-w-0 w-full"
-            >
-              <h3 className="font-black text-slate-800 text-base sm:text-lg leading-snug line-clamp-2 break-words" title={displayName}>
-                {displayName}
-              </h3>
-            </Link>
-            
-            {/* Avaliação */}
-            <Link 
-              to={`/profile/${professional.slug || professional.id}?tab=avaliacoes`}
-              onClick={handleProfileClick}
-              className="flex items-center gap-1 hover:underline hover:text-primary transition-all cursor-pointer group/rating min-w-0 mt-2.5 sm:mt-3"
-              title="Ver todas as avaliações deste profissional"
-            >
-              <div className="flex items-center gap-0.5 shrink-0 text-amber-400">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <Star key={i} size={11} className={i <= rating ? "fill-amber-400 text-amber-400 group-hover/rating:scale-110 transition-transform duration-200" : "text-slate-200 fill-slate-200"} />
-                ))}
-              </div>
-              <span className="text-xs sm:text-sm font-bold text-slate-700 leading-none whitespace-nowrap">
-                {rating > 0 ? rating.toFixed(1) : 'Novo'}
-              </span>
-              {reviewCount > 0 && (
-                <span className="text-[10px] text-slate-450 leading-none">({reviewCount})</span>
-              )}
-            </Link>
-
-            {/* Telefone */}
-            {phone && (
-              <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 font-medium leading-none truncate w-full min-w-0 mt-1">
-                <Phone size={12} className="text-slate-400 shrink-0" />
-                <span className="truncate">{formatPhone(phone)}</span>
-              </div>
-            )}
-
-            {/* Local/Bairro */}
-            <div className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-500 font-medium leading-none truncate w-full min-w-0 mt-1">
-              <MapPin size={12} className="text-slate-400 shrink-0" />
-              <span className="truncate">{location}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Linha 2 (Ações Perfil) */}
-        <div className="flex items-center w-full">
-          <Link
-            to={`/profile/${professional.slug || professional.id}`}
-            onClick={handleProfileClick}
-            className="w-full flex items-center justify-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-600 hover:text-sky-700 font-bold text-xs sm:text-sm py-2 rounded-xl transition-all border border-sky-100/50"
-          >
-            <CircleUser size={18} className="text-sky-600 shrink-0" />
-            <span>Ver Perfil</span>
-          </Link>
-        </div>
-
-        {/* Linha 3 (Contatos ou Dashboard) */}
-        <div className="flex items-center gap-2 mt-auto">
+        {/* Right (Block 8 - Call, WA, Share) */}
+        <div className="flex-1 min-w-0 flex justify-center items-center gap-[10px] h-full">
           {isDashboard ? (
-            <>
-              {showEdit && (
-                <div className="flex flex-row w-full gap-2 items-center flex-wrap sm:flex-nowrap">
-                  <button 
-                    onClick={() => onEdit?.(professional)} 
-                    disabled={disableEdit}
-                    className="flex-1 flex justify-center items-center gap-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 py-2.5 rounded-xl font-bold transition-all text-xs sm:text-sm border border-slate-200 shadow-xs cursor-pointer"
-                  >
-                    <Edit2 size={14} /> Editar
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => onQrCode?.(professional)}
-                    className="flex-1 flex justify-center items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 rounded-xl font-bold transition-all text-xs sm:text-sm border border-slate-200 shadow-xs cursor-pointer"
-                  >
-                    <QrCode size={14} /> QR Code
-                  </button>
-                  <button 
-                    onClick={() => onDelete?.(professional.id)} 
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-150 py-2.5 rounded-xl font-bold transition-all text-xs sm:text-sm shadow-xs cursor-pointer"
-                  >
-                    <Trash2 size={14} /> Excluir
-                  </button>
-                </div>
-              )}
-            </>
+            showEdit && (
+              <div className="flex flex-row w-full gap-[10px] items-center h-full">
+                <button 
+                  onClick={() => onEdit?.(professional)} 
+                  disabled={disableEdit}
+                  className="flex-1 h-10 flex justify-center items-center gap-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 rounded-xl font-bold transition-all text-[11px] sm:text-xs border border-slate-200 shadow-xs cursor-pointer"
+                >
+                  <Edit2 size={12} /> Editar
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => onQrCode?.(professional)}
+                  className="flex-1 h-10 flex justify-center items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all text-[11px] sm:text-xs border border-slate-200 shadow-xs cursor-pointer"
+                >
+                  <QrCode size={12} /> QR Code
+                </button>
+                <button 
+                  onClick={() => onDelete?.(professional.id)} 
+                  className="flex-1 h-10 flex items-center justify-center gap-1 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-150 rounded-xl font-bold transition-all text-[11px] sm:text-xs shadow-xs cursor-pointer"
+                >
+                  <Trash2 size={12} /> Excluir
+                </button>
+              </div>
+            )
           ) : (
-            <div className="w-full flex items-center justify-center gap-4 sm:gap-6 mt-1">
+            <div className="w-full flex items-center justify-center gap-[10px] h-full">
               {/* Botão Ligar */}
               {phone && (
                 <button
                   onClick={callPhone}
-                  className="w-10 h-10 shrink-0 flex items-center justify-center bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200 rounded-full transition-colors shadow-2xs active:scale-95 cursor-pointer"
+                  className="w-10 h-10 shrink-0 flex items-center justify-center bg-slate-50 text-slate-605 border border-slate-200 rounded-full transition-colors shadow-2xs active:scale-95 cursor-pointer"
                   title="Ligar"
                 >
                   <Phone className="w-[18px] h-[18px]" />
@@ -539,10 +619,10 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               {phone && (
                 <button
                   onClick={openWhatsApp}
-                  className="w-12 h-12 shrink-0 flex items-center justify-center bg-[#25D366] hover:bg-[#1fb355] text-white rounded-full transition-all shadow-md shadow-green-200/40 hover:scale-105 active:scale-95 cursor-pointer"
+                  className="w-10 h-10 shrink-0 flex items-center justify-center bg-[#25D366] hover:bg-[#1fb355] text-white rounded-full transition-all shadow-md shadow-green-200/40 hover:scale-105 active:scale-95 cursor-pointer"
                   title="WhatsApp"
                 >
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-[26px] h-[26px] shrink-0">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-[20px] h-[20px] shrink-0">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
                   </svg>
                 </button>
@@ -551,90 +631,12 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               {/* Botão Compartilhar */}
               <button
                 onClick={share}
-                className="w-10 h-10 shrink-0 flex items-center justify-center bg-slate-50 text-slate-600 border border-slate-200 rounded-full transition-colors shadow-2xs active:scale-95 cursor-pointer"
+                className="w-10 h-10 shrink-0 flex items-center justify-center bg-slate-50 text-slate-605 border border-slate-200 rounded-full transition-colors shadow-2xs active:scale-95 cursor-pointer"
                 title={copied ? 'Copiado!' : 'Compartilhar link'}
               >
                 {copied ? <CheckCircle className="w-[18px] h-[18px] text-emerald-500" /> : <Share2 className="w-[18px] h-[18px]" />}
               </button>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Coluna Direita (Patrocinador + Ações Secundárias) */}
-      <div className="flex flex-col justify-between items-center h-full min-w-0">
-        {/* Banner do Patrocinador */}
-        {!showEdit && showSponsor ? (
-          <div className="w-full aspect-[3/4] flex items-center justify-center">
-            {validPartners.length > 0 ? (
-              <div 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/profile/${professional.slug || professional.id}?tab=parceiros`);
-                }}
-                className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-0.5 relative overflow-hidden shadow-2xs select-none cursor-pointer hover:border-primary/30 transition-colors shrink-0"
-              >
-                <div 
-                  className="absolute inset-0 bg-cover bg-center blur-[2px] opacity-15 scale-110 pointer-events-none" 
-                  style={{ backgroundImage: `url(${validPartners[currentSponsorIdx].imageUrl})` }} 
-                />
-                <img 
-                  src={validPartners[currentSponsorIdx].imageUrl} 
-                  alt={validPartners[currentSponsorIdx].name || "Patrocinador"} 
-                  className="relative z-10 w-full h-full object-contain shrink-0"
-                />
-                <span className="absolute bottom-0 left-0 right-0 text-center bg-slate-900/60 backdrop-blur-[1px] text-white text-[8px] font-bold py-0.5 leading-none z-20">
-                  APOIO
-                </span>
-              </div>
-            ) : (
-              <div className="w-full h-full rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-1 select-none text-center shrink-0">
-                <span className="text-[10px] xl:text-xs font-semibold text-slate-400 text-center leading-tight">
-                  Anuncie
-                </span>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="w-full h-0 pointer-events-none" />
-        )}
-
-        {/* Botões Secundários (Favoritar + Mapa) */}
-        <div className="flex justify-between gap-1 w-full mt-2">
-          {!showEdit ? (
-            <>
-              <button
-                onClick={handleToggleFavorite}
-                className={`flex-1 p-1 sm:p-2 rounded-lg border transition-colors flex items-center justify-center ${
-                  isFavorited 
-                    ? 'bg-red-50 text-red-500 border-red-200 hover:bg-red-100' 
-                    : 'bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100'
-                }`}
-                title={isFavorited ? "Remover dos favoritos" : "Salvar nos favoritos"}
-              >
-                <Bookmark size={16} className={isFavorited ? "fill-red-500 text-red-500" : ""} />
-              </button>
-              
-              <a
-                href={getMapsLink()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1 p-1 sm:p-2 rounded-lg border bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100 transition-colors flex items-center justify-center"
-                title="Ver rota no mapa"
-              >
-                <Map size={16} />
-              </a>
-            </>
-          ) : (
-            <a
-              href={getMapsLink()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full p-1 sm:p-2 rounded-lg border bg-slate-50 text-slate-650 border-slate-200 hover:bg-slate-100 transition-colors flex items-center justify-center"
-              title="Ver rota no mapa"
-            >
-              <Map size={16} />
-            </a>
           )}
         </div>
       </div>
