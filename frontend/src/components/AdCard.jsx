@@ -598,7 +598,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               </div>
             )
           ) : (
-            <div className="w-full flex items-center justify-center gap-[10px] h-full">
+            <div className="w-full md:w-full flex items-center justify-center md:justify-center gap-[10px] md:gap-4 h-full">
               {/* Botão Ligar */}
               {phone && (
                 <button

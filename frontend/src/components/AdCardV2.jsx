@@ -323,7 +323,7 @@ export default function AdCardV2({ professional, showEdit = false, onEdit, onDel
         </div>
 
         {/* Linha 3: Amarelo (Ligar, WhatsApp, Compartilhar) */}
-        <div className="flex items-center gap-2">
+        <div className="flex md:w-full items-center justify-center md:justify-center gap-2 md:gap-4">
           {/* Botão Ligar */}
           {phone ? (
             <button
