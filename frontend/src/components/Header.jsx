@@ -121,7 +121,7 @@ export default function Header() {
             {/* Esquerda: Menu Mobile e Logo */}
             <div className="flex items-center gap-4">
               {/* Mobile menu button */}
-              <div className="md:hidden flex items-center">
+              <div className="lg:hidden flex items-center">
                 <button onClick={() => setIsOpen(true)} className="text-slate-600 hover:text-slate-900 focus:outline-none">
                   <Menu size={28} />
                 </button>
@@ -129,14 +129,14 @@ export default function Header() {
 
               {/* Logo (Oculto na Home) */}
               {!isHome && (
-                <Link to="/" className="flex items-center md:static absolute left-1/2 md:left-auto -translate-x-1/2 md:translate-x-0">
-                  <img src="/logo-proita.svg" alt="proITA Logo" className="h-10 md:h-12" />
+                <Link to="/" className="flex items-center lg:static absolute left-1/2 lg:left-auto -translate-x-1/2 lg:translate-x-0">
+                  <img src="/logo-proita.svg" alt="proITA Logo" className="h-10 lg:h-12 shrink-0" />
                 </Link>
               )}
             </div>
 
             {/* Direita: Links de Navegação & Auth/Ações */}
-            <div className="hidden md:flex items-center gap-8">
+            <div className="hidden lg:flex items-center gap-8">
 
               {/* Navegação */}
               <nav className="flex items-center gap-6">
@@ -193,10 +193,10 @@ export default function Header() {
                         <img
                           src={user.profileImageUrl}
                           alt={user.nome}
-                          className="w-10 h-10 rounded-full object-cover border-2 border-transparent hover:border-primary transition-all shadow-sm"
+                          className="w-10 h-10 rounded-full object-cover border-2 border-transparent hover:border-primary transition-all shadow-sm shrink-0"
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white font-bold text-sm border-2 border-transparent hover:border-primary transition-all select-none">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white font-bold text-sm border-2 border-transparent hover:border-primary transition-all select-none shrink-0">
                           {user?.nome?.[0]?.toUpperCase()}{user?.sobrenome?.[0]?.toUpperCase()}
                         </div>
                       )}
@@ -248,7 +248,7 @@ export default function Header() {
             </div>
 
             {/* Mobile right side - Sininho de Notificação se Autenticado */}
-            <div className="md:hidden flex items-center">
+            <div className="lg:hidden flex items-center">
               {isAuthenticated ? (
                 <NotificationBell />
               ) : (
@@ -262,14 +262,14 @@ export default function Header() {
       {/* Mobile Navigation Overlay - AGORA SOLTO DA CAIXA DO HEADER */}
       {isOpen && (
         <div
-          className="md:hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+          className="lg:hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Mobile Navigation Sidebar - AGORA SOLTO E COM Z-INDEX MÁXIMO (Sticks to thumb!) */}
       <div
-        className={`md:hidden fixed inset-y-0 left-0 w-4/5 max-w-sm z-[60] bg-white shadow-2xl flex flex-col ${
+        className={`lg:hidden fixed inset-y-0 left-0 w-4/5 max-w-sm z-[60] bg-white shadow-2xl flex flex-col ${
           isDragging ? '' : 'transition-transform duration-300 ease-in-out'
         }`}
         style={{
