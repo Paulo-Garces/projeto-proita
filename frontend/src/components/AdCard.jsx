@@ -323,23 +323,23 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
   const cardContent = (
     <div 
       style={!isDashboard ? style : undefined}
-      className={`flex flex-col gap-y-[10px] p-[10px] border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full' : ''} min-w-[290px]`}
+      className={`flex flex-col gap-y-[10px] p-[10px] border border-slate-200 rounded-xl bg-white relative hover:shadow-xl hover:border-primary/20 transition-all duration-300 animate-card-fade ${!isDashboard ? 'w-full max-w-[420px] mx-auto' : 'w-full max-w-[420px]'} min-w-[310px]`}
     >
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary to-cyan-400 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300 rounded-t-xl" />
 
       {/* Row 1 (Avatar, Info, Sponsor) */}
-      <div className="flex flex-row items-start gap-x-[10px] w-full">
+      <div className="grid grid-cols-[96px_1fr_56px] gap-2.5 w-full items-start">
         {/* Left (Block 1 - Avatar) */}
-        <div className="w-[90px] h-[90px] shrink-0 flex items-center justify-center">
+        <div className="w-full h-full flex items-center justify-center">
           <Link 
             to={`/profile/${professional.slug || professional.id}`} 
             onClick={handleProfileClick} 
-            className="relative cursor-pointer hover:scale-105 transition-transform rounded-full w-[82px] h-[82px]"
+            className="relative cursor-pointer hover:scale-105 transition-transform rounded-full w-[72px] h-[72px]"
           >
             {avatar ? (
-              <img src={avatar} alt={displayName} className="w-[82px] h-[82px] rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md" />
+              <img src={avatar} alt={displayName} className="w-[72px] h-[72px] rounded-full object-cover ring-[3px] ring-primary/25 border-2 border-white shadow-md" />
             ) : (
-              <div className="w-[82px] h-[82px] rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white text-2xl font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none">
+              <div className="w-[72px] h-[72px] rounded-full bg-gradient-to-br from-primary to-cyan-400 flex items-center justify-center text-white text-2xl font-bold ring-[3px] ring-primary/25 border-2 border-white shadow-md select-none">
                 {displayName?.[0]?.toUpperCase() || 'P'}
               </div>
             )}
@@ -375,7 +375,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             onClick={handleProfileClick} 
             className="block group-hover:text-primary transition-colors min-w-0 w-full"
           >
-            <h3 className="font-black text-slate-800 text-sm sm:text-base leading-tight truncate" title={displayName}>
+            <h3 className="font-black text-slate-800 text-sm leading-tight truncate" title={displayName}>
               {displayName}
             </h3>
           </Link>
@@ -392,7 +392,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                 <Star key={i} size={10} className={i <= rating ? "fill-amber-400 text-amber-400 group-hover/rating:scale-110 transition-transform duration-200" : "text-slate-200 fill-slate-200"} />
               ))}
             </div>
-            <span className="text-[11px] sm:text-xs font-bold text-slate-700 leading-none whitespace-nowrap">
+            <span className="text-[11px] font-bold text-slate-700 leading-none whitespace-nowrap">
               {rating > 0 ? rating.toFixed(1) : 'Novo'}
             </span>
             {reviewCount > 0 && (
@@ -402,21 +402,21 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
 
           {/* Telefone */}
           {phone && (
-            <div className="flex items-center gap-1 text-[11px] sm:text-xs text-slate-500 font-medium leading-none truncate w-full min-w-0">
+            <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium leading-none truncate w-full min-w-0">
               <Phone size={10} className="text-slate-400 shrink-0" />
               <span className="truncate">{formatPhone(phone)}</span>
             </div>
           )}
 
           {/* Local/Bairro */}
-          <div className="flex items-center gap-1 text-[11px] sm:text-xs text-slate-500 font-medium leading-none truncate w-full min-w-0">
+          <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium leading-none truncate w-full min-w-0">
             <MapPin size={10} className="text-slate-400 shrink-0" />
             <span className="truncate">{location}</span>
           </div>
         </div>
 
         {/* Right (Block 3 - Sponsor Banner) */}
-        <div className="w-[68px] h-[90px] shrink-0">
+        <div className="w-[56px] shrink-0 aspect-[3/4] flex items-center justify-center">
           {hasSponsorRights && validPartners.length > 0 ? (
             <div 
               onClick={(e) => {
@@ -449,20 +449,20 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
       </div>
 
       {/* Row 2 (Category, View Profile, Sec. Actions) */}
-      <div className="flex flex-row items-center gap-x-[10px] w-full h-[31px]">
+      <div className="grid grid-cols-[96px_1fr_56px] gap-2.5 w-full items-center h-[31px]">
         {/* Left (Block 4 - Category) */}
-        <div className="w-[90px] shrink-0 flex items-center justify-center">
-          <p className="text-[10px] sm:text-[11px] font-black text-primary uppercase tracking-wider leading-none text-center line-clamp-2 max-w-full">
+        <div className="w-full flex items-center justify-center">
+          <p className="text-[10px] font-black text-primary uppercase tracking-wider leading-none text-center line-clamp-2 max-w-full">
             {professional.category || professional.atividadePrincipal || 'Profissional'}
           </p>
         </div>
 
         {/* Middle (Block 5 - View Profile Btn) */}
-        <div className="flex-1 min-w-0 flex items-center justify-center h-full">
+        <div className="w-full flex items-center justify-center h-full">
           <Link
             to={`/profile/${professional.slug || professional.id}`}
             onClick={handleProfileClick}
-            className="w-full h-full flex items-center justify-center gap-1 bg-sky-50 hover:bg-sky-100 text-sky-600 hover:text-sky-700 font-bold text-[11px] sm:text-xs rounded-lg transition-colors border border-sky-100/30"
+            className="w-full h-full flex items-center justify-center gap-1 bg-sky-50 hover:bg-sky-100 text-sky-600 hover:text-sky-700 font-bold text-[11px] rounded-lg transition-colors border border-sky-100/30 whitespace-nowrap"
           >
             <CircleUser size={14} className="text-sky-600 shrink-0" />
             <span>Ver Perfil</span>
@@ -470,7 +470,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
         </div>
 
         {/* Right (Block 6 - Fav & Map Btns) */}
-        <div className="w-[69px] shrink-0 flex justify-between items-center gap-[10px] h-full">
+        <div className="w-full h-full flex justify-between items-center gap-1.5">
           {!showEdit ? (
             <>
               <button
@@ -510,9 +510,9 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
       </div>
 
       {/* Row 3 (Socials, Primary Actions) */}
-      <div className="flex flex-row items-center gap-x-[10px] w-full h-[60px] mt-1">
+      <div className="grid grid-cols-[96px_1fr_56px] gap-2.5 w-full items-center h-[60px] mt-1">
         {/* Left (Block 7 - Social Icons + 'Por Fulano') */}
-        <div className="w-[127px] shrink-0 flex flex-col items-center justify-center gap-y-1">
+        <div className="w-full flex flex-col items-center justify-center gap-y-1">
           <div className="flex flex-row flex-nowrap justify-center items-center gap-1 w-full">
             {displayedSocials.map((link, idx) => {
               const url = link.url.startsWith('http') ? link.url : `https://${link.url}`;
@@ -564,14 +564,14 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
           </div>
           
           {ownerName && (
-            <p className="text-[9px] text-slate-400 font-medium truncate w-full max-w-[127px] text-center">
+            <p className="text-[9px] text-slate-400 font-medium truncate w-full text-center">
               Por {ownerName}
             </p>
           )}
         </div>
 
         {/* Right (Block 8 - Call, WA, Share) */}
-        <div className="flex-1 min-w-0 flex justify-center items-center gap-[10px] h-full">
+        <div className="col-span-2 min-w-0 flex justify-center items-center gap-[10px] h-full">
           {isDashboard ? (
             showEdit && (
               <div className="flex flex-row w-full gap-[10px] items-center h-full">
@@ -598,7 +598,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               </div>
             )
           ) : (
-            <div className="w-full md:w-full flex items-center justify-center md:justify-center gap-[10px] md:gap-4 h-full">
+            <div className="w-full flex items-center justify-between px-1 sm:px-2 h-full">
               {/* Botão Ligar */}
               {phone && (
                 <button
@@ -614,7 +614,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               {phone && (
                 <button
                   onClick={openWhatsApp}
-                  className="w-12 h-12 shrink-0 flex items-center justify-center bg-[#25D366] hover:bg-[#1fb355] text-white rounded-full transition-all shadow-md shadow-green-200/40 scale-110 sm:scale-125 hover:scale-115 sm:hover:scale-130 active:scale-95 cursor-pointer"
+                  className="w-12 h-12 shrink-0 flex items-center justify-center bg-[#25D366] hover:bg-[#1fb355] text-white rounded-full transition-all shadow-md shadow-green-200/40 scale-110 hover:scale-115 active:scale-95 cursor-pointer"
                   title="WhatsApp"
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor" className="w-[24px] h-[24px] shrink-0">

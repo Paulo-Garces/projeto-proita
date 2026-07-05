@@ -2562,7 +2562,7 @@ export default function Dashboard() {
                       </Link>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(310px,1fr))] gap-5 w-full justify-center">
                       {favoriteAds.map(ad => {
                         const fotoAnuncio = (ad.fotoAnuncioUrl && ad.fotoAnuncioUrl.trim() !== '')
                           ? ad.fotoAnuncioUrl
@@ -2656,7 +2656,7 @@ export default function Dashboard() {
                         </div>
                       ) : (
                         <div className="space-y-6 animate-in fade-in duration-300">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                          <div className="grid grid-cols-[repeat(auto-fill,minmax(310px,1fr))] gap-5 w-full justify-center">
                             {myAds.map(ad => {
                               const fotoAnuncio = (ad.fotoAnuncioUrl && ad.fotoAnuncioUrl.trim() !== '')
                                 ? ad.fotoAnuncioUrl

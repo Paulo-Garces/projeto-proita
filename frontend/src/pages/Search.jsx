@@ -514,7 +514,7 @@ export default function Search() {
               </div>
             ) : displayResults.length > 0 ? (
               <div className="w-full max-w-3xl mx-auto lg:max-w-none">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6 w-full items-start">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(310px,1fr))] gap-6 w-full items-start justify-center">
                   {displayResults.map((pro, index) => (
                     <AdCard key={pro.id} professional={pro} style={{ animationDelay: `${index * 80}ms` }} />
                   ))}
@@ -566,7 +566,7 @@ export default function Search() {
             <p className="mt-2 text-slate-500">Os mais bem avaliados pelos clientes proITA</p>
           </div>
           <div className="w-full max-w-3xl mx-auto md:max-w-none">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full items-start">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(310px,1fr))] gap-6 w-full items-start justify-center">
               {destaques.map(pro => (
                 <AdCard key={pro.id} professional={pro} />
               ))}
