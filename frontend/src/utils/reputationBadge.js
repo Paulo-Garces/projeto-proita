@@ -18,9 +18,10 @@
 export function getReputationBadge(p) {
   if (!p) return null;
 
-  // 0. Elegibilidade de Assinatura: deve estar ATIVO ou BASICO
+  // 0. Elegibilidade de Assinatura
   const planStatus = p.user?.planStatus || p.planStatus || 'DEGUSTACAO';
-  if (planStatus !== 'ATIVO' && planStatus !== 'BASICO') return null;
+  const isEligible = ['ATIVO', 'PATROCINADOR', 'TESTE', 'DEGUSTACAO'].includes(planStatus);
+  if (!isEligible) return null;
 
   // 1. Conta criada há pelo menos 30 dias
   const createdAt = p.createdAt || p.profileCreatedAt;
@@ -34,21 +35,11 @@ export function getReputationBadge(p) {
   const reviewCount = p.reviewCount ?? p.reviewsCount ?? 0;
   if (reviewCount < 5) return null;
 
-  // 3. Perfil completo:
-  // Deve possuir horariosFuncionamento
-  const hasHorarios = p.horariosFuncionamento != null && (
-    (typeof p.horariosFuncionamento === 'string' && p.horariosFuncionamento.trim() !== '') ||
-    (Array.isArray(p.horariosFuncionamento) && p.horariosFuncionamento.length > 0) ||
-    (typeof p.horariosFuncionamento === 'object' && Object.keys(p.horariosFuncionamento).length > 0)
-  );
-  if (!hasHorarios) return null;
-
-  // Deve possuir foto de perfil (não sendo a imagem de fallback gerada por iniciais)
-  const avatar = p.fotoAnuncioUrl || p.avatarUrl || p.avatar || p.user?.profileImageUrl || p.profileImageUrl;
-  const hasImage = avatar != null && 
-                   String(avatar).trim() !== '' && 
-                   !String(avatar).includes('ui-avatars.com');
-  if (!hasImage) return null;
+  // 3. Regras de Completude do Perfil (Estritas)
+  const hasGoogle = !!(p.user?.googleId || p.googleId);
+  const hasPhone = p.telefoneComercial || p.whatsapp || p.phone || p.user?.telefone;
+  const hasBio = p.sobre || p.descricao || p.bio;
+  if (!hasGoogle || !hasPhone || !hasBio) return null;
 
   // 4. Classificação com base na nota
   const rating = p.rating ?? 0;

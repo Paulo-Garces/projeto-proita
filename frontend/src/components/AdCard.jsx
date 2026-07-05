@@ -346,7 +346,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             {badge ? (
               <div 
                 className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 bg-white rounded-full p-0.5 shadow-md flex items-center justify-center z-10" 
-                title={badge.title}
+                title={badge.title + " (Avaliado pela Comunidade)"}
               >
                 <BadgeCheck 
                   className={`w-5 h-5 ${
@@ -360,7 +360,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
             ) : (
               <div 
                 className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 bg-white rounded-full p-0.5 shadow-md flex items-center justify-center text-gray-400 cursor-help z-10" 
-                title="Selo de Verificação: Complete seu perfil e receba avaliações para ativar esta conquista."
+                title="Profissional de Destaque: Perfil completo, verificado pelo Google e com ótimas avaliações dos clientes."
               >
                 <BadgeCheck className="w-5 h-5 text-gray-400" />
               </div>
