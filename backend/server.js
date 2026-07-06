@@ -256,6 +256,8 @@ app.post('/api/login', async (req, res) => {
         email: user.email || null,
         emailSecundario: user.emailSecundario || null,
         emailSecundarioVerificado: user.emailSecundarioVerificado || false,
+        telefoneVerificado: user.telefoneVerificado || false,
+        isPhoneVerified: user.telefoneVerificado || false,
         googleId: user.googleId || null,
         bairro: user.bairro,
         role: user.role,
@@ -448,6 +450,8 @@ app.post('/api/auth/google', async (req, res) => {
         email: user.email,
         emailSecundario: user.emailSecundario || null,
         emailSecundarioVerificado: user.emailSecundarioVerificado || false,
+        telefoneVerificado: user.telefoneVerificado || false,
+        isPhoneVerified: user.telefoneVerificado || false,
         bairro: user.bairro,
         role: user.role,
         profileImageUrl: user.profileImageUrl || null,
@@ -599,11 +603,100 @@ app.post('/api/user/email-secundario/verify-confirm', async (req, res) => {
   }
 });
 
+// Rota para solicitar verificação do telefone celular (SMS/WhatsApp simulado)
+app.post('/api/auth/send-verification-code', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'O número de telefone é obrigatório.' });
+    }
+
+    // Gerar código de 6 dígitos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log(`\n======================================================`);
+    console.log(`[VERIFICAÇÃO DE TELEFONE] Código OTP gerado para usuário ID: ${userId} (${phone})`);
+    console.log(`--> CÓDIGO DE VERIFICAÇÃO: ${code}`);
+    console.log(`======================================================\n`);
+
+    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        telefoneCodigo: code,
+        telefoneCodigoExpires: expires
+      }
+    });
+
+    res.status(200).json({ success: true, message: 'Código de verificação enviado com sucesso! Verifique o console do servidor.' });
+  } catch (error) {
+    console.error('Erro ao enviar código de verificação de telefone:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao processar solicitação.' });
+  }
+});
+
+// Rota para confirmar o código de verificação do telefone celular
+app.post('/api/auth/verify-code', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { code } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ success: false, message: 'O código de verificação é obrigatório.' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+    }
+
+    if (user.telefoneCodigo !== code || !user.telefoneCodigoExpires || user.telefoneCodigoExpires < new Date()) {
+      return res.status(400).json({ success: false, message: 'Código de verificação inválido ou expirado.' });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        telefoneVerificado: true,
+        telefoneCodigo: null,
+        telefoneCodigoExpires: null
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Telefone verificado com sucesso!',
+      user: {
+        id: updatedUser.id,
+        telefone: updatedUser.telefone,
+        telefoneVerificado: updatedUser.telefoneVerificado,
+        isPhoneVerified: updatedUser.telefoneVerificado
+      }
+    });
+  } catch (error) {
+    console.error('Erro na confirmação de verificação de telefone:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao confirmar verificação.' });
+  }
+});
+
 // Rota para atualizar os dados cadastrais (perfil) do usuário
 app.put('/api/user/profile', authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
     const { nome, sobrenome, telefone, bairro, senha } = req.body;
+
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!currentUser) {
+      return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
+    }
 
     if (!nome || nome.trim() === '') {
       return res.status(400).json({ success: false, message: 'O nome é obrigatório.' });
@@ -630,6 +723,12 @@ app.put('/api/user/profile', authMiddleware, async (req, res) => {
       telefone: formattedPhone,
       bairro: bairro ? bairro.trim() : null
     };
+
+    if (formattedPhone !== currentUser.telefone) {
+      updateData.telefoneVerificado = false;
+      updateData.telefoneCodigo = null;
+      updateData.telefoneCodigoExpires = null;
+    }
 
     if (senha !== undefined) {
       if (senha) {
@@ -659,6 +758,8 @@ app.put('/api/user/profile', authMiddleware, async (req, res) => {
         email: updatedUser.email,
         emailSecundario: updatedUser.emailSecundario,
         emailSecundarioVerificado: updatedUser.emailSecundarioVerificado,
+        telefoneVerificado: updatedUser.telefoneVerificado,
+        isPhoneVerified: updatedUser.telefoneVerificado,
         profileImageUrl: updatedUser.profileImageUrl,
         googleId: updatedUser.googleId,
         role: updatedUser.role,
@@ -708,6 +809,8 @@ app.post('/api/subscriptions/trial', authMiddleware, async (req, res) => {
         email: updatedUser.email || null,
         emailSecundario: updatedUser.emailSecundario || null,
         emailSecundarioVerificado: updatedUser.emailSecundarioVerificado || false,
+        telefoneVerificado: updatedUser.telefoneVerificado || false,
+        isPhoneVerified: updatedUser.telefoneVerificado || false,
         googleId: updatedUser.googleId || null,
         bairro: updatedUser.bairro,
         role: updatedUser.role,
@@ -738,6 +841,7 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
         email: true,
         emailSecundario: true,
         emailSecundarioVerificado: true,
+        telefoneVerificado: true,
         googleId: true,
         bairro: true,
         role: true,
@@ -764,6 +868,8 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
         email: user.email || null,
         emailSecundario: user.emailSecundario || null,
         emailSecundarioVerificado: user.emailSecundarioVerificado || false,
+        telefoneVerificado: user.telefoneVerificado || false,
+        isPhoneVerified: user.telefoneVerificado || false,
         googleId: user.googleId || null,
         bairro: user.bairro,
         role: user.role,

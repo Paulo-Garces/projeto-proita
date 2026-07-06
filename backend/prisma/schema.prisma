@@ -28,6 +28,9 @@ model User {
   emailSecundarioCode        String?
   emailSecundarioCodeExpires DateTime?
   emailSecundarioVerificado  Boolean        @default(false)
+  telefoneCodigo             String?
+  telefoneCodigoExpires      DateTime?
+  telefoneVerificado         Boolean        @default(false)
   planStatus                 String         @default("INATIVO")
   subscriptionEndsAt         DateTime?
   trialEndsAt                DateTime?

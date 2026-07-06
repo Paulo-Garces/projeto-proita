@@ -1,7 +1,7 @@
 import { useState, useContext, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard, Sparkles, Clock, Copy, ChevronLeft, ChevronRight, Check, X, Link2, Crop, RefreshCw, Bell, Download, Share2 } from 'lucide-react';
+import { User, Heart, Settings, LayoutDashboard, LogOut, Camera, Loader2, Plus, ArrowLeft, CheckCircle, Trash2, UploadCloud, Edit2, AlertCircle, Shield, KeyRound, CreditCard, Sparkles, Clock, Copy, ChevronLeft, ChevronRight, Check, X, Link2, Crop, RefreshCw, Bell, Download, Share2, Send } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
@@ -1785,6 +1785,14 @@ export default function Dashboard() {
   const [profileSuccess, setProfileSuccess] = useState('');
   const [profileError, setProfileError] = useState('');
 
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [showOtpField, setShowOtpField] = useState(false);
+  const [loadingOtp, setLoadingOtp] = useState(false);
+  const [loadingVerify, setLoadingVerify] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [otpSuccess, setOtpSuccess] = useState('');
+
   // Sincroniza os estados locais quando o usuário carregar ou for atualizado
   useEffect(() => {
     if (user) {
@@ -1792,6 +1800,7 @@ export default function Dashboard() {
       setProfileSobrenome(user.sobrenome || '');
       setProfileTelefone(user.telefone ? formatPhone(user.telefone.replace(/^\+55/, '')) : '');
       setProfileBairro(user.bairro || '');
+      setIsEditingPhone(false);
     }
   }, [user]);
 
@@ -2341,6 +2350,70 @@ export default function Dashboard() {
     }
   };
 
+  const handleSendPhoneVerification = async () => {
+    setOtpError('');
+    setOtpSuccess('');
+    setLoadingOtp(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/send-verification-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ phone: convertToInternationalPhone(profileTelefone) })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setOtpSuccess(data.message || 'Código enviado com sucesso!');
+        setShowOtpField(true);
+      } else {
+        setOtpError(data.message || 'Erro ao enviar código de verificação.');
+      }
+    } catch (err) {
+      console.error(err);
+      setOtpError('Erro de conexão ao enviar código.');
+    } finally {
+      setLoadingOtp(false);
+    }
+  };
+
+  const handleVerifyPhoneCode = async (e) => {
+    e.preventDefault();
+    if (!otpCode || otpCode.length !== 6) {
+      setOtpError('O código deve conter exatamente 6 dígitos.');
+      return;
+    }
+    setOtpError('');
+    setOtpSuccess('');
+    setLoadingVerify(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/verify-code`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ code: otpCode })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setOtpSuccess(data.message || 'Telefone verificado com sucesso!');
+        updateUser({ telefoneVerificado: true, isPhoneVerified: true });
+        setShowOtpField(false);
+        setIsEditingPhone(false);
+        setOtpCode('');
+      } else {
+        setOtpError(data.message || 'Código de verificação inválido ou expirado.');
+      }
+    } catch (err) {
+      console.error(err);
+      setOtpError('Erro de conexão ao verificar código.');
+    } finally {
+      setLoadingVerify(false);
+    }
+  };
+
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setLoadingProfile(true);
@@ -2512,14 +2585,108 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Telefone / WhatsApp</label>
-                      <input
-                        type="text"
-                        value={profileTelefone}
-                        onChange={(e) => setProfileTelefone(formatPhone(e.target.value))}
-                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary"
-                        placeholder="(88) 99999-9999"
-                      />
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-sm font-medium text-slate-700">Telefone / WhatsApp</label>
+                        {user?.telefone && (
+                          user.telefoneVerificado || user.isPhoneVerified ? (
+                            <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1 font-sans">
+                              <CheckCircle size={11} /> Verificado
+                            </span>
+                          ) : (
+                            <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1 font-sans">
+                              <AlertCircle size={11} /> Não verificado
+                            </span>
+                          )
+                        )}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={profileTelefone}
+                          onChange={(e) => setProfileTelefone(formatPhone(e.target.value))}
+                          disabled={(user?.telefoneVerificado || user?.isPhoneVerified) && !isEditingPhone}
+                          className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-100"
+                          placeholder="(88) 99999-9999"
+                        />
+                        {(user?.telefoneVerificado || user?.isPhoneVerified) && !isEditingPhone && (
+                          <button
+                            type="button"
+                            onClick={() => setIsEditingPhone(true)}
+                            className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-primary bg-slate-100 hover:bg-slate-200/80 rounded-lg border border-slate-200 transition-colors shrink-0 cursor-pointer"
+                          >
+                            Alterar
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Fluxo de Verificação (Código) */}
+                      {user?.telefone && !(user.telefoneVerificado || user.isPhoneVerified) && (
+                        <div className="mt-2.5 p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl space-y-3">
+                          <p className="text-xs text-slate-500 leading-relaxed">
+                            Seu número ainda não foi verificado. Clique para enviar um código OTP simulado de 6 dígitos.
+                          </p>
+                          {!showOtpField ? (
+                            <button
+                              type="button"
+                              onClick={handleSendPhoneVerification}
+                              disabled={loadingOtp || !profileTelefone || profileTelefone.length < 14}
+                              className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              {loadingOtp ? (
+                                <Loader2 size={13} className="animate-spin" />
+                              ) : (
+                                <Send size={13} />
+                              )}
+                              Enviar Código de Verificação
+                            </button>
+                          ) : (
+                            <div className="space-y-2.5">
+                              <div className="flex flex-col sm:flex-row gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Digite os 6 dígitos"
+                                  maxLength={6}
+                                  value={otpCode}
+                                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                                  className="w-full sm:w-48 px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary font-mono text-center tracking-wider"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleVerifyPhoneCode}
+                                  disabled={loadingVerify || otpCode.length !== 6}
+                                  className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                  {loadingVerify ? (
+                                    <Loader2 size={13} className="animate-spin" />
+                                  ) : (
+                                    <Check size={13} />
+                                  )}
+                                  Confirmar Código
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowOtpField(false)}
+                                  className="text-slate-500 hover:text-slate-700 px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {otpError && (
+                            <p className="text-xs font-semibold text-red-600 flex items-center gap-1 mt-1">
+                              <AlertCircle size={13} /> {otpError}
+                            </p>
+                          )}
+                          {otpSuccess && (
+                            <p className="text-xs font-semibold text-emerald-600 flex items-center gap-1 mt-1">
+                              <CheckCircle size={13} /> {otpSuccess}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Bairro Padrão</label>
@@ -3634,9 +3801,15 @@ export default function Dashboard() {
                         {user?.telefone ? (
                           <div className="space-y-1.5">
                             <p className="text-xs text-slate-500">{user.telefone}</p>
-                            <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1">
-                              <AlertCircle size={14} /> Não verificado
-                            </span>
+                            {user.telefoneVerificado || user.isPhoneVerified ? (
+                              <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1">
+                                <CheckCircle size={14} /> Verificado
+                              </span>
+                            ) : (
+                              <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1">
+                                <AlertCircle size={14} /> Não verificado
+                              </span>
+                            )}
                           </div>
                         ) : (
                           <form onSubmit={handleLinkPhone} className="flex gap-3">

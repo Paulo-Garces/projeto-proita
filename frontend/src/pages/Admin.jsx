@@ -754,7 +754,7 @@ function ActionMenu({ user, onAction }) {
           {/* Overlay para fechar */}
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
 
-          <div className="absolute right-0 top-10 z-20 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 min-w-[220px] overflow-hidden"
+          <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl z-[999] border border-slate-100 py-1.5 overflow-hidden"
             style={{ animation: 'menuPop 0.15s ease-out both' }}
           >
             {items.map((item, idx) => {
@@ -2105,7 +2105,7 @@ function ProfessionalsTab({ token }) {
       </div>
 
       {/* Tabela */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -2211,7 +2211,7 @@ function ProfessionalsTab({ token }) {
                     </td>
 
                     {/* Ações */}
-                    <td className="py-4 px-5">
+                    <td className="py-4 px-5 relative">
                       <div className="flex items-center gap-1.5">
                         {/* WhatsApp Rápido */}
                         {u.telefone && (
