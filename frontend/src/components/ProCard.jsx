@@ -58,7 +58,11 @@ export default function ProCard({ professional }) {
 
   const handleWhatsApp = (e) => {
     e.preventDefault();
-    if (phone) window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=Olá! Vi seu perfil no proITA.`, '_blank');
+    if (phone) {
+      const categoryName = professional.atividadePrincipal || professional.category || 'profissional';
+      const message = `Olá! Vi seu perfil de ${categoryName} no proITA e gostaria de mais informações.`;
+      window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
+    }
   };
 
   const handleShare = (e) => {

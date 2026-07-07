@@ -99,7 +99,9 @@ export default function AdCardV2({ professional, showEdit = false, onEdit, onDel
     e.preventDefault();
     e.stopPropagation();
     if (phone) {
-      window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=Olá! Vi seu perfil no proITA.`, '_blank');
+      const categoryName = professional.atividadePrincipal || professional.category || 'profissional';
+      const message = `Olá! Vi seu perfil de ${categoryName} no proITA e gostaria de mais informações.`;
+      window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`, '_blank');
     }
   };
 

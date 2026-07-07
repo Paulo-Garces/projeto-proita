@@ -631,7 +631,9 @@ export default function Profile() {
 
       const cleanPhone = professional.phone.replace(/\D/g, '');
       const finalPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
-      window.open(`https://wa.me/${finalPhone}?text=Olá! Encontrei seu perfil no proITA e gostaria de um orçamento.`, '_blank');
+      const categoryName = professional.category || professional.atividadePrincipal || 'profissional';
+      const message = `Olá! Vi seu perfil de ${categoryName} no proITA e gostaria de mais informações.`;
+      window.open(`https://wa.me/${finalPhone}?text=${encodeURIComponent(message)}`, '_blank');
     }
   };
 

@@ -36,7 +36,7 @@ export default async function handler(req, res) {
             <meta property="og:description" content="Confira os serviços e entre em contato!">
             <meta property="og:image" content="${absoluteImageUrl}">
             <meta property="og:url" content="${protocol}://${requestHost}/profile/${slug}">
-            <meta name="twitter:card" content="summary_large_image">
+            <meta name="twitter:card" content="summary">
           `;
 
           html = html.replace(/<title>.*?<\/title>/i, `<title>${title}</title>`);

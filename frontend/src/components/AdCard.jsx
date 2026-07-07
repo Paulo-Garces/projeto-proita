@@ -272,7 +272,9 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
       }
       const cleanPhone = phone.replace(/\D/g, '');
       const finalPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
-      window.open(`https://wa.me/${finalPhone}?text=Olá! Vi seu perfil no proITA.`, '_blank');
+      const categoryName = professional.atividadePrincipal || professional.category || 'profissional';
+      const message = `Olá! Vi seu perfil de ${categoryName} no proITA e gostaria de mais informações.`;
+      window.open(`https://wa.me/${finalPhone}?text=${encodeURIComponent(message)}`, '_blank');
     }
   };
 
