@@ -1483,27 +1483,55 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
               </span>
             )}
           </div>
-          <input
-            value={form.telefoneComercial}
-            onChange={(e) => {
-              const formatted = formatPhone(e.target.value);
-              setForm(prev => ({ 
-                ...prev, 
-                telefoneComercial: formatted,
-                servicePhone: formatted
-              }));
-            }}
-            placeholder="Ex: (88) 99999-9999"
-            disabled={lockInfo.active}
-            className={`${inputClass} ${lockInfo.active ? 'opacity-65 cursor-not-allowed bg-slate-100' : ''}`}
-          />
+          {user?.phones?.filter(p => p.isVerified).length > 0 ? (
+            <select
+              value={form.telefoneComercial}
+              disabled={lockInfo.active}
+              onChange={(e) => {
+                const val = e.target.value;
+                setForm(prev => ({ 
+                  ...prev, 
+                  telefoneComercial: val,
+                  servicePhone: val,
+                  whatsapp: val
+                }));
+              }}
+              className={`${inputClass} ${lockInfo.active ? 'opacity-65 cursor-not-allowed bg-slate-100' : ''}`}
+            >
+              {user.phones.filter(p => p.isVerified).map((p) => (
+                <option key={p.id} value={formatPhone(p.numero)}>
+                  {formatPhone(p.numero)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs font-semibold">
+              ⚠️ Você não possui telefones verificados na sua carteira. 
+              Para editar seu anúncio, você precisa cadastrar e verificar ao menos um telefone na aba <strong>Segurança</strong> do seu painel.
+            </div>
+          )}
           {lockInfo.active && (
             <span className="text-xs text-amber-600 font-semibold block mt-1">
               Disponível para edição em {lockInfo.days} dia(s)
             </span>
           )}
-          <p className="text-xs text-slate-500 mt-1">
-            Insira o número de contato do anúncio. O número do seu cadastro continuará privado.
+          <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
+            <span>
+              Insira o número de contato do anúncio. O número do seu cadastro continuará privado.
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('security');
+                setTimeout(() => {
+                  const element = document.getElementById('security');
+                  if (element) element.scrollIntoView({ behavior: 'smooth' });
+                }, 50);
+              }}
+              className="text-primary hover:underline font-bold text-xs bg-transparent border-none p-0 cursor-pointer shrink-0"
+            >
+              + Adicionar novo telefone
+            </button>
           </p>
         </div>
           <div className="flex items-center justify-between mb-3 border-t border-slate-100 pt-4">
@@ -1792,6 +1820,154 @@ export default function Dashboard() {
   const [loadingVerify, setLoadingVerify] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [otpSuccess, setOtpSuccess] = useState('');
+
+  // Estados da Carteira de Telefones (Phone Wallet)
+  const [novoWalletPhone, setNovoWalletPhone] = useState('');
+  const [loadingAddWalletPhone, setLoadingAddWalletPhone] = useState(false);
+  const [walletPhoneVerifyingId, setWalletPhoneVerifyingId] = useState(null);
+  const [walletOtpCode, setWalletOtpCode] = useState('');
+  const [loadingVerifyWalletPhone, setLoadingVerifyWalletPhone] = useState(false);
+  const [walletOtpError, setWalletOtpError] = useState('');
+  const [loadingDeleteWalletPhoneId, setLoadingDeleteWalletPhoneId] = useState(null);
+
+  const refreshUser = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.user) {
+        updateUser(data.user);
+      }
+    } catch (err) {
+      console.error("Erro ao sincronizar sessão:", err);
+    }
+  };
+
+  const handleAddWalletPhone = async (e) => {
+    e.preventDefault();
+    if (!novoWalletPhone) return;
+    setLoadingAddWalletPhone(true);
+    setWalletOtpError('');
+    setSecurityError('');
+    setSecuritySuccess('');
+    try {
+      const res = await fetch(`${API_URL}/api/user/phones`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ phone: novoWalletPhone })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setNovoWalletPhone('');
+        setSecuritySuccess('Telefone adicionado à carteira com sucesso! Clique em "Verificar" ao lado do número para validá-lo.');
+        await refreshUser();
+      } else {
+        setSecurityError(data.message || 'Erro ao adicionar telefone.');
+      }
+    } catch (err) {
+      console.error(err);
+      setSecurityError('Erro de conexão ao adicionar telefone.');
+    } finally {
+      setLoadingAddWalletPhone(false);
+    }
+  };
+
+  const handleRequestVerifyWalletPhone = async (phoneRecord) => {
+    setWalletOtpError('');
+    setWalletOtpCode('');
+    setSecurityError('');
+    setSecuritySuccess('');
+    try {
+      const res = await fetch(`${API_URL}/api/user/phones`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ phone: phoneRecord.numero })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setWalletPhoneVerifyingId(phoneRecord.id);
+        setSecuritySuccess(`Código de verificação enviado para o telefone ${formatPhone(phoneRecord.numero)}!`);
+      } else {
+        setSecurityError(data.message || 'Erro ao gerar código de verificação.');
+      }
+    } catch (err) {
+      console.error(err);
+      setSecurityError('Erro de conexão ao solicitar código de verificação.');
+    }
+  };
+
+  const handleVerifyWalletPhone = async (e) => {
+    e.preventDefault();
+    if (!walletOtpCode || !walletPhoneVerifyingId) return;
+    setLoadingVerifyWalletPhone(true);
+    setWalletOtpError('');
+    setSecurityError('');
+    setSecuritySuccess('');
+    try {
+      const res = await fetch(`${API_URL}/api/user/phones/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ phoneId: walletPhoneVerifyingId, code: walletOtpCode })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setWalletPhoneVerifyingId(null);
+        setWalletOtpCode('');
+        setSecuritySuccess('Telefone verificado com sucesso na sua carteira!');
+        await refreshUser();
+      } else {
+        setWalletOtpError(data.message || 'Código incorreto ou expirado.');
+      }
+    } catch (err) {
+      console.error(err);
+      setSecurityError('Erro de conexão ao verificar código.');
+    } finally {
+      setLoadingVerifyWalletPhone(false);
+    }
+  };
+
+  const handleDeleteWalletPhone = async (phoneId) => {
+    if (!window.confirm('Tem certeza que deseja remover este telefone da sua carteira?')) return;
+    setLoadingDeleteWalletPhoneId(phoneId);
+    setSecurityError('');
+    setSecuritySuccess('');
+    try {
+      const res = await fetch(`${API_URL}/api/user/phones/${phoneId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (walletPhoneVerifyingId === phoneId) {
+          setWalletPhoneVerifyingId(null);
+          setWalletOtpCode('');
+        }
+        setSecuritySuccess('Telefone removido com sucesso da sua carteira!');
+        await refreshUser();
+      } else {
+        setSecurityError(data.message || 'Erro ao remover telefone.');
+      }
+    } catch (err) {
+      console.error(err);
+      setSecurityError('Erro de conexão ao remover telefone.');
+    } finally {
+      setLoadingDeleteWalletPhoneId(null);
+    }
+  };
 
   // Sincroniza os estados locais quando o usuário carregar ou for atualizado
   useEffect(() => {
@@ -2430,7 +2606,7 @@ export default function Dashboard() {
         body: JSON.stringify({
           nome: profileNome,
           sobrenome: profileSobrenome,
-          telefone: convertToInternationalPhone(profileTelefone),
+          telefone: user?.telefone || '',
           bairro: profileBairro
         })
       });
@@ -2583,113 +2759,6 @@ export default function Dashboard() {
                           className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary"
                         />
                       </div>
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-sm font-medium text-slate-700">Telefone / WhatsApp</label>
-                        {user?.telefone && (
-                          user.telefoneVerificado || user.isPhoneVerified ? (
-                            <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1 font-sans">
-                              <CheckCircle size={11} /> Verificado
-                            </span>
-                          ) : (
-                            <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1 font-sans">
-                              <AlertCircle size={11} /> Não verificado
-                            </span>
-                          )
-                        )}
-                      </div>
-
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={profileTelefone}
-                          onChange={(e) => setProfileTelefone(formatPhone(e.target.value))}
-                          disabled={(user?.telefoneVerificado || user?.isPhoneVerified) && !isEditingPhone}
-                          className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary disabled:bg-slate-50 disabled:text-slate-500 disabled:border-slate-100"
-                          placeholder="(88) 99999-9999"
-                        />
-                        {(user?.telefoneVerificado || user?.isPhoneVerified) && !isEditingPhone && (
-                          <button
-                            type="button"
-                            onClick={() => setIsEditingPhone(true)}
-                            className="px-3 py-2 text-sm font-medium text-slate-600 hover:text-primary bg-slate-100 hover:bg-slate-200/80 rounded-lg border border-slate-200 transition-colors shrink-0 cursor-pointer"
-                          >
-                            Alterar
-                          </button>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 mt-1.5 flex items-center gap-1 leading-relaxed">
-                        🔒 Seu número ficará visível publicamente no seu anúncio. O proITA não vende dados e nunca enviará ofertas de terceiros pelo seu WhatsApp.
-                      </p>
-
-                      {/* Fluxo de Verificação (Código) */}
-                      {user?.telefone && !(user.telefoneVerificado || user.isPhoneVerified) && (
-                        <div className="mt-2.5 p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl space-y-3">
-                          <p className="text-xs text-slate-500 leading-relaxed">
-                            Seu número ainda não foi verificado. Clique para enviar um código OTP simulado de 6 dígitos.
-                          </p>
-                          {!showOtpField ? (
-                            <button
-                              type="button"
-                              onClick={handleSendPhoneVerification}
-                              disabled={loadingOtp || !profileTelefone || profileTelefone.length < 14}
-                              className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-1.5 cursor-pointer"
-                            >
-                              {loadingOtp ? (
-                                <Loader2 size={13} className="animate-spin" />
-                              ) : (
-                                <Send size={13} />
-                              )}
-                              Enviar Código de Verificação
-                            </button>
-                          ) : (
-                            <div className="space-y-2.5">
-                              <div className="flex flex-col sm:flex-row gap-2">
-                                <input
-                                  type="text"
-                                  placeholder="Digite os 6 dígitos"
-                                  maxLength={6}
-                                  value={otpCode}
-                                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                                  className="w-full sm:w-48 px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary font-mono text-center tracking-wider"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={handleVerifyPhoneCode}
-                                  disabled={loadingVerify || otpCode.length !== 6}
-                                  className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                                >
-                                  {loadingVerify ? (
-                                    <Loader2 size={13} className="animate-spin" />
-                                  ) : (
-                                    <Check size={13} />
-                                  )}
-                                  Confirmar Código
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setShowOtpField(false)}
-                                  className="text-slate-500 hover:text-slate-700 px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer"
-                                >
-                                  Cancelar
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          {otpError && (
-                            <p className="text-xs font-semibold text-red-600 flex items-center gap-1 mt-1">
-                              <AlertCircle size={13} /> {otpError}
-                            </p>
-                          )}
-                          {otpSuccess && (
-                            <p className="text-xs font-semibold text-emerald-600 flex items-center gap-1 mt-1">
-                              <CheckCircle size={13} /> {otpSuccess}
-                            </p>
-                          )}
-                        </div>
-                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Bairro Padrão</label>
@@ -3788,47 +3857,140 @@ export default function Dashboard() {
                         )}
                       </div>
 
-                      {/* ── 2. Telefone / WhatsApp ── */}
-                      <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
-                        <div className="flex items-center justify-between">
+                      {/* ── 2. Carteira de Telefones ── */}
+                      <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                           <div className="flex items-center gap-2">
                             <Shield size={16} className="text-slate-500" />
-                            <span className="text-sm font-semibold text-slate-800">Telefone / WhatsApp</span>
+                            <span className="text-sm font-semibold text-slate-800">Carteira de Telefones (Anúncios)</span>
                           </div>
-                          {user?.telefone ? (
-                            <span className="text-slate-500 text-xs font-medium">Vinculado</span>
-                          ) : (
-                            <span className="text-xs font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-full">Não vinculado</span>
-                          )}
+                          <span className="text-slate-500 text-xs font-semibold">
+                            {user?.phones?.length || 0} / 3
+                          </span>
                         </div>
-                        {user?.telefone ? (
-                          <div className="space-y-1.5">
-                            <p className="text-xs text-slate-500">{user.telefone}</p>
-                            {user.telefoneVerificado || user.isPhoneVerified ? (
-                              <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1">
-                                <CheckCircle size={14} /> Verificado
-                              </span>
-                            ) : (
-                              <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1">
-                                <AlertCircle size={14} /> Não verificado
-                              </span>
-                            )}
+
+                        {/* Lista de Telefones */}
+                        {user?.phones && user.phones.length > 0 ? (
+                          <div className="space-y-3">
+                            {user.phones.map((phoneRecord) => (
+                              <div key={phoneRecord.id} className="space-y-2">
+                                <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between gap-3">
+                                  <div className="space-y-1">
+                                    <p className="text-sm font-bold text-slate-800">{formatPhone(phoneRecord.numero)}</p>
+                                    {phoneRecord.isVerified ? (
+                                      <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-0.5">
+                                        <CheckCircle size={10} /> Verificado
+                                      </span>
+                                    ) : (
+                                      <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-0.5">
+                                        <AlertCircle size={10} /> Pendente
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {!phoneRecord.isVerified && walletPhoneVerifyingId !== phoneRecord.id && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRequestVerifyWalletPhone(phoneRecord)}
+                                        className="text-xs font-bold text-primary hover:text-primary-hover px-2.5 py-1.5 bg-primary/10 rounded-lg transition-colors cursor-pointer"
+                                      >
+                                        Verificar
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteWalletPhone(phoneRecord.id)}
+                                      disabled={loadingDeleteWalletPhoneId === phoneRecord.id}
+                                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors disabled:opacity-60 cursor-pointer"
+                                      title="Remover telefone"
+                                    >
+                                      {loadingDeleteWalletPhoneId === phoneRecord.id ? (
+                                        <Loader2 size={15} className="animate-spin" />
+                                      ) : (
+                                        <Trash2 size={15} />
+                                      )}
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Fluxo de Verificação (OTP) - Renderizado abaixo daquele telefone específico */}
+                                {walletPhoneVerifyingId === phoneRecord.id && (
+                                  <form onSubmit={handleVerifyWalletPhone} className="p-3.5 bg-slate-100/60 border border-slate-200/60 rounded-xl space-y-3 mx-2">
+                                    <div>
+                                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                        Código de Verificação (OTP) para {formatPhone(phoneRecord.numero)}
+                                      </label>
+                                      <div className="flex gap-2">
+                                        <input
+                                          type="text"
+                                          inputMode="numeric"
+                                          pattern="[0-9]*"
+                                          maxLength="6"
+                                          placeholder="Digite os 6 dígitos"
+                                          value={walletOtpCode}
+                                          onChange={(e) => setWalletOtpCode(e.target.value.replace(/\D/g, ''))}
+                                          className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm bg-white"
+                                          required
+                                        />
+                                        <button
+                                          type="submit"
+                                          disabled={loadingVerifyWalletPhone || walletOtpCode.length < 6}
+                                          className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
+                                        >
+                                          {loadingVerifyWalletPhone ? <Loader2 size={16} className="animate-spin" /> : 'Confirmar'}
+                                        </button>
+                                      </div>
+                                      {walletOtpError && (
+                                        <p className="text-xs text-red-600 font-bold mt-1.5">{walletOtpError}</p>
+                                      )}
+                                      <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">
+                                        Um código OTP de 6 dígitos foi gerado. Verifique o console do servidor de desenvolvimento para obter o código.
+                                      </p>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setWalletPhoneVerifyingId(null);
+                                          setWalletOtpCode('');
+                                          setWalletOtpError('');
+                                        }}
+                                        className="text-xs text-slate-500 hover:text-slate-700 font-bold underline mt-2 block"
+                                      >
+                                        Cancelar Verificação
+                                      </button>
+                                    </div>
+                                  </form>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         ) : (
-                          <form onSubmit={handleLinkPhone} className="flex gap-3">
+                          <p className="text-xs text-slate-500">Nenhum telefone cadastrado na sua carteira.</p>
+                        )}
+
+                        {/* Formulário para Adicionar Telefone (máx. 3) */}
+                        {(!user?.phones || user.phones.length < 3) && !walletPhoneVerifyingId && (
+                          <form onSubmit={handleAddWalletPhone} className="flex gap-2.5 pt-2 border-t border-slate-100">
                             <input
                               type="tel"
                               placeholder="(88) 99999-9999"
-                              value={novoTelefone}
-                              onChange={(e) => setNovoTelefone(formatPhone(e.target.value))}
+                              value={novoWalletPhone}
+                              onChange={(e) => setNovoWalletPhone(formatPhone(e.target.value))}
                               className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm"
                               required
                             />
-                            <button type="submit" disabled={loadingLinkPhone} className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0 disabled:opacity-70 cursor-pointer">
-                              {loadingLinkPhone ? 'Vinculando...' : 'Vincular'}
+                            <button
+                              type="submit"
+                              disabled={loadingAddWalletPhone || !novoWalletPhone || novoWalletPhone.length < 14}
+                              className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shrink-0 disabled:opacity-75 cursor-pointer"
+                            >
+                              {loadingAddWalletPhone ? <Loader2 size={15} className="animate-spin" /> : 'Adicionar'}
                             </button>
                           </form>
                         )}
+
+                        <p className="text-[10px] text-slate-500 leading-normal">
+                          🔒 Seus telefones cadastrados e verificados poderão ser livremente associados a qualquer um dos seus anúncios.
+                        </p>
                       </div>
 
                       {/* ── 3. E-mail de Recuperação ── */}

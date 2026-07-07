@@ -684,6 +684,157 @@ app.post('/api/auth/verify-code', authMiddleware, async (req, res) => {
   }
 });
 
+// =================================================================
+// ROTAS DA CARTEIRA DE TELEFONES (PHONE WALLET)
+// =================================================================
+
+// Adicionar telefone à carteira (máx 3)
+app.post('/api/user/phones', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({ success: false, message: 'O número de telefone é obrigatório.' });
+    }
+
+    // Valida limite de 3 telefones por usuário
+    const count = await prisma.userPhone.count({
+      where: { userId }
+    });
+    if (count >= 3) {
+      return res.status(400).json({ success: false, message: 'Você já atingiu o limite máximo de 3 telefones na carteira.' });
+    }
+
+    const cleanPhone = phone.replace(/\D/g, '');
+    const finalPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+
+    // Verifica se já existe na carteira
+    const existing = await prisma.userPhone.findFirst({
+      where: {
+        userId,
+        OR: [
+          { numero: finalPhone },
+          { numero: cleanPhone },
+          { numero: `+${finalPhone}` }
+        ]
+      }
+    });
+
+    if (existing && existing.isVerified) {
+      return res.status(400).json({ success: false, message: 'Este telefone já está cadastrado e verificado na sua carteira.' });
+    }
+
+    // Gerar código de 6 dígitos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+    console.log(`\n======================================================`);
+    console.log(`[CARTEIRA DE TELEFONES] Código OTP gerado para usuário ID: ${userId} (${phone})`);
+    console.log(`--> CÓDIGO DE VERIFICAÇÃO: ${code}`);
+    console.log(`======================================================\n`);
+
+    let phoneRecord;
+    if (existing) {
+      phoneRecord = await prisma.userPhone.update({
+        where: { id: existing.id },
+        data: {
+          codigoOtp: code,
+          otpExpires: expires
+        }
+      });
+    } else {
+      phoneRecord = await prisma.userPhone.create({
+        data: {
+          userId,
+          numero: phone.trim(),
+          isVerified: false,
+          codigoOtp: code,
+          otpExpires: expires
+        }
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Código de verificação enviado com sucesso! Verifique o console do servidor.',
+      phoneId: phoneRecord.id
+    });
+  } catch (error) {
+    console.error('[POST /api/user/phones] Erro:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao processar solicitação.' });
+  }
+});
+
+// Confirmar verificação do telefone na carteira
+app.post('/api/user/phones/verify', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { phoneId, code } = req.body;
+
+    if (!phoneId || !code) {
+      return res.status(400).json({ success: false, message: 'O ID do telefone e o código de verificação são obrigatórios.' });
+    }
+
+    const phoneRecord = await prisma.userPhone.findFirst({
+      where: {
+        id: phoneId,
+        userId
+      }
+    });
+
+    if (!phoneRecord) {
+      return res.status(404).json({ success: false, message: 'Telefone não encontrado na sua carteira.' });
+    }
+
+    if (phoneRecord.codigoOtp !== code || !phoneRecord.otpExpires || phoneRecord.otpExpires < new Date()) {
+      return res.status(400).json({ success: false, message: 'Código de verificação inválido ou expirado.' });
+    }
+
+    await prisma.userPhone.update({
+      where: { id: phoneId },
+      data: {
+        isVerified: true,
+        codigoOtp: null,
+        otpExpires: null
+      }
+    });
+
+    res.status(200).json({ success: true, message: 'Telefone verificado com sucesso na sua carteira!' });
+  } catch (error) {
+    console.error('[POST /api/user/phones/verify] Erro:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao confirmar verificação.' });
+  }
+});
+
+// Remover telefone da carteira
+app.delete('/api/user/phones/:id', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const phoneId = req.params.id;
+
+    const phoneRecord = await prisma.userPhone.findFirst({
+      where: {
+        id: phoneId,
+        userId
+      }
+    });
+
+    if (!phoneRecord) {
+      return res.status(404).json({ success: false, message: 'Telefone não encontrado na sua carteira.' });
+    }
+
+    await prisma.userPhone.delete({
+      where: { id: phoneId }
+    });
+
+    res.status(200).json({ success: true, message: 'Telefone removido com sucesso da sua carteira!' });
+  } catch (error) {
+    console.error('[DELETE /api/user/phones/:id] Erro:', error);
+    res.status(500).json({ success: false, message: 'Erro interno ao processar remoção.' });
+  }
+});
+
 // Rota para atualizar os dados cadastrais (perfil) do usuário
 app.put('/api/user/profile', authMiddleware, async (req, res) => {
   try {
@@ -851,7 +1002,9 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
         trialEndsAt: true,
         subscriptionEndsAt: true,
         createdAt: true,
-        planType: true
+        planType: true,
+        phones: true,
+        profiles: true
       }
     });
     if (!user) {
@@ -879,7 +1032,9 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
         trialEndsAt: user.trialEndsAt,
         subscriptionEndsAt: user.subscriptionEndsAt,
         createdAt: user.createdAt,
-        planType: user.planType
+        planType: user.planType,
+        profiles: user.profiles || [],
+        phones: user.phones || []
       }
     });
   } catch (error) {

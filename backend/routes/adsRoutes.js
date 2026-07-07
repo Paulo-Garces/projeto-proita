@@ -328,10 +328,31 @@ module.exports = (prisma) => {
         socialLinksToSave = value;
       }
 
-      const resolvedServicePhone = pickFirstNonEmptyString(servicePhone, telefone) ?? null;
+      const finalPhone = telefoneComercial ? convertToInternationalPhone(pickOptionalProfileString(telefoneComercial)) : null;
+
+      if (finalPhone) {
+        const cleanPhone = finalPhone.replace(/\D/g, '');
+        const isPhoneVerified = await prisma.userPhone.findFirst({
+          where: {
+            userId,
+            isVerified: true,
+            OR: [
+              { numero: finalPhone },
+              { numero: cleanPhone },
+              { numero: `+${finalPhone}` },
+              { numero: `+${cleanPhone}` },
+              { numero: telefoneComercial.trim() }
+            ]
+          }
+        });
+        if (!isPhoneVerified) {
+          return res.status(400).json({ success: false, message: 'O telefone comercial fornecido precisa estar verificado na sua carteira de telefones.' });
+        }
+      }
+
+      const resolvedServicePhone = finalPhone || (pickFirstNonEmptyString(servicePhone, telefone) ?? null);
       const resolvedServiceBairro = pickFirstNonEmptyString(serviceBairro, bairro) ?? null;
-      const profileWhatsapp =
-        pickFirstNonEmptyString(whatsapp, servicePhone, telefone) ?? null;
+      const profileWhatsapp = finalPhone || (pickFirstNonEmptyString(whatsapp, servicePhone, telefone) ?? null);
 
       // ── Gera o próximo Código de Referência sequencial (PRO-001, PRO-002...) ──
       const lastProfile = await prisma.profile.findFirst({
@@ -380,7 +401,8 @@ module.exports = (prisma) => {
           servicePhone: resolvedServicePhone,
           serviceBairro: resolvedServiceBairro,
           exibirEnderecoCompleto: exibirEnderecoCompleto !== undefined ? exibirEnderecoCompleto : true,
-          telefoneComercial: convertToInternationalPhone(pickOptionalProfileString(telefoneComercial)),
+          telefoneComercial: finalPhone,
+          telefoneComercialVerificado: finalPhone ? true : false,
           fotoAnuncioUrl: pickOptionalProfileString(fotoAnuncioUrl),
           fotoAnuncioFileId: pickOptionalProfileString(fotoAnuncioFileId),
           capaUrl: pickOptionalProfileString(capaUrl),
@@ -454,6 +476,26 @@ module.exports = (prisma) => {
       
       const incomingPhone = telefoneComercial !== undefined ? convertToInternationalPhone(pickOptionalProfileString(telefoneComercial)) : undefined;
       const isChangingPhone = incomingPhone !== undefined && incomingPhone !== existing.telefoneComercial;
+
+      if (incomingPhone) {
+        const cleanPhone = incomingPhone.replace(/\D/g, '');
+        const isPhoneVerified = await prisma.userPhone.findFirst({
+          where: {
+            userId,
+            isVerified: true,
+            OR: [
+              { numero: incomingPhone },
+              { numero: cleanPhone },
+              { numero: `+${incomingPhone}` },
+              { numero: `+${cleanPhone}` },
+              { numero: telefoneComercial.trim() }
+            ]
+          }
+        });
+        if (!isPhoneVerified) {
+          return res.status(400).json({ success: false, message: 'O telefone comercial fornecido precisa estar verificado na sua carteira de telefones.' });
+        }
+      }
 
       if (isChangingName || isChangingPhone) {
         if (existing.lastNamePhoneUpdate) {
@@ -537,7 +579,9 @@ module.exports = (prisma) => {
           ...(exibirEnderecoCompleto !== undefined && { exibirEnderecoCompleto }),
           ...(telefoneComercial !== undefined && {
             telefoneComercial: convertToInternationalPhone(pickOptionalProfileString(telefoneComercial)),
-            ...(existing.telefoneComercial !== convertToInternationalPhone(pickOptionalProfileString(telefoneComercial)) && { telefoneComercialVerificado: false })
+            telefoneComercialVerificado: true,
+            servicePhone: convertToInternationalPhone(pickOptionalProfileString(telefoneComercial)),
+            whatsapp: convertToInternationalPhone(pickOptionalProfileString(telefoneComercial))
           }),
           ...(fotoAnuncioUrl !== undefined && { fotoAnuncioUrl: pickOptionalProfileString(fotoAnuncioUrl) }),
           ...(fotoAnuncioFileId !== undefined && { fotoAnuncioFileId: pickOptionalProfileString(fotoAnuncioFileId) }),

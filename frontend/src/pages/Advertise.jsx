@@ -1,5 +1,5 @@
 import { useState, useContext, useRef, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 import imageCompression from 'browser-image-compression';
@@ -205,11 +205,12 @@ export default function Advertise() {
         const fullCadName = [user.nome, user.sobrenome].filter(Boolean).join(' ').trim();
         setNomeExibicao(fullCadName);
       }
-      if (!telefoneComercial && user.telefone) {
-        setTelefoneComercial(formatPhone(user.telefone));
+      const verifiedPhones = user.phones?.filter(p => p.isVerified) || [];
+      if (!telefoneComercial && verifiedPhones.length > 0) {
+        setTelefoneComercial(formatPhone(verifiedPhones[0].numero));
       }
     }
-  }, [user]);
+  }, [user, telefoneComercial]);
 
   // Step 2 states
   const [atividadePrincipal, setAtividadePrincipal] = useState('');
@@ -989,15 +990,31 @@ export default function Advertise() {
                 {/* Linha 2: WhatsApp / Telefone Comercial do Anúncio */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">WhatsApp / Telefone Comercial do Anúncio</label>
-                  <input
-                    type="text"
-                    value={telefoneComercial}
-                    onChange={(e) => setTelefoneComercial(formatPhone(e.target.value))}
-                    placeholder="Ex: (88) 99999-9999"
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
-                  />
-                  <p className="text-xs text-slate-500 mt-1 hidden md:block">
-                    <span className="font-semibold text-primary">Estas são as informações públicas do seu anúncio.</span> Insira o número de contato profissional do anúncio. O número do seu cadastro continuará privado.
+                  {user?.phones?.filter(p => p.isVerified).length > 0 ? (
+                    <select
+                      value={telefoneComercial}
+                      onChange={(e) => setTelefoneComercial(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
+                    >
+                      {user.phones.filter(p => p.isVerified).map((p) => (
+                        <option key={p.id} value={formatPhone(p.numero)}>
+                          {formatPhone(p.numero)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs font-semibold">
+                      ⚠️ Você não possui telefones verificados na sua carteira. 
+                      Para criar um anúncio, você precisa cadastrar e verificar ao menos um telefone na aba <strong>Segurança</strong> do seu painel.
+                    </div>
+                  )}
+                  <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
+                    <span>
+                      <span className="font-semibold text-primary">Estas são as informações públicas do seu anúncio.</span>
+                    </span>
+                    <Link to="/dashboard?tab=security" className="text-primary hover:underline font-bold shrink-0">
+                      + Adicionar novo telefone
+                    </Link>
                   </p>
                 </div>
               </div>

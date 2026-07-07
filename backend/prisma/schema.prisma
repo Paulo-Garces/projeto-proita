@@ -45,6 +45,18 @@ model User {
   profiles                   Profile[]
   reviews                    Review[]
   favoriteProfiles           Profile[]      @relation("UserFavorites")
+  phones                     UserPhone[]
+}
+
+model UserPhone {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  numero      String
+  isVerified  Boolean   @default(false)
+  codigoOtp   String?
+  otpExpires  DateTime?
+  createdAt   DateTime  @default(now())
 }
 
 model Profile {
