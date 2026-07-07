@@ -123,6 +123,16 @@ export default function Dicas() {
           </div>
         </div>
 
+        {/* Prevenção contra Spam */}
+        <div className="bg-white border border-slate-200 border-l-4 border-l-blue-500 p-5 rounded-2xl shadow-sm text-left">
+          <h4 className="font-extrabold text-slate-800 text-base leading-snug flex items-center gap-2 mb-2">
+            🛡️ Prevenção contra Spam
+          </h4>
+          <p className="text-slate-500 text-xs md:text-sm leading-relaxed font-medium">
+            Como seu telefone fica público para atrair clientes, robôs de outras empresas podem tentar capturá-lo. Fique tranquilo: o proITA possui travas de segurança contra robôs, não vende suas informações e nossa equipe nunca entrará em contato pelo WhatsApp para oferecer produtos de outras empresas. Se receber mensagens estranhas, apenas ignore.
+          </p>
+        </div>
+
         {/* Link de retorno */}
         <div className="text-center pt-4">
           <Link to="/search" className="inline-flex items-center gap-2 text-primary font-bold hover:text-primary-hover transition-colors text-base">

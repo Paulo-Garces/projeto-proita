@@ -563,6 +563,12 @@ export default function Auth() {
               <button type="submit" className="w-full flex justify-center py-4 px-4 border border-transparent rounded-xl shadow-md text-base font-bold text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all mt-2">
                 {isLogin ? 'Entrar' : 'Criar Conta'}
               </button>
+
+              {!isLogin && (
+                <p className="text-xs text-slate-500 text-center mt-3 leading-relaxed">
+                  🔒 Privacidade garantida: Seus dados estão seguros. Não enviamos spam e não compartilhamos seu contato com empresas de marketing.
+                </p>
+              )}
             </form>
 
             <div className="text-center mt-6">

@@ -2619,6 +2619,9 @@ export default function Dashboard() {
                           </button>
                         )}
                       </div>
+                      <p className="text-xs text-slate-500 mt-1.5 flex items-center gap-1 leading-relaxed">
+                        🔒 Seu número ficará visível publicamente no seu anúncio. O proITA não vende dados e nunca enviará ofertas de terceiros pelo seu WhatsApp.
+                      </p>
 
                       {/* Fluxo de Verificação (Código) */}
                       {user?.telefone && !(user.telefoneVerificado || user.isPhoneVerified) && (

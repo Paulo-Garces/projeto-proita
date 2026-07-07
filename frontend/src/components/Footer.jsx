@@ -50,8 +50,16 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Coluna 2 — reservada (mantida vazia para preservar layout de 4 colunas) */}
-          <div></div>
+          {/* Sobre o proITA */}
+          <div>
+            <h3 className="text-white font-semibold mb-4 tracking-wide uppercase text-sm">Sobre</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              O proITA é o Guia dos Três Climas de Itapipoca, facilitando o contato direto entre clientes e prestadores de serviços de forma segura e transparente. <Link to="/sobre" className="text-indigo-400 hover:underline">Saiba mais</Link>
+            </p>
+            <p className="text-xs text-slate-400 mt-4 leading-relaxed">
+              🔒 Segurança: O proITA não realiza contato proativo por WhatsApp para venda de serviços de terceiros e não autoriza a extração de dados da plataforma.
+            </p>
+          </div>
 
           {/* Para Profissionais */}
           <div>
