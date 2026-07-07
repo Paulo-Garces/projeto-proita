@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/profile/:slug", "destination": "/api/profile?slug=$slug" },
+    { "source": "/profile/:slug", "destination": "/api/profile" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
