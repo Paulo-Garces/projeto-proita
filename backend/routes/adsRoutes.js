@@ -149,11 +149,17 @@ module.exports = (prisma) => {
             OR: [
               {
                 planStatus: { in: ['ATIVO', 'BASICO'] },
-                subscriptionEndsAt: { gte: now }
+                OR: [
+                  { subscriptionEndsAt: null },
+                  { subscriptionEndsAt: { gte: now } }
+                ]
               },
               {
                 planStatus: 'DEGUSTACAO',
-                trialEndsAt: { gte: now }
+                OR: [
+                  { trialEndsAt: null },
+                  { trialEndsAt: { gte: now } }
+                ]
               }
             ]
           }

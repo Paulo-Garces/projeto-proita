@@ -3089,9 +3089,20 @@ export default function Dashboard() {
                         let planId = 'basico_anual';
 
                         const now = new Date();
-                        const trialEnds = user?.trialEndsAt ? new Date(user.trialEndsAt) : null;
+                        const subEnds = user?.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) : null;
 
-                        if (status === 'ATIVO') {
+                        const isTrial = status === 'DEGUSTACAO' || user?.planType === 'TESTE';
+
+                        if (isTrial) {
+                          const isTrialActive = !subEnds || now <= subEnds;
+                          statusBadgeColor = isTrialActive 
+                            ? 'bg-amber-50 border-amber-200 text-amber-700' 
+                            : 'bg-red-50 border-red-200 text-red-700';
+                          statusText = isTrialActive ? 'TESTE ATIVO' : 'Expirado';
+                          planName = 'Período de Teste (30 Dias)';
+                          planPrice = '0,00';
+                          planId = 'teste';
+                        } else if (status === 'ATIVO') {
                           statusBadgeColor = 'bg-emerald-50 border-emerald-200 text-emerald-700';
                           const isPatrocinador = user?.planType?.includes('PATROCINADOR');
                           const isBienal = user?.planType?.includes('BIENAL');
@@ -3113,15 +3124,6 @@ export default function Dashboard() {
                         } else if (status === 'BASICO') {
                           statusBadgeColor = 'bg-sky-50 border-sky-200 text-sky-700';
                           statusText = 'Profissional Ativo';
-                          planName = 'Plano Profissional Anual';
-                          planPrice = '44,90';
-                          planId = 'basico_anual';
-                        } else if (status === 'DEGUSTACAO') {
-                          statusBadgeColor = 'bg-amber-50 border-amber-200 text-amber-700';
-                          statusText = 'Degustação (30 dias grátis)';
-                          if (trialEnds && now <= trialEnds) {
-                            statusText = 'Ativo (Período de Avaliação)';
-                          }
                           planName = 'Plano Profissional Anual';
                           planPrice = '44,90';
                           planId = 'basico_anual';
@@ -3560,20 +3562,31 @@ export default function Dashboard() {
                                 </span>
                               </div>
 
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-2">
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 py-2">
                                 <div className="space-y-1">
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Início da Assinatura / Criação da Conta</span>
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Criação da Conta</span>
                                   <span className="font-semibold text-slate-800 text-sm md:text-base">
-                                    {formatDateBR(user?.createdAt || user?.dataCriacao || user?.created_at)}
+                                    {formatDateBR(user?.createdAt)}
                                   </span>
                                 </div>
 
                                 <div className="space-y-1">
-                                  {status === 'DEGUSTACAO' ? (
+                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Início da Assinatura</span>
+                                  <span className="font-semibold text-slate-800 text-sm md:text-base">
+                                    {user?.subscriptionStartsAt 
+                                      ? formatDateBR(user.subscriptionStartsAt) 
+                                      : (isTrial || status === 'ATIVO' || status === 'BASICO' || user?.subscriptionEndsAt)
+                                        ? formatDateBR(user?.createdAt) 
+                                        : 'Aguardando ativação'}
+                                  </span>
+                                </div>
+
+                                <div className="space-y-1">
+                                  {isTrial ? (
                                     <>
                                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Fim do Teste Grátis</span>
                                       <span className="font-semibold text-slate-800 text-sm md:text-base text-amber-600">
-                                        {formatDateBR(user?.trialEndsAt)}
+                                        {formatDateBR(user?.subscriptionEndsAt)}
                                       </span>
                                     </>
                                   ) : (
@@ -3588,10 +3601,10 @@ export default function Dashboard() {
                               </div>
 
                               {/* Barra de Progresso do Período de Avaliação */}
-                              {trialEnds && now <= trialEnds && (() => {
+                              {isTrial && subEnds && now <= subEnds && (() => {
                                 const totalTrialDays = 30;
                                 const msPerDay = 1000 * 60 * 60 * 24;
-                                const daysRemaining = Math.max(0, Math.ceil((trialEnds - now) / msPerDay));
+                                const daysRemaining = Math.max(0, Math.ceil((subEnds - now) / msPerDay));
                                 const progressPercent = Math.max(0, Math.min(100, (daysRemaining / totalTrialDays) * 100));
 
                                 const getBarColor = (days) => {

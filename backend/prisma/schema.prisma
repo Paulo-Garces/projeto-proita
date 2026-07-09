@@ -33,6 +33,7 @@ model User {
   telefoneVerificado         Boolean        @default(false)
   planStatus                 String         @default("INATIVO")
   subscriptionEndsAt         DateTime?
+  subscriptionStartsAt       DateTime?
   trialEndsAt                DateTime?
   cpfCnpj                    String?
   pendingNossoNumero         String?        @unique

@@ -161,6 +161,7 @@ module.exports = (prisma) => {
         role: user.role,
         planStatus: user.planStatus,
         subscriptionEndsAt: user.subscriptionEndsAt,
+        subscriptionStartsAt: user.subscriptionStartsAt || null,
         trialEndsAt: user.trialEndsAt,
         planType: user.planType || null,
         hasAd: !!(user.profiles && user.profiles.length > 0),
@@ -675,7 +676,7 @@ module.exports = (prisma) => {
   // Rota 13: Renovar / Estender Plano de um profissional manualmente
   router.patch('/users/:id/extend', checkAdmin, async (req, res) => {
     const { id } = req.params;
-    const { option, customDate, planType } = req.body;
+    const { option, customDate, planType, subscriptionStartsAt } = req.body;
 
     if (!option) {
       return res.status(400).json({ success: false, message: 'O campo option é obrigatório.' });
@@ -684,7 +685,7 @@ module.exports = (prisma) => {
     try {
       const user = await prisma.user.findUnique({
         where: { id },
-        select: { id: true, planStatus: true, subscriptionEndsAt: true, trialEndsAt: true, nome: true }
+        select: { id: true, planStatus: true, subscriptionEndsAt: true, trialEndsAt: true, subscriptionStartsAt: true, nome: true }
       });
 
       if (!user) {
@@ -717,13 +718,22 @@ module.exports = (prisma) => {
       const isDateActive = newExpirationDate > new Date();
       const planStatus = isDateActive ? 'ATIVO' : 'INATIVO';
 
+      let parsedStartsAt = undefined;
+      if (subscriptionStartsAt !== undefined) {
+        parsedStartsAt = subscriptionStartsAt === null || subscriptionStartsAt === '' ? null : new Date(subscriptionStartsAt);
+      } else if (!user.subscriptionStartsAt && (option === '30d' || option === '365d')) {
+        // Se for uma ativação de plano manual via botão rápido e o início da assinatura não estava definido, define como hoje
+        parsedStartsAt = new Date();
+      }
+
       const updatedUser = await prisma.user.update({
         where: { id },
         data: {
           planStatus,
           subscriptionEndsAt: newExpirationDate,
           trialEndsAt: null, // Limpa trial se houver para priorizar o plano ativo
-          planType: planType || null
+          planType: planType || null,
+          subscriptionStartsAt: parsedStartsAt
         }
       });
 
@@ -733,6 +743,7 @@ module.exports = (prisma) => {
         data: {
           planStatus: updatedUser.planStatus,
           subscriptionEndsAt: updatedUser.subscriptionEndsAt,
+          subscriptionStartsAt: updatedUser.subscriptionStartsAt,
           planType: updatedUser.planType
         }
       });

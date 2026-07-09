@@ -1298,7 +1298,12 @@ function BroadcastModal({ token, onSuccess, onClose }) {
 
 function ExtendPlanModal({ user, token, onSuccess, onClose }) {
   const [option, setOption] = useState('30d'); // '30d', '365d', 'custom'
-  const [customDate, setCustomDate] = useState('');
+  const [customStartDate, setCustomStartDate] = useState(
+    user.subscriptionStartsAt ? new Date(user.subscriptionStartsAt).toISOString().split('T')[0] : ''
+  );
+  const [customEndDate, setCustomEndDate] = useState(
+    user.subscriptionEndsAt ? new Date(user.subscriptionEndsAt).toISOString().split('T')[0] : ''
+  );
   const [planType, setPlanType] = useState(user.planType || 'PRO_ANUAL');
   const [loading, setLoading] = useState(false);
   const [localError, setLocalError] = useState('');
@@ -1314,12 +1319,17 @@ function ExtendPlanModal({ user, token, onSuccess, onClose }) {
     } else if (option === '365d') {
       requestBody = { option: '365d', planType };
     } else {
-      if (!customDate) {
-        setLocalError('Por favor, selecione uma data customizada.');
+      if (!customEndDate) {
+        setLocalError('Por favor, selecione uma data de vencimento.');
         setLoading(false);
         return;
       }
-      requestBody = { option: 'custom', customDate, planType };
+      requestBody = { 
+        option: 'custom', 
+        customDate: customEndDate, 
+        planType, 
+        subscriptionStartsAt: customStartDate || null 
+      };
     }
 
     try {
@@ -1453,14 +1463,26 @@ function ExtendPlanModal({ user, token, onSuccess, onClose }) {
                   </div>
 
                   {option === 'custom' && (
-                    <div className="mt-3 pl-7 animate-in slide-in-from-top-1 duration-150">
-                      <input
-                        type="date"
-                        value={customDate}
-                        onChange={(e) => setCustomDate(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-white"
-                        required
-                      />
+                    <div className="mt-3 pl-7 space-y-3 animate-in slide-in-from-top-1 duration-150">
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Início da Assinatura</label>
+                        <input
+                          type="date"
+                          value={customStartDate}
+                          onChange={(e) => setCustomStartDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-white text-slate-700 font-medium"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fim da Assinatura (Vencimento)</label>
+                        <input
+                          type="date"
+                          value={customEndDate}
+                          onChange={(e) => setCustomEndDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-white text-slate-700 font-medium"
+                          required
+                        />
+                      </div>
                     </div>
                   )}
                 </label>

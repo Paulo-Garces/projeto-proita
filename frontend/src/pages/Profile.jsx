@@ -466,9 +466,11 @@ export default function Profile() {
     }
   };
 
-  const fetchReviews = async () => {
+  const fetchReviews = async (profileId) => {
+    const targetId = profileId || id;
+    if (!targetId) return;
     try {
-      const res = await fetch(`${API_URL}/api/reviews/${id}`);
+      const res = await fetch(`${API_URL}/api/reviews/${targetId}`);
       const data = await res.json();
       if (res.ok && data.success) {
         setReviews(data.data);
@@ -480,9 +482,11 @@ export default function Profile() {
     }
   };
 
-  const fetchServices = async () => {
+  const fetchServices = async (profileId) => {
+    const targetId = profileId || id;
+    if (!targetId) return;
     try {
-      const res = await fetch(`${API_URL}/api/services/${id}`);
+      const res = await fetch(`${API_URL}/api/services/${targetId}`);
       const data = await res.json();
       if (res.ok && data.success) {
         setServices(data.data);
@@ -570,6 +574,10 @@ export default function Profile() {
             fotoAnuncioUrl: profile.fotoAnuncioUrl || null,
           });
 
+          // Buscar avaliações e serviços utilizando o UUID correto
+          fetchReviews(profile.id);
+          fetchServices(profile.id);
+
           // Dispara tracking silencioso de visualização
           fetch(`${API_URL}/api/ads/${profile.id}/track`, {
             method: 'POST',
@@ -584,8 +592,6 @@ export default function Profile() {
       }
     };
     fetchProfile();
-    fetchReviews();
-    fetchServices();
   }, [id]);
 
   if (isLoading) {
@@ -827,6 +833,11 @@ export default function Profile() {
     e.preventDefault();
     if (!token) return;
 
+    if (!professional?.id) {
+      setReviewError('Anúncio não encontrado.');
+      return;
+    }
+
     setIsSubmittingReview(true);
     setReviewError(null);
     setReviewSuccess(null);
@@ -841,7 +852,7 @@ export default function Profile() {
         body: JSON.stringify({
           rating: formRating,
           comment: formComment,
-          profileId: id
+          profileId: professional.id
         })
       });
 
@@ -851,7 +862,7 @@ export default function Profile() {
         setReviewSuccess('Avaliação enviada com sucesso!');
         setFormComment('');
         setFormRating(5);
-        fetchReviews(); // Recarrega os depoimentos atualizados
+        fetchReviews(professional.id); // Recarrega os depoimentos atualizados
 
         if (data.profileStats) {
           setProfessional(prev => ({
@@ -1440,7 +1451,7 @@ export default function Profile() {
                 </div>
 
                 {/* Formulário de Avaliação (Disponível apenas para logados que não são os donos do anúncio) */}
-                {token && user && user.id !== professional.userId && (
+                {token && user && professional?.id && user.id !== professional.userId && (
                   <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-100 shadow-sm mb-8">
                     <h3 className="text-lg font-bold text-slate-900 mb-4">Deixe sua Avaliação</h3>
                     

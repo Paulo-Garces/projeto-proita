@@ -266,6 +266,8 @@ app.post('/api/login', async (req, res) => {
         planStatus: user.planStatus,
         trialEndsAt: user.trialEndsAt,
         subscriptionEndsAt: user.subscriptionEndsAt,
+        subscriptionStartsAt: user.subscriptionStartsAt || null,
+        createdAt: user.createdAt,
         planType: user.planType
       }
     });
@@ -459,6 +461,8 @@ app.post('/api/auth/google', async (req, res) => {
         planStatus: user.planStatus,
         trialEndsAt: user.trialEndsAt,
         subscriptionEndsAt: user.subscriptionEndsAt,
+        subscriptionStartsAt: user.subscriptionStartsAt || null,
+        createdAt: user.createdAt,
         planType: user.planType
       }
     });
@@ -1001,6 +1005,7 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
         planStatus: true,
         trialEndsAt: true,
         subscriptionEndsAt: true,
+        subscriptionStartsAt: true,
         createdAt: true,
         planType: true,
         phones: true,
@@ -1031,6 +1036,7 @@ app.get('/api/auth/me', authMiddleware, async (req, res) => {
         planStatus: user.planStatus,
         trialEndsAt: user.trialEndsAt,
         subscriptionEndsAt: user.subscriptionEndsAt,
+        subscriptionStartsAt: user.subscriptionStartsAt || null,
         createdAt: user.createdAt,
         planType: user.planType,
         profiles: user.profiles || [],

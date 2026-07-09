@@ -1565,11 +1565,20 @@ export default function Advertise() {
                 </div>
 
                 {/* Termos */}
-                <div className="pt-6 border-t border-slate-100 flex items-start gap-3">
-                  <input type="checkbox" required id="terms" className="mt-1 h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary" />
-                  <label htmlFor="terms" className="text-sm text-slate-600 leading-relaxed cursor-pointer">
-                    Concordo com os <a href="/termos" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Termos de Uso</a> e <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Política de Privacidade</a> do proITA, e confirmo que as informações fornecidas são verdadeiras.
-                  </label>
+                <div className="pt-6 border-t border-slate-100 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <input type="checkbox" required id="terms" className="mt-1 h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary" />
+                    <label htmlFor="terms" className="text-sm text-slate-600 leading-relaxed cursor-pointer">
+                      Concordo com os <a href="/termos" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Termos de Uso</a> e <a href="/privacidade" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Política de Privacidade</a> do proITA, e confirmo que as informações fornecidas são verdadeiras.
+                    </label>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <input type="checkbox" required id="declaredAge" className="mt-1 h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary" />
+                    <label htmlFor="declaredAge" className="text-sm text-slate-600 leading-relaxed cursor-pointer">
+                      Declaro sob as penas da lei que sou maior de 18 anos, ou possuo mais de 16 anos e expressa autorização dos meus responsáveis legais.
+                    </label>
+                  </div>
                 </div>
 
                 {adCount >= 1 && (
