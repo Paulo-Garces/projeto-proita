@@ -40,10 +40,10 @@ Usuário Cadastrado: pessoa física que realizou cadastro gratuito na plataforma
 Anunciante: pessoa física, MEI, autônomo ou microempresa que contrata plano pago ou gratuito para exibir perfil e anúncios de prestação de serviços.
 Perfil: página pública do Anunciante contendo dados cadastrais, descrição, portfólio, horários e estatísticas.
 Anúncio: publicação individual de serviço vinculada ao perfil do Anunciante.
-Plano Pro Anual: contratação por 12 meses ao valor de R$ 35,90, após período de avaliação gratuita.
-Plano Pro Bienal: contratação por 24 meses ao valor de R$ 59,90, após período de avaliação gratuita.
-Plano Patrocinador Anual: contratação por 12 meses ao valor de R$ 45,90, com todos os recursos do Plano Pro acrescidos do espaço de banner patrocinado.
-Plano Patrocinador Bienal: contratação por 24 meses ao valor de R$ 79,90, com todos os recursos do Plano Patrocinador Anual e desconto bienal.
+Plano Pro Anual: contratação por 12 meses ao valor de R$ 44,90, após período de avaliação gratuita.
+Plano Pro Bienal: contratação por 24 meses ao valor de R$ 74,90, após período de avaliação gratuita.
+Plano Patrocinador Anual: contratação por 12 meses ao valor de R$ 54,90, com todos os recursos do Plano Pro acrescidos do espaço de banner patrocinado.
+Plano Patrocinador Bienal: contratação por 24 meses ao valor de R$ 94,90, com todos os recursos do Plano Patrocinador Anual e desconto bienal.
 Período de Avaliação Gratuita: 30 dias corridos de acesso ao Plano Patrocinador completo, sem custo e sem cobrança automática, contados da criação do perfil.
 Banner Patrocinado: espaço visual exclusivo disponível nos Planos Patrocinador, dentro do card e micropágina do Anunciante, para veiculação de até 3 imagens de terceiros ou do próprio Anunciante, cujo conteúdo é de responsabilidade exclusiva do Anunciante.
 Micropágina: página individual do Anunciante com descrição completa, portfólio de até 8 fotos, foto de perfil, capa, horários, redes sociais e catálogo de serviços.
@@ -91,7 +91,7 @@ Todo novo Anunciante tem direito a 30 (trinta) dias corridos de uso gratuito do 
 4.2 Planos Disponíveis
 
 Recurso	Pro Anual	Pro Bienal	Patrocin. Anual	Patrocin. Bienal
-Valor	R$ 35,90	R$ 59,90	R$ 45,90	R$ 79,90
+Valor	R$ 44,90	R$ 74,90	R$ 54,90	R$ 94,90
 Vigência	12 meses	24 meses	12 meses	24 meses
 Anúncios simultâneos	2	2	2	2
 Fotos portfólio/anúncio	8	8	8	8

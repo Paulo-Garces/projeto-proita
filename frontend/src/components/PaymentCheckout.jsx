@@ -19,25 +19,25 @@ const PLANS = {
   basico_anual: { 
     id: 'basico_anual', 
     name: 'Plano Profissional Anual', 
-    price: '35,90',
+    price: '44,90',
     description: 'Selo profissional verificado e portfólio completo.' 
   },
   basico_bienal: { 
     id: 'basico_bienal', 
     name: 'Plano Profissional Bienal', 
-    price: '59,90',
+    price: '74,90',
     description: 'Selo profissional verificado e portfólio completo.' 
   },
   patrocinador_anual: { 
     id: 'patrocinador_anual', 
     name: 'Plano Patrocinador Anual', 
-    price: '45,90',
+    price: '54,90',
     description: 'Destaque prioritário + revenda de espaço publicitário.' 
   },
   patrocinador_bienal: { 
     id: 'patrocinador_bienal', 
     name: 'Plano Patrocinador Bienal', 
-    price: '79,90',
+    price: '94,90',
     description: 'Destaque prioritário + revenda de espaço publicitário.' 
   },
 };
@@ -55,7 +55,7 @@ const PLANS = {
 const PaymentCheckout = ({
   planId = 'basico_anual',
   planName = 'Plano Profissional Anual',
-  planPrice = '35,90',
+  planPrice = '44,90',
   userStatus = 'first_subscription',
   onClose = null,
 }) => {
@@ -391,10 +391,10 @@ const PaymentCheckout = ({
                   disabled={pixGenerated || boletoGenerated || loading}
                   className="w-full bg-slate-900 text-white rounded-lg border border-slate-700 px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 focus:outline-none transition-all disabled:opacity-50 cursor-pointer"
                 >
-                  <option value="basico_anual">Profissional Anual (R$ 35,90/ano)</option>
-                  <option value="basico_bienal">Profissional Bienal (R$ 59,90/2 anos)</option>
-                  <option value="patrocinador_anual">Patrocinador Anual (R$ 45,90/ano)</option>
-                  <option value="patrocinador_bienal">Patrocinador Bienal (R$ 79,90/2 anos)</option>
+                  <option value="basico_anual">Profissional Anual (R$ 44,90/ano)</option>
+                  <option value="basico_bienal">Profissional Bienal (R$ 74,90/2 anos)</option>
+                  <option value="patrocinador_anual">Patrocinador Anual (R$ 54,90/ano)</option>
+                  <option value="patrocinador_bienal">Patrocinador Bienal (R$ 94,90/2 anos)</option>
                 </select>
               </div>
 

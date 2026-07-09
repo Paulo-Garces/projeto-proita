@@ -179,10 +179,10 @@ export default function Terms() {
               <li><strong>Anunciante:</strong> pessoa física, MEI, autônomo ou microempresa que contrata plano pago ou gratuito para exibir perfil e anúncios de prestação de serviços.</li>
               <li><strong>Perfil:</strong> página pública do Anunciante contendo dados cadastrais, descrição, portfólio, horários e estatísticas.</li>
               <li><strong>Anúncio:</strong> publicação individual de serviço vinculada ao perfil do Anunciante.</li>
-              <li><strong>Plano Pro Anual:</strong> contratação por 12 meses ao valor de R$ 35,90, após período de avaliação gratuita.</li>
-              <li><strong>Plano Pro Bienal:</strong> contratação por 24 meses ao valor de R$ 59,90, após período de avaliação gratuita.</li>
-              <li><strong>Plano Patrocinador Anual:</strong> contratação por 12 meses ao valor de R$ 45,90, com todos os recursos do Plano Pro acrescidos do espaço de banner patrocinado.</li>
-              <li><strong>Plano Patrocinador Bienal:</strong> contratação por 24 meses ao valor de R$ 79,90, com todos os recursos do Plano Patrocinador Anual e desconto bienal.</li>
+              <li><strong>Plano Pro Anual:</strong> contratação por 12 meses ao valor de R$ 44,90, após período de avaliação gratuita.</li>
+              <li><strong>Plano Pro Bienal:</strong> contratação por 24 meses ao valor de R$ 74,90, após período de avaliação gratuita.</li>
+              <li><strong>Plano Patrocinador Anual:</strong> contratação por 12 meses ao valor de R$ 54,90, com todos os recursos do Plano Pro acrescidos do espaço de banner patrocinado.</li>
+              <li><strong>Plano Patrocinador Bienal:</strong> contratação por 24 meses ao valor de R$ 94,90, com todos os recursos do Plano Patrocinador Anual e desconto bienal.</li>
               <li><strong>Período de Avaliação Gratuita:</strong> 30 dias corridos de acesso ao Plano Patrocinador completo, sem custo e sem cobrança automática, contados da criação do perfil.</li>
               <li><strong>Banner Patrocinado:</strong> espaço visual exclusivo disponível nos Planos Patrocinador, dentro do card e micropágina do Anunciante, para veiculação de até 3 imagens de terceiros ou do próprio Anunciante, cujo conteúdo é de responsabilidade exclusiva do Anunciante.</li>
               <li><strong>Micropágina:</strong> página individual do Anunciante com descrição completa, portfólio de até 8 fotos, foto de perfil, capa, horários, redes sociais e catálogo de serviços.</li>
@@ -274,10 +274,10 @@ export default function Terms() {
                 <tbody className="bg-white divide-y divide-slate-200">
                   <tr className="hover:bg-slate-50/50">
                     <td className="px-4 py-2.5 font-medium text-slate-700">Valor</td>
-                    <td className="px-4 py-2.5 text-slate-600">R$ 35,90</td>
-                    <td className="px-4 py-2.5 text-slate-600">R$ 59,90</td>
-                    <td className="px-4 py-2.5 text-slate-600">R$ 45,90</td>
-                    <td className="px-4 py-2.5 text-slate-600">R$ 79,90</td>
+                    <td className="px-4 py-2.5 text-slate-600">R$ 44,90</td>
+                    <td className="px-4 py-2.5 text-slate-600">R$ 74,90</td>
+                    <td className="px-4 py-2.5 text-slate-600">R$ 54,90</td>
+                    <td className="px-4 py-2.5 text-slate-600">R$ 94,90</td>
                   </tr>
                   <tr className="hover:bg-slate-50/50">
                     <td className="px-4 py-2.5 font-medium text-slate-700">Vigência</td>

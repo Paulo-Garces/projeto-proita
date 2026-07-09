@@ -24,10 +24,10 @@ module.exports = (prisma) => {
   // ── Mapa de Planos → Valores ──────────────────────────────────────────────────
   // Centralizado aqui para evitar manipulação de preço via cliente
   const PLAN_PRICES = {
-    basico_anual:        35.90,
-    basico_bienal:       59.90,
-    patrocinador_anual:  45.90,
-    patrocinador_bienal: 79.90,
+    basico_anual:        44.90,
+    basico_bienal:       74.90,
+    patrocinador_anual:  54.90,
+    patrocinador_bienal: 94.90,
   };
 
   const PLAN_LABELS = {

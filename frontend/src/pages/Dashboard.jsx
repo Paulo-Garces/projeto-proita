@@ -3085,7 +3085,7 @@ export default function Dashboard() {
                         let statusBadgeColor = '';
                         let statusText = '';
                         let planName = 'Plano Profissional Anual';
-                        let planPrice = '35,90';
+                        let planPrice = '44,90';
                         let planId = 'basico_anual';
 
                         const now = new Date();
@@ -3098,12 +3098,12 @@ export default function Dashboard() {
                           
                           if (isPatrocinador) {
                             planName = isBienal ? 'Plano Patrocinador Bienal' : 'Plano Patrocinador Anual';
-                            planPrice = isBienal ? '79,90' : '45,90';
+                            planPrice = isBienal ? '94,90' : '54,90';
                             planId = isBienal ? 'patrocinador_bienal' : 'patrocinador_anual';
                             statusText = isBienal ? 'Patrocinador Ativo (Bienal)' : 'Patrocinador Ativo (Anual)';
                           } else {
                             planName = isBienal ? 'Plano Profissional Bienal' : 'Plano Profissional Anual';
-                            planPrice = isBienal ? '59,90' : '35,90';
+                            planPrice = isBienal ? '74,90' : '44,90';
                             planId = isBienal ? 'basico_bienal' : 'basico_anual';
                             statusText = isBienal ? 'Profissional Ativo (Bienal)' : 'Profissional Ativo (Anual)';
                           }
@@ -3114,7 +3114,7 @@ export default function Dashboard() {
                           statusBadgeColor = 'bg-sky-50 border-sky-200 text-sky-700';
                           statusText = 'Profissional Ativo';
                           planName = 'Plano Profissional Anual';
-                          planPrice = '35,90';
+                          planPrice = '44,90';
                           planId = 'basico_anual';
                         } else if (status === 'DEGUSTACAO') {
                           statusBadgeColor = 'bg-amber-50 border-amber-200 text-amber-700';
@@ -3123,7 +3123,7 @@ export default function Dashboard() {
                             statusText = 'Ativo (Período de Avaliação)';
                           }
                           planName = 'Plano Profissional Anual';
-                          planPrice = '35,90';
+                          planPrice = '44,90';
                           planId = 'basico_anual';
                         } else {
                           statusBadgeColor = 'bg-red-50 border-red-200 text-red-700';

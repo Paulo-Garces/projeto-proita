@@ -2611,8 +2611,13 @@ function FinanceTab({ token }) {
                           : new Date(u.createdAt);
                         const method = i % 2 === 0 ? 'PIX' : 'Cartão';
                         const isPatrocinador = u.planType?.includes('PATROCINADOR') || (u.planStatus === 'ATIVO' && !u.planType);
-                        const planLabel = isPatrocinador ? 'Patrocinador' : 'Profissional';
-                        const price = isPatrocinador ? 45.90 : 35.90;
+                        const isBienal = u.planType?.includes('BIENAL');
+                        const planLabel = isPatrocinador
+                          ? (isBienal ? 'Patrocinador Bienal' : 'Patrocinador Anual')
+                          : (isBienal ? 'Profissional Bienal' : 'Profissional Anual');
+                        const price = isPatrocinador
+                          ? (isBienal ? 94.90 : 54.90)
+                          : (isBienal ? 74.90 : 44.90);
 
                         return (
                           <tr key={u.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">

@@ -425,7 +425,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
                 e.stopPropagation();
                 navigate(`/profile/${professional.slug || professional.id}?tab=parceiros`);
               }}
-              className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-0.5 relative overflow-hidden shadow-2xs select-none cursor-pointer hover:border-primary/30 transition-colors"
+              className="w-full h-full rounded-lg border border-slate-200 bg-slate-50 flex flex-col items-center justify-center relative overflow-hidden shadow-2xs select-none cursor-pointer hover:border-primary/30 transition-colors"
             >
               <div 
                 className="absolute inset-0 bg-cover bg-center blur-[2px] opacity-15 scale-110 pointer-events-none" 
@@ -434,7 +434,7 @@ export default function AdCard({ professional, showEdit = false, onEdit, onDelet
               <img 
                 src={validPartners[currentSponsorIdx].imageUrl} 
                 alt={validPartners[currentSponsorIdx].name || "Patrocinador"} 
-                className="relative z-10 w-full h-full object-contain"
+                className="relative z-10 w-full h-full object-cover"
               />
               <span className="absolute bottom-0 left-0 right-0 text-center bg-slate-900/60 backdrop-blur-[1px] text-white text-[8px] font-bold py-0.5 leading-none z-20">
                 APOIO

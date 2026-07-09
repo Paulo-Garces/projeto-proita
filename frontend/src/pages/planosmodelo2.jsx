@@ -645,10 +645,10 @@
         <p class="desc">Presença profissional completa, com o maior custo-benefício da plataforma.</p>
         <div class="price-row">
           <span class="currency">R$</span>
-          <span class="amount num" id="pro-price">35,90</span>
+          <span class="amount num" id="pro-price">44,90</span>
           <span class="period" id="pro-period">/ano</span>
         </div>
-        <div class="price-month" id="pro-month">Equivalente a <strong>R$2,99/mês</strong></div>
+        <div class="price-month" id="pro-month">Equivalente a <strong>R$3,74/mês</strong></div>
         <ul class="feat">
           <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="var(--serra)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Avaliações e notas completas</li>
           <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="var(--serra)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Portfólio de serviços com fotos</li>
@@ -670,11 +670,11 @@
         <p class="desc">Tudo do Profissional, mais o Espaço Parceiro pra monetizar seu perfil.</p>
         <div class="price-row">
           <span class="currency">R$</span>
-          <span class="amount num" id="patro-price">45,90</span>
+          <span class="amount num" id="patro-price">54,90</span>
           <span class="period" id="patro-period">/ano</span>
         </div>
-        <div class="price-month" id="patro-month">Equivalente a <strong>R$3,82/mês</strong></div>
-        <div class="savings" id="patro-save" style="visibility:hidden;">Economize R$11,90 no plano bienal</div>
+        <div class="price-month" id="patro-month">Equivalente a <strong>R$4,57/mês</strong></div>
+        <div class="savings" id="patro-save" style="visibility:hidden;">Economize R$14,90 no plano bienal</div>
         <ul class="feat">
           <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="var(--serra)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Tudo do plano Profissional</li>
           <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="var(--serra)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Prioridade nos resultados de busca</li>
@@ -782,12 +782,12 @@
 <script>
   const prices = {
     pro: {
-      anual: { price:'35,90', period:'/ano', month:'2,99' },
-      bienal:{ price:'59,90', period:'/2 anos', month:'2,49' }
+      anual: { price:'44,90', period:'/ano', month:'3,74' },
+      bienal:{ price:'74,90', period:'/2 anos', month:'3,12' }
     },
     patro: {
-      anual: { price:'45,90', period:'/ano', month:'3,82' },
-      bienal:{ price:'79,90', period:'/2 anos', month:'3,32' }
+      anual: { price:'54,90', period:'/ano', month:'4,57' },
+      bienal:{ price:'94,90', period:'/2 anos', month:'3,95' }
     }
   };
 
