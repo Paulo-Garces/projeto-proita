@@ -130,6 +130,7 @@ const publicUserSelect = {
   trialEndsAt: true,
   subscriptionEndsAt: true,
   planType: true,
+  googleId: true,
 };
 
 module.exports = (prisma) => {

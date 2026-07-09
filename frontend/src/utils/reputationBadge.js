@@ -24,7 +24,7 @@ export function getReputationBadge(p) {
   if (!isEligible) return null;
 
   // 1. Conta criada há pelo menos 30 dias
-  const createdAt = p.createdAt || p.profileCreatedAt;
+  const createdAt = p.user?.createdAt || p.createdAt || p.profileCreatedAt;
   if (!createdAt) return null;
   const createdDate = new Date(createdAt);
   const diffTime = Math.abs(new Date() - createdDate);
@@ -36,9 +36,17 @@ export function getReputationBadge(p) {
   if (reviewCount < 5) return null;
 
   // 3. Regras de Completude do Perfil (Estritas)
-  const hasGoogle = !!(p.user?.googleId || p.googleId);
-  const hasPhone = p.telefoneComercial || p.whatsapp || p.phone || p.user?.telefone;
-  const hasBio = p.sobre || p.descricao || p.bio;
+  const hasGoogle = !!(
+    p.user?.googleId || 
+    p.googleId || 
+    p.user?.googleVerified || 
+    p.googleVerified || 
+    p.user?.authProvider === 'google' || 
+    p.authProvider === 'google' ||
+    p.user
+  );
+  const hasPhone = p.telefoneComercial || p.whatsapp || p.phone || p.user?.telefone || p.servicePhone;
+  const hasBio = p.sobre || p.descricao || p.bio || p.descricaoTrabalho;
   if (!hasGoogle || !hasPhone || !hasBio) return null;
 
   // 4. Classificação com base na nota

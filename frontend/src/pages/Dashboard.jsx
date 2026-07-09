@@ -2644,14 +2644,15 @@ export default function Dashboard() {
 
   const isSuspended = (() => {
     const now = new Date();
-    const trialEnds = user?.trialEndsAt ? new Date(user.trialEndsAt) : null;
     const subEnds = user?.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) : null;
     const status = user?.planStatus || 'INATIVO';
+    const isTrial = (status === 'DEGUSTACAO' || user?.planType === 'TESTE' || user?.planType === 'trial' || user?.planStatus === 'trial') &&
+                    !(user?.planType === 'PATROCINADOR_ANUAL' || user?.planType === 'PATROCINADOR_BIENAL' || user?.planType === 'PRO_ANUAL' || user?.planType === 'PRO_BIENAL' || user?.planType === 'PROFISSIONAL_ANUAL' || user?.planType === 'PROFISSIONAL_BIENAL');
 
-    const hasPaidPlan = status === 'ATIVO' || status === 'BASICO' || !!subEnds;
+    const hasPaidPlan = (status === 'ATIVO' || status === 'BASICO') && !isTrial;
 
     // Se estava no trial e expirou sem plano pago
-    if (trialEnds && now > trialEnds && !hasPaidPlan) {
+    if (isTrial && subEnds && now > subEnds && !hasPaidPlan) {
       return true;
     }
 
@@ -3090,8 +3091,10 @@ export default function Dashboard() {
 
                         const now = new Date();
                         const subEnds = user?.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) : null;
+                        const trialEnds = subEnds;
 
-                        const isTrial = status === 'DEGUSTACAO' || user?.planType === 'TESTE';
+                        const isTrial = (status === 'DEGUSTACAO' || user?.planType === 'TESTE' || user?.planType === 'trial' || user?.planStatus === 'trial') &&
+                                        !(user?.planType === 'PATROCINADOR_ANUAL' || user?.planType === 'PATROCINADOR_BIENAL' || user?.planType === 'PRO_ANUAL' || user?.planType === 'PRO_BIENAL' || user?.planType === 'PROFISSIONAL_ANUAL' || user?.planType === 'PROFISSIONAL_BIENAL');
 
                         if (isTrial) {
                           const isTrialActive = !subEnds || now <= subEnds;
@@ -3117,9 +3120,6 @@ export default function Dashboard() {
                             planPrice = isBienal ? '74,90' : '44,90';
                             planId = isBienal ? 'basico_bienal' : 'basico_anual';
                             statusText = isBienal ? 'Profissional Ativo (Bienal)' : 'Profissional Ativo (Anual)';
-                          }
-                          if (trialEnds && now <= trialEnds) {
-                            statusText = 'Ativo (Período de Avaliação)';
                           }
                         } else if (status === 'BASICO') {
                           statusBadgeColor = 'bg-sky-50 border-sky-200 text-sky-700';
@@ -3477,21 +3477,19 @@ export default function Dashboard() {
                           }
 
                           const now = new Date();
-                          const trialEnds = user?.trialEndsAt ? new Date(user.trialEndsAt) : null;
                           const subEnds = user?.subscriptionEndsAt ? new Date(user.subscriptionEndsAt) : null;
+                          const hasPaidPlan = status === 'ATIVO' || status === 'BASICO' || !!subEnds;
 
-                          // Condição prioritária para período de testes ativo
-                          if (trialEnds && now <= trialEnds) {
+                          // 1. Período de Testes Ativo
+                          if (isTrial && subEnds && now <= subEnds) {
                             return {
                               text: 'Assinar Plano Oficial',
                               bgClass: 'bg-primary hover:bg-primary-hover text-white shadow-primary/10'
                             };
                           }
 
-                          const hasPaidPlan = status === 'ATIVO' || status === 'BASICO' || !!subEnds;
-
-                          // 1. Fim do Trial
-                          if (trialEnds && now > trialEnds && !hasPaidPlan) {
+                          // 2. Fim do Trial / Sem Plano Pago
+                          if (isTrial && subEnds && now > subEnds && !hasPaidPlan) {
                             return {
                               text: 'Quero continuar no proITA, escolher meu plano',
                               bgClass: 'bg-primary hover:bg-primary-hover text-white shadow-primary/10'
