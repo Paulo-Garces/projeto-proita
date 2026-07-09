@@ -1407,7 +1407,7 @@ function ExtendPlanModal({ user, token, onSuccess, onClose }) {
                       type="radio"
                       name="extendOption"
                       checked={option === '30d'}
-                      onChange={() => { setOption('30d'); setPlanType('TESTE'); }}
+                      onChange={() => setOption('30d')}
                       className="text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
                     />
                     <div>
@@ -1425,7 +1425,7 @@ function ExtendPlanModal({ user, token, onSuccess, onClose }) {
                       type="radio"
                       name="extendOption"
                       checked={option === '365d'}
-                      onChange={() => { setOption('365d'); setPlanType('PRO_ANUAL'); }}
+                      onChange={() => setOption('365d')}
                       className="text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
                     />
                     <div>
@@ -1459,7 +1459,6 @@ function ExtendPlanModal({ user, token, onSuccess, onClose }) {
                         value={customDate}
                         onChange={(e) => setCustomDate(e.target.value)}
                         className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-emerald-500 bg-white"
-                        min={new Date().toISOString().split('T')[0]}
                         required
                       />
                     </div>

@@ -713,14 +713,17 @@ module.exports = (prisma) => {
         return res.status(400).json({ success: false, message: 'Opção de extensão inválida.' });
       }
 
-      // Atualiza o plano do usuário para ATIVO e define a expiração
+      // Atualiza o plano do usuário e define a expiração e tipo
+      const isDateActive = newExpirationDate > new Date();
+      const planStatus = isDateActive ? 'ATIVO' : 'INATIVO';
+
       const updatedUser = await prisma.user.update({
         where: { id },
         data: {
-          planStatus: 'ATIVO',
+          planStatus,
           subscriptionEndsAt: newExpirationDate,
           trialEndsAt: null, // Limpa trial se houver para priorizar o plano ativo
-          planType: planType || undefined
+          planType: planType || null
         }
       });
 
