@@ -1483,7 +1483,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
               </span>
             )}
           </div>
-          {user?.phones?.filter(p => p.isVerified).length > 0 ? (
+          {getSelectablePhones().length > 0 ? (
             <select
               value={form.telefoneComercial}
               disabled={lockInfo.active}
@@ -1498,7 +1498,7 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
               }}
               className={`${inputClass} ${lockInfo.active ? 'opacity-65 cursor-not-allowed bg-slate-100' : ''}`}
             >
-              {user.phones.filter(p => p.isVerified).map((p) => (
+              {getSelectablePhones().map((p) => (
                 <option key={p.id} value={formatPhone(p.numero)}>
                   {formatPhone(p.numero)}
                 </option>
@@ -1506,8 +1506,8 @@ function AdEditForm({ ad, token, user, isSecondAd, onSaved, onCancel }) {
             </select>
           ) : (
             <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs font-semibold">
-              ⚠️ Você não possui telefones verificados na sua carteira. 
-              Para editar seu anúncio, você precisa cadastrar e verificar ao menos um telefone na aba <strong>Segurança</strong> do seu painel.
+              ⚠️ Você não possui telefones na sua carteira. 
+              Para editar seu anúncio, você precisa cadastrar ao menos um telefone na aba <strong>Segurança</strong> do seu painel.
             </div>
           )}
           {lockInfo.active && (
@@ -1637,6 +1637,26 @@ export default function Dashboard() {
     const newParams = new URLSearchParams(searchParams);
     newParams.set('tab', newTab);
     setSearchParams(newParams);
+  };
+
+  const getSelectablePhones = () => {
+    const list = [...(user?.phones || [])];
+    const mainPhone = user?.telefone || user?.phone;
+    if (mainPhone) {
+      const alreadyHas = list.some(p => {
+        const cleanP = p.numero ? [...p.numero].filter(c => c >= '0' && c <= '9').join('') : '';
+        const cleanMain = mainPhone ? [...mainPhone].filter(c => c >= '0' && c <= '9').join('') : '';
+        return cleanP === cleanMain;
+      });
+      if (!alreadyHas) {
+        list.push({
+          id: 'main-fallback',
+          numero: mainPhone,
+          isVerified: user?.telefoneVerificado || false
+        });
+      }
+    }
+    return list;
   };
 
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
@@ -3869,140 +3889,172 @@ export default function Dashboard() {
                       </div>
 
                       {/* ── 2. Carteira de Telefones ── */}
-                      <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                          <div className="flex items-center gap-2">
-                            <Shield size={16} className="text-slate-500" />
-                            <span className="text-sm font-semibold text-slate-800">Carteira de Telefones (Anúncios)</span>
-                          </div>
-                          <span className="text-slate-500 text-xs font-semibold">
-                            {user?.phones?.length || 0} / 3
-                          </span>
-                        </div>
+                      {(() => {
+                        const displayedPhones = [...(user?.phones || [])];
+                        const mainPhone = user?.telefone || user?.phone;
+                        if (mainPhone) {
+                          const alreadyHas = displayedPhones.some(p => {
+                            const cleanP = p.numero ? [...p.numero].filter(c => c >= '0' && c <= '9').join('') : '';
+                            const cleanMain = mainPhone ? [...mainPhone].filter(c => c >= '0' && c <= '9').join('') : '';
+                            return cleanP === cleanMain;
+                          });
+                          if (!alreadyHas) {
+                            displayedPhones.unshift({
+                              id: 'main-fallback',
+                              numero: mainPhone,
+                              isVerified: user?.telefoneVerificado || false,
+                              isFallback: true
+                            });
+                          }
+                        }
 
-                        {/* Lista de Telefones */}
-                        {user?.phones && user.phones.length > 0 ? (
-                          <div className="space-y-3">
-                            {user.phones.map((phoneRecord) => (
-                              <div key={phoneRecord.id} className="space-y-2">
-                                <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between gap-3">
-                                  <div className="space-y-1">
-                                    <p className="text-sm font-bold text-slate-800">{formatPhone(phoneRecord.numero)}</p>
-                                    {phoneRecord.isVerified ? (
-                                      <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-0.5">
-                                        <CheckCircle size={10} /> Verificado
-                                      </span>
-                                    ) : (
-                                      <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-0.5">
-                                        <AlertCircle size={10} /> Pendente
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    {!phoneRecord.isVerified && walletPhoneVerifyingId !== phoneRecord.id && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleRequestVerifyWalletPhone(phoneRecord)}
-                                        className="text-xs font-bold text-primary hover:text-primary-hover px-2.5 py-1.5 bg-primary/10 rounded-lg transition-colors cursor-pointer"
-                                      >
-                                        Verificar
-                                      </button>
-                                    )}
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteWalletPhone(phoneRecord.id)}
-                                      disabled={loadingDeleteWalletPhoneId === phoneRecord.id}
-                                      className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors disabled:opacity-60 cursor-pointer"
-                                      title="Remover telefone"
-                                    >
-                                      {loadingDeleteWalletPhoneId === phoneRecord.id ? (
-                                        <Loader2 size={15} className="animate-spin" />
-                                      ) : (
-                                        <Trash2 size={15} />
-                                      )}
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {/* Fluxo de Verificação (OTP) - Renderizado abaixo daquele telefone específico */}
-                                {walletPhoneVerifyingId === phoneRecord.id && (
-                                  <form onSubmit={handleVerifyWalletPhone} className="p-3.5 bg-slate-100/60 border border-slate-200/60 rounded-xl space-y-3 mx-2">
-                                    <div>
-                                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                        Código de Verificação (OTP) para {formatPhone(phoneRecord.numero)}
-                                      </label>
-                                      <div className="flex gap-2">
-                                        <input
-                                          type="text"
-                                          inputMode="numeric"
-                                          pattern="[0-9]*"
-                                          maxLength="6"
-                                          placeholder="Digite os 6 dígitos"
-                                          value={walletOtpCode}
-                                          onChange={(e) => setWalletOtpCode(e.target.value.replace(/\D/g, ''))}
-                                          className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm bg-white"
-                                          required
-                                        />
-                                        <button
-                                          type="submit"
-                                          disabled={loadingVerifyWalletPhone || walletOtpCode.length < 6}
-                                          className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
-                                        >
-                                          {loadingVerifyWalletPhone ? <Loader2 size={16} className="animate-spin" /> : 'Confirmar'}
-                                        </button>
-                                      </div>
-                                      {walletOtpError && (
-                                        <p className="text-xs text-red-600 font-bold mt-1.5">{walletOtpError}</p>
-                                      )}
-                                      <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">
-                                        Um código OTP de 6 dígitos foi gerado. Verifique o console do servidor de desenvolvimento para obter o código.
-                                      </p>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setWalletPhoneVerifyingId(null);
-                                          setWalletOtpCode('');
-                                          setWalletOtpError('');
-                                        }}
-                                        className="text-xs text-slate-500 hover:text-slate-700 font-bold underline mt-2 block"
-                                      >
-                                        Cancelar Verificação
-                                      </button>
-                                    </div>
-                                  </form>
-                                )}
+                        return (
+                          <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-4">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                              <div className="flex items-center gap-2">
+                                <Shield size={16} className="text-slate-500" />
+                                <span className="text-sm font-semibold text-slate-800">Carteira de Telefones (Anúncios)</span>
                               </div>
-                            ))}
+                              <span className="text-slate-500 text-xs font-semibold">
+                                {displayedPhones.length} / 3
+                              </span>
+                            </div>
+
+                            {/* Lista de Telefones */}
+                            {displayedPhones.length > 0 ? (
+                              <div className="space-y-3">
+                                {displayedPhones.map((phoneRecord) => (
+                                  <div key={phoneRecord.id} className="space-y-2">
+                                    <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between gap-3">
+                                      <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                          <p className="text-sm font-bold text-slate-800">{formatPhone(phoneRecord.numero)}</p>
+                                          {phoneRecord.isFallback && (
+                                            <span className="bg-slate-100 border border-slate-200 text-slate-600 px-1.5 py-0.5 rounded-md text-[9px] font-bold">
+                                              Cadastro
+                                            </span>
+                                          )}
+                                        </div>
+                                        {phoneRecord.isVerified ? (
+                                          <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-0.5">
+                                            <CheckCircle size={10} /> Verificado
+                                          </span>
+                                        ) : (
+                                          <span className="bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-0.5">
+                                            <AlertCircle size={10} /> Pendente
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        {!phoneRecord.isVerified && !phoneRecord.isFallback && walletPhoneVerifyingId !== phoneRecord.id && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleRequestVerifyWalletPhone(phoneRecord)}
+                                            className="text-xs font-bold text-primary hover:text-primary-hover px-2.5 py-1.5 bg-primary/10 rounded-lg transition-colors cursor-pointer"
+                                          >
+                                            Verificar
+                                          </button>
+                                        )}
+                                        {!phoneRecord.isFallback && (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleDeleteWalletPhone(phoneRecord.id)}
+                                            disabled={loadingDeleteWalletPhoneId === phoneRecord.id}
+                                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors disabled:opacity-60 cursor-pointer"
+                                            title="Remover telefone"
+                                          >
+                                            {loadingDeleteWalletPhoneId === phoneRecord.id ? (
+                                              <Loader2 size={15} className="animate-spin" />
+                                            ) : (
+                                              <Trash2 size={15} />
+                                            )}
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Fluxo de Verificação (OTP) */}
+                                    {walletPhoneVerifyingId === phoneRecord.id && (
+                                      <form onSubmit={handleVerifyWalletPhone} className="p-3.5 bg-slate-100/60 border border-slate-200/60 rounded-xl space-y-3 mx-2">
+                                        <div>
+                                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                            Código de Verificação (OTP) para {formatPhone(phoneRecord.numero)}
+                                          </label>
+                                          <div className="flex gap-2">
+                                            <input
+                                              type="text"
+                                              inputMode="numeric"
+                                              pattern="[0-9]*"
+                                              maxLength="6"
+                                              placeholder="Digite os 6 dígitos"
+                                              value={walletOtpCode}
+                                              onChange={(e) => setWalletOtpCode([...e.target.value].filter(c => c >= '0' && c <= '9').join(''))}
+                                              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm bg-white"
+                                              required
+                                            />
+                                            <button
+                                              type="submit"
+                                              disabled={loadingVerifyWalletPhone || walletOtpCode.length < 6}
+                                              className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
+                                            >
+                                              {loadingVerifyWalletPhone ? <Loader2 size={16} className="animate-spin" /> : 'Confirmar'}
+                                            </button>
+                                          </div>
+                                          {walletOtpError && (
+                                            <p className="text-xs text-red-600 font-bold mt-1.5">{walletOtpError}</p>
+                                          )}
+                                          <p className="text-[10px] text-slate-500 mt-2 leading-relaxed">
+                                            Um código OTP de 6 dígitos foi gerado. Verifique o console do servidor de desenvolvimento para obter o código.
+                                          </p>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setWalletPhoneVerifyingId(null);
+                                              setWalletOtpCode('');
+                                              setWalletOtpError('');
+                                            }}
+                                            className="text-xs text-slate-500 hover:text-slate-700 font-bold underline mt-2 block"
+                                          >
+                                            Cancelar Verificação
+                                          </button>
+                                        </div>
+                                      </form>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-slate-500">Nenhum telefone cadastrado na sua carteira.</p>
+                            )}
+
+                            {/* Formulário para Adicionar Telefone (máx. 3) */}
+                            {displayedPhones.length < 3 && !walletPhoneVerifyingId && (
+                              <form onSubmit={handleAddWalletPhone} className="flex gap-2.5 pt-2 border-t border-slate-100">
+                                <input
+                                  type="tel"
+                                  placeholder="(88) 99999-9999"
+                                  value={novoWalletPhone}
+                                  onChange={(e) => setNovoWalletPhone(formatPhone(e.target.value))}
+                                  disabled={displayedPhones.length >= 3}
+                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm disabled:opacity-60"
+                                  required
+                                />
+                                <button
+                                  type="submit"
+                                  disabled={displayedPhones.length >= 3 || loadingAddWalletPhone || !novoWalletPhone || novoWalletPhone.length < 14}
+                                  className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shrink-0 disabled:opacity-75 cursor-pointer"
+                                >
+                                  {loadingAddWalletPhone ? <Loader2 size={15} className="animate-spin" /> : 'Adicionar'}
+                                </button>
+                              </form>
+                            )}
+
+                            <p className="text-[10px] text-slate-500 leading-normal">
+                              🔒 Seus telefones cadastrados e verificados poderão ser livremente associados a qualquer um dos seus anúncios.
+                            </p>
                           </div>
-                        ) : (
-                          <p className="text-xs text-slate-500">Nenhum telefone cadastrado na sua carteira.</p>
-                        )}
-
-                        {/* Formulário para Adicionar Telefone (máx. 3) */}
-                        {(!user?.phones || user.phones.length < 3) && !walletPhoneVerifyingId && (
-                          <form onSubmit={handleAddWalletPhone} className="flex gap-2.5 pt-2 border-t border-slate-100">
-                            <input
-                              type="tel"
-                              placeholder="(88) 99999-9999"
-                              value={novoWalletPhone}
-                              onChange={(e) => setNovoWalletPhone(formatPhone(e.target.value))}
-                              className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary text-sm"
-                              required
-                            />
-                            <button
-                              type="submit"
-                              disabled={loadingAddWalletPhone || !novoWalletPhone || novoWalletPhone.length < 14}
-                              className="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shrink-0 disabled:opacity-75 cursor-pointer"
-                            >
-                              {loadingAddWalletPhone ? <Loader2 size={15} className="animate-spin" /> : 'Adicionar'}
-                            </button>
-                          </form>
-                        )}
-
-                        <p className="text-[10px] text-slate-500 leading-normal">
-                          🔒 Seus telefones cadastrados e verificados poderão ser livremente associados a qualquer um dos seus anúncios.
-                        </p>
-                      </div>
+                        );
+                      })()}
 
                       {/* ── 3. E-mail de Recuperação ── */}
                       <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-3">
@@ -4146,7 +4198,7 @@ export default function Dashboard() {
                   maxLength="6"
                   placeholder="000000"
                   value={codigoVerificacaoEmail}
-                  onChange={(e) => setCodigoVerificacaoEmail(e.target.value.replace(/\D/g, ''))}
+                  onChange={(e) => setCodigoVerificacaoEmail([...e.target.value].filter(c => c >= '0' && c <= '9').join(''))}
                   className="w-full text-center text-2xl font-bold tracking-widest px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-slate-800"
                   required
                 />

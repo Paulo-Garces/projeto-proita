@@ -199,15 +199,35 @@ export default function Advertise() {
 
   const [isPaused, setIsPaused] = useState(false);
 
+  const getSelectablePhones = () => {
+    const list = [...(user?.phones || [])];
+    const mainPhone = user?.telefone || user?.phone;
+    if (mainPhone) {
+      const alreadyHas = list.some(p => {
+        const cleanP = p.numero ? [...p.numero].filter(c => c >= '0' && c <= '9').join('') : '';
+        const cleanMain = mainPhone ? [...mainPhone].filter(c => c >= '0' && c <= '9').join('') : '';
+        return cleanP === cleanMain;
+      });
+      if (!alreadyHas) {
+        list.push({
+          id: 'main-fallback',
+          numero: mainPhone,
+          isVerified: user?.telefoneVerificado || false
+        });
+      }
+    }
+    return list;
+  };
+
   useEffect(() => {
     if (user) {
       if (!nomeExibicao) {
         const fullCadName = [user.nome, user.sobrenome].filter(Boolean).join(' ').trim();
         setNomeExibicao(fullCadName);
       }
-      const verifiedPhones = user.phones?.filter(p => p.isVerified) || [];
-      if (!telefoneComercial && verifiedPhones.length > 0) {
-        setTelefoneComercial(formatPhone(verifiedPhones[0].numero));
+      const selectable = getSelectablePhones();
+      if (!telefoneComercial && selectable.length > 0) {
+        setTelefoneComercial(formatPhone(selectable[0].numero));
       }
     }
   }, [user, telefoneComercial]);
@@ -990,13 +1010,13 @@ export default function Advertise() {
                 {/* Linha 2: WhatsApp / Telefone Comercial do Anúncio */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">WhatsApp / Telefone Comercial do Anúncio</label>
-                  {user?.phones?.filter(p => p.isVerified).length > 0 ? (
+                  {getSelectablePhones().length > 0 ? (
                     <select
                       value={telefoneComercial}
                       onChange={(e) => setTelefoneComercial(e.target.value)}
                       className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary transition-colors text-slate-800"
                     >
-                      {user.phones.filter(p => p.isVerified).map((p) => (
+                      {getSelectablePhones().map((p) => (
                         <option key={p.id} value={formatPhone(p.numero)}>
                           {formatPhone(p.numero)}
                         </option>
@@ -1004,8 +1024,8 @@ export default function Advertise() {
                     </select>
                   ) : (
                     <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs font-semibold">
-                      ⚠️ Você não possui telefones verificados na sua carteira. 
-                      Para criar um anúncio, você precisa cadastrar e verificar ao menos um telefone na aba <strong>Segurança</strong> do seu painel.
+                      ⚠️ Você não possui telefones na sua carteira. 
+                      Para criar um anúncio, você precisa cadastrar ao menos um telefone na aba <strong>Segurança</strong> do seu painel.
                     </div>
                   )}
                   <p className="text-xs text-slate-500 mt-1.5 flex items-center justify-between">

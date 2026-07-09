@@ -157,7 +157,13 @@ app.post('/api/register', async (req, res) => {
         sobrenome,
         telefone: formattedPhone,
         isWhatsapp: isWhatsapp === true || isWhatsapp === 'true',
-        senha: hashedPassword
+        senha: hashedPassword,
+        phones: {
+          create: {
+            numero: formattedPhone,
+            isVerified: false
+          }
+        }
       }
     });
 
