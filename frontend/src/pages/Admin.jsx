@@ -691,7 +691,7 @@ function ModerationTab({ token }) {
 
 // ─── ActionMenu: Dropdown de Ações do Profissional ──────────────────────────────────
 
-function ActionMenu({ user, onAction }) {
+function ActionMenu({ user, onAction, isNearBottom }) {
   const [open, setOpen] = useState(false);
 
   const isBlocked = user.role === 'BLOCKED';
@@ -754,8 +754,11 @@ function ActionMenu({ user, onAction }) {
           {/* Overlay para fechar */}
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
 
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl z-[999] border border-slate-100 py-1.5 overflow-hidden"
-            style={{ animation: 'menuPop 0.15s ease-out both' }}
+          <div 
+            className={`absolute right-0 w-48 bg-white rounded-xl shadow-xl z-[999] border border-slate-100 py-1.5 overflow-hidden ${
+              isNearBottom ? 'bottom-full mb-2' : 'top-full mt-2'
+            }`}
+            style={{ animation: `${isNearBottom ? 'menuPopUp' : 'menuPop'} 0.15s ease-out both` }}
           >
             {items.map((item, idx) => {
               if (item.hidden) return null;
@@ -779,6 +782,10 @@ function ActionMenu({ user, onAction }) {
       <style>{`
         @keyframes menuPop {
           from { opacity: 0; transform: scale(0.95) translateY(-6px); }
+          to   { opacity: 1; transform: scale(1)    translateY(0); }
+        }
+        @keyframes menuPopUp {
+          from { opacity: 0; transform: scale(0.95) translateY(6px); }
           to   { opacity: 1; transform: scale(1)    translateY(0); }
         }
       `}</style>
@@ -2138,7 +2145,7 @@ function ProfessionalsTab({ token }) {
                   </td>
                 </tr>
               ) : (
-                filtered.map(u => (
+                filtered.map((u, index) => (
                   <tr key={u.id} className={`border-b border-slate-50 transition-colors hover:bg-slate-50/70 ${
                     u.role === 'BLOCKED' ? 'opacity-60' : ''
                   }`}>
@@ -2238,6 +2245,7 @@ function ProfessionalsTab({ token }) {
                         <ActionMenu
                           user={u}
                           onAction={(action, targetUser) => setModalAction({ action, user: targetUser })}
+                          isNearBottom={index >= filtered.length - 3}
                         />
                       </div>
                     </td>
