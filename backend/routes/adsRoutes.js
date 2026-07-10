@@ -669,6 +669,48 @@ module.exports = (prisma) => {
         });
       });
 
+      // 4. Limpar telefones fantasma (ghost phones) da carteira
+      if (existing.telefoneComercial) {
+        const deletedPhoneIntl = convertToInternationalPhone(existing.telefoneComercial);
+        
+        if (deletedPhoneIntl) {
+          const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { telefone: true }
+          });
+          
+          const mainPhoneIntl = convertToInternationalPhone(user?.telefone);
+          const isMainPhone = deletedPhoneIntl === mainPhoneIntl;
+          
+          if (!isMainPhone) {
+            // Busca outros perfis restantes do usuário
+            const remainingProfiles = await prisma.profile.findMany({
+              where: { userId }
+            });
+            
+            const isUsedInOtherProfiles = remainingProfiles.some(p => {
+              return convertToInternationalPhone(p.telefoneComercial) === deletedPhoneIntl ||
+                     convertToInternationalPhone(p.servicePhone) === deletedPhoneIntl ||
+                     convertToInternationalPhone(p.whatsapp) === deletedPhoneIntl;
+            });
+            
+            if (!isUsedInOtherProfiles) {
+              // Encontra e deleta o telefone da carteira (UserPhone)
+              const userPhones = await prisma.userPhone.findMany({
+                where: { userId }
+              });
+              const ghostRecord = userPhones.find(up => convertToInternationalPhone(up.numero) === deletedPhoneIntl);
+              if (ghostRecord) {
+                await prisma.userPhone.delete({
+                  where: { id: ghostRecord.id }
+                });
+                console.log(`[DELETE /api/ads/:id] Telefone fantasma ${ghostRecord.numero} (ID: ${ghostRecord.id}) removido da carteira do usuário ${userId}.`);
+              }
+            }
+          }
+        }
+      }
+
       res.status(200).json({ success: true, message: 'Anúncio excluído com sucesso.' });
     } catch (error) {
       console.error('[DELETE /api/ads/:id] Erro:', error.message);

@@ -141,7 +141,7 @@ model Review {
   authorId  String
   updatedAt DateTime @updatedAt
   author    User     @relation(fields: [authorId], references: [id])
-  profile   Profile  @relation(fields: [profileId], references: [id])
+  profile   Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model Service {
@@ -153,7 +153,7 @@ model Service {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   profileId   String
-  profile     Profile  @relation(fields: [profileId], references: [id])
+  profile     Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
 }
 
 model Report {

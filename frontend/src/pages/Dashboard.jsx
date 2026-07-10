@@ -3892,7 +3892,7 @@ export default function Dashboard() {
                       {(() => {
                         const displayedPhones = [...(user?.phones || [])];
                         const mainPhone = user?.telefone || user?.phone;
-                        if (mainPhone) {
+                        if (mainPhone && displayedPhones.length < 3) {
                           const alreadyHas = displayedPhones.some(p => {
                             const cleanP = p.numero ? [...p.numero].filter(c => c >= '0' && c <= '9').join('') : '';
                             const cleanMain = mainPhone ? [...mainPhone].filter(c => c >= '0' && c <= '9').join('') : '';
