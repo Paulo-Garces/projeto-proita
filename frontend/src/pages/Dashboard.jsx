@@ -13,10 +13,17 @@ import PaymentCheckout from '../components/PaymentCheckout';
 import { API_URL } from '../config';
 import { getProfileDisplayName, getProfileAvatarNameParam } from '../utils/profileDisplayName';
 
-// ── Auxiliares de Formatação e Máscara de Telefone ───────────────
 const formatPhone = (val) => {
   if (!val) return '';
-  let value = val.replace(/\D/g, '');
+  let clean = String(val).trim();
+  
+  if (clean.startsWith('+55')) {
+    clean = clean.slice(3).trim();
+  } else if (clean.startsWith('55') && clean.replace(/\D/g, '').length >= 12) {
+    clean = clean.slice(2).trim();
+  }
+
+  let value = clean.replace(/\D/g, '');
   if (value.length > 11) value = value.slice(0, 11);
   if (value.length > 2) {
     value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
