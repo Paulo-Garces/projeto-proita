@@ -1818,6 +1818,7 @@ export default function Dashboard() {
   const [loadingLinkPhone, setLoadingLinkPhone] = useState(false);
   const [showUnlinkModal, setShowUnlinkModal] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
+  const [phoneToDelete, setPhoneToDelete] = useState(null);
 
   const [showVerifyEmailModal, setShowVerifyEmailModal] = useState(false);
   const [codigoVerificacaoEmail, setCodigoVerificacaoEmail] = useState('');
@@ -1959,7 +1960,6 @@ export default function Dashboard() {
   };
 
   const handleDeleteWalletPhone = async (phoneId) => {
-    if (!window.confirm('Tem certeza que deseja remover este telefone da sua carteira?')) return;
     setLoadingDeleteWalletPhoneId(phoneId);
     setSecurityError('');
     setSecuritySuccess('');
@@ -1986,6 +1986,7 @@ export default function Dashboard() {
       setSecurityError('Erro de conexão ao remover telefone.');
     } finally {
       setLoadingDeleteWalletPhoneId(null);
+      setPhoneToDelete(null);
     }
   };
 
@@ -3958,7 +3959,7 @@ export default function Dashboard() {
                                         {!phoneRecord.isFallback && (
                                           <button
                                             type="button"
-                                            onClick={() => handleDeleteWalletPhone(phoneRecord.id)}
+                                            onClick={() => setPhoneToDelete({ id: phoneRecord.id, numero: phoneRecord.numero })}
                                             disabled={loadingDeleteWalletPhoneId === phoneRecord.id}
                                             className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors disabled:opacity-60 cursor-pointer"
                                             title="Remover telefone"
@@ -4154,6 +4155,38 @@ export default function Dashboard() {
           </main>
         </div>
       </div>
+
+      {phoneToDelete && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Remover Telefone da Carteira?</h3>
+            <p className="text-sm text-slate-600 mb-6">
+              Tem certeza que deseja remover o telefone <strong>{formatPhone(phoneToDelete.numero)}</strong> da sua carteira?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setPhoneToDelete(null)}
+                className="px-4 py-2 text-slate-600 hover:bg-slate-50 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+                disabled={loadingDeleteWalletPhoneId === phoneToDelete.id}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteWalletPhone(phoneToDelete.id)}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors cursor-pointer flex items-center gap-2"
+                disabled={loadingDeleteWalletPhoneId === phoneToDelete.id}
+              >
+                {loadingDeleteWalletPhoneId === phoneToDelete.id && (
+                  <Loader2 size={14} className="animate-spin" />
+                )}
+                Remover
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showUnlinkModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
