@@ -1496,14 +1496,13 @@ export default function Profile() {
                       </div>
 
                       <div className="flex flex-col gap-1.5">
-                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Seu Comentário:</span>
+                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Seu Comentário (Opcional):</span>
                         <textarea
                           value={formComment}
                           onChange={(e) => setFormComment(e.target.value)}
-                          placeholder="Escreva como foi sua experiência e qualidade do serviço contratado..."
+                          placeholder="Escreva como foi sua experiência (opcional)..."
                           className="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm text-slate-700 resize-none transition-all placeholder:text-slate-400"
                           rows="3"
-                          required
                         />
                       </div>
 

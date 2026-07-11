@@ -26,6 +26,7 @@ import Mural from './pages/Mural';
 import Sandbox from './pages/Sandbox';
 import ScrollToTop from './components/ScrollToTop';
 import PwaUpdateToast from './components/PwaUpdateToast';
+import CookieConsent from './components/CookieConsent';
 
 function App() {
   console.log('URL da API atual:', import.meta.env.VITE_API_URL);
@@ -64,6 +65,7 @@ function App() {
             <BottomNav />
             <Footer />
             <PwaUpdateToast />
+            <CookieConsent />
           </div>
         </Router>
       </PwaProvider>

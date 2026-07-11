@@ -86,7 +86,7 @@ export default function Footer() {
         </div>
         
         <div className="pt-8 border-t border-slate-800 text-center text-sm text-slate-500">
-          <p>&copy; {new Date().getFullYear()} proITA - Guia dos Três Climas. Todos os direitos reservados.</p>
+          <p>© 2026 proITA Serviços Digitais Ltda. Todos os direitos reservados. | CNPJ: 67.140.810/0001-14 | Itapipoca — CE</p>
         </div>
       </div>
     </footer>

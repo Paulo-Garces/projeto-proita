@@ -92,6 +92,9 @@ export default function Privacy() {
               <li>A exclusão da sua conta e de todos os dados pessoais associados, ressalvados aqueles que a lei nos obrigue a guardar (como notas fiscais e logs de acesso).</li>
               <li>A portabilidade dos dados ou a revogação do consentimento.</li>
             </ul>
+            <p className="mt-4">
+              Garantimos também a você o direito de solicitar a revisão por pessoa natural de decisões baseadas em tratamento automatizado de dados, tais como a ordenação algorítmica de perfis nos resultados de busca ou a definição automatizada de níveis e selos de destaque (bronze, prata e ouro), caso considere que tais decisões violaram ou prejudicaram de forma indevida a exposição do seu perfil.
+            </p>
 
             <h3 className="font-bold text-base text-slate-900 mt-6 mb-2">7. CONTATO E ENCARREGADO DE DADOS (DPO)</h3>
             <p>

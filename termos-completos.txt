@@ -115,9 +115,9 @@ Nos termos do art. 49 do Código de Defesa do Consumidor (Lei 8.078/1990), o Anu
 A solicitação deve ser feita pelo e-mail contato@proita.com.br. O reembolso será processado em até 10 dias úteis pelo meio de pagamento original.
 5.4 Cancelamento pelo Anunciante após 7 Dias
 Após o prazo de 7 dias, o cancelamento pelo Anunciante pode ser solicitado a qualquer tempo. Não há reembolso proporcional ao período não utilizado, salvo em caso de descontinuidade da plataforma pela Operadora (cláusula 14).
-5.5 Cancelamento por Violação — Sem Reembolso
-Em caso de suspensão ou banimento do perfil do Anunciante por violação destes Termos, não haverá reembolso de qualquer valor pago, independentemente do tempo restante do plano.
-Base legal: art. 49 do CDC (7 dias de arrependimento em contratos à distância). Após esse prazo, a não renovação e o cancelamento por violação não geram direito a reembolso, conforme disposições contratuais expressamente aceitas no ato da contratação.
+5.5 Cancelamento por Violação ou Fraude — Sem Reembolso
+Contas banidas ou suspensas por fraude, falsidade ideológica, golpes ou violação grave destes Termos de Uso perdem integralmente o direito aos períodos restantes de qualquer assinatura ativa, com perda total dos prazos decorrentes e sem direito a qualquer tipo de reembolso proporcional (pro-rata) ou restituição de valores.
+Base legal: art. 49 do CDC (7 dias de arrependimento em contratos à distância). Após esse prazo, o cancelamento por violação ou comportamento fraudulento não gera direito a reembolso, acarretando a perda total das assinaturas contratadas, conforme disposições contratuais expressamente aceitas no ato da contratação.
 
 5.6 Intransferibilidade da Assinatura
 A assinatura de plano é estritamente pessoal e intransferível. O Anunciante não pode ceder, compartilhar, sublicenciar ou transferir sua conta ou plano a terceiros, a qualquer título. O perfil deve refletir a identidade real de quem efetivamente prestará o serviço ao cliente.

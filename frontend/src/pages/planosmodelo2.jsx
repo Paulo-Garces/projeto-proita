@@ -776,7 +776,7 @@
 
 <footer>
   <div class="brand"><span class="brand-mark"></span> proITA</div>
-  © 2026 proITA — O Guia dos Três Climas. Todos os direitos reservados.
+  © 2026 proITA Serviços Digitais Ltda. Todos os direitos reservados. | CNPJ: 67.140.810/0001-14 | Itapipoca — CE
 </footer>
 
 <script>

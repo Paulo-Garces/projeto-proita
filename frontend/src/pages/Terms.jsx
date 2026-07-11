@@ -377,12 +377,12 @@ export default function Terms() {
               Após o prazo de 7 dias, o cancelamento pelo Anunciante pode ser solicitado a qualquer tempo. Não há reembolso proporcional ao período não utilizado, salvo em caso de descontinuidade da plataforma pela Operadora (cláusula 14).
             </p>
 
-            <h3 className="text-base font-bold text-slate-800 mt-4 mb-2">5.5 Cancelamento por Violação — Sem Reembolso</h3>
+            <h3 className="text-base font-bold text-slate-800 mt-4 mb-2">5.5 Cancelamento por Violação ou Fraude — Sem Reembolso</h3>
             <p className="text-slate-600 text-sm mb-4">
-              Em caso de suspensão ou banimento do perfil do Anunciante por violação destes Termos, não haverá reembolso de qualquer valor pago, independentemente do tempo restante do plano.
+              Contas banidas ou suspensas por fraude, falsidade ideológica, golpes ou violação grave destes Termos de Uso <strong>perdem integralmente o direito aos períodos restantes de qualquer assinatura ativa</strong>, com perda total dos prazos decorrentes e sem direito a qualquer tipo de reembolso proporcional (<em>pro-rata</em>) ou restituição de valores.
             </p>
             <p className="text-slate-500 text-xs mb-4">
-              Base legal: art. 49 do CDC (7 dias de arrependimento em contratos à distância). Após esse prazo, a não renovação e o cancelamento por violação não geram direito a reembolso, conforme disposições contratuais expressamente aceitas no ato da contratação.
+              Base legal: art. 49 do CDC (7 dias de arrependimento em contratos à distância). Após esse prazo, o cancelamento por violação ou comportamento fraudulento não gera direito a reembolso, acarretando a perda total das assinaturas contratadas, conforme disposições contratuais expressamente aceitas no ato da contratação.
             </p>
 
             <h3 className="text-base font-bold text-slate-800 mt-4 mb-2">5.6 Intransferibilidade da Assinatura</h3>

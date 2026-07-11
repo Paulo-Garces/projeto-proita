@@ -292,7 +292,7 @@ export default function Home() {
       {/* Footer minimalista colado na base - texto branco sobre as serras verdes */}
       <footer className="absolute bottom-4 left-0 w-full text-center bg-transparent z-20 shrink-0">
         <p className="text-white/80 text-xs font-semibold tracking-wide drop-shadow-md">
-          &copy; {new Date().getFullYear()} proITA - Guia dos Três Climas. Todos os direitos reservados.
+          © 2026 proITA Serviços Digitais Ltda. Todos os direitos reservados. | CNPJ: 67.140.810/0001-14 | Itapipoca — CE
         </p>
       </footer>
     </div>
