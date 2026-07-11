@@ -44,6 +44,44 @@
     <link rel="apple-touch-startup-image" href="/pwa-512x512.png" />
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <!-- Google Analytics (GA4) -->
+    <script>
+      (function() {
+        const gaId = "%VITE_GOOGLE_ANALYTICS_ID%";
+        if (gaId && !gaId.startsWith('%')) {
+          const script = document.createElement('script');
+          script.async = true;
+          script.src = 'https://www.googletagmanager.com/gtag/js?id=' + gaId;
+          document.head.appendChild(script);
+
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          window.gtag = gtag;
+          gtag('js', new Date());
+          gtag('config', gaId);
+        }
+      })();
+    </script>
+
+    <!-- Meta Pixel -->
+    <script>
+      (function() {
+        const pixelId = "%VITE_META_PIXEL_ID%";
+        if (pixelId && !pixelId.startsWith('%')) {
+          !function(f,b,e,v,n,t,s)
+          {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+          n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+          n.queue=[];t=b.createElement(e);t.async=!0;
+          t.src=v;s=b.getElementsByTagName(e)[0];
+          s.parentNode.insertBefore(t,s)}(window, document,'script',
+          'https://connect.facebook.net/en_US/fbevents.js');
+          fbq('init', pixelId);
+          fbq('track', 'PageView');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
