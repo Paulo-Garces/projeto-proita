@@ -97,6 +97,47 @@ module.exports = (prisma) => {
     }
   });
 
+  // Rota: Resumo de métricas agregadas de todos os anúncios
+  router.get('/analytics-summary', checkAdmin, async (req, res) => {
+    try {
+      const sums = await prisma.profile.aggregate({
+        _sum: {
+          impressions: true,
+          profileViews: true,
+          visitasPerfil: true,
+          whatsappClicks: true,
+          cliquesWhatsapp: true,
+          phoneClicks: true,
+          shares: true
+        }
+      });
+
+      const profilesWithFavorites = await prisma.profile.findMany({
+        select: {
+          _count: {
+            select: { favoritedBy: true }
+          }
+        }
+      });
+      const totalFavorites = profilesWithFavorites.reduce((acc, p) => acc + p._count.favoritedBy, 0);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          totalImpressions: sums._sum.impressions || 0,
+          totalProfileViews: sums._sum.profileViews || sums._sum.visitasPerfil || 0,
+          totalWhatsappClicks: sums._sum.whatsappClicks || sums._sum.cliquesWhatsapp || 0,
+          totalPhoneClicks: sums._sum.phoneClicks || 0,
+          totalShares: sums._sum.shares || 0,
+          totalFavorites
+        }
+      });
+    } catch (error) {
+      console.error('Erro ao buscar resumo de analytics do admin:', error);
+      res.status(500).json({ success: false, message: 'Erro interno ao gerar resumo de analytics.' });
+    }
+  });
+
   // Rota Temporária: Migrar perfis antigos gerando Slugs amigáveis
   router.put('/migrate-slugs', checkAdmin, async (req, res) => {
     try {

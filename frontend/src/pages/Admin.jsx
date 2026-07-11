@@ -2,6 +2,7 @@ import { useState, useContext, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
+import AdminAnalytics from '../components/AdminAnalytics';
 import {
   LayoutDashboard,
   Users,
@@ -2959,6 +2960,7 @@ export default function Admin() {
 
   const navItems = [
     { id: 'dashboard',     label: 'Visão Geral',             icon: LayoutDashboard },
+    { id: 'analytics',     label: 'Métricas da Plataforma',  icon: TrendingUp },
     { id: 'professionals', label: 'Gestão de Profissionais', icon: Briefcase },
     {
       id: 'moderation',
@@ -3099,8 +3101,13 @@ export default function Admin() {
             <FinanceTab token={token} />
           )}
 
+          {/* ── Aba: Métricas da Plataforma ── */}
+          {activeTab === 'analytics' && (
+            <AdminAnalytics />
+          )}
+
           {/* ── Abas em construção ── */}
-          {activeTab !== 'dashboard' && activeTab !== 'professionals' && activeTab !== 'moderation' && activeTab !== 'finance' && (
+          {activeTab !== 'dashboard' && activeTab !== 'analytics' && activeTab !== 'professionals' && activeTab !== 'moderation' && activeTab !== 'finance' && (
             <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center shadow-sm">
               <div className="inline-flex p-4 bg-slate-50 rounded-full mb-4 text-slate-400">
                 <Settings size={32} />
