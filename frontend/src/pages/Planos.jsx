@@ -4,7 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 import AdCard from '../components/AdCard';
 import PaymentCheckout from '../components/PaymentCheckout';
-import { ArrowLeft, Mountain, Sun, Calendar, Layers, BarChart3, Award, Image, Sparkles } from 'lucide-react';
+import { ArrowLeft, Mountain, Sun, Calendar, Layers, BarChart3, Award, Image, Sparkles, PlayCircle } from 'lucide-react';
 import './Planos.css';
 
 // ─── Configuração dos planos ────────────────────────────────────────────────
@@ -140,7 +140,7 @@ export default function Planos() {
     <div className="planos-page">
       
       {/* ---------- HERO ---------- */}
-      <section className="bg-gradient-to-br from-[#0B1E33] via-[#0F2C46] to-[#1E3A8A] text-white pt-28 pb-20 relative overflow-hidden">
+      <section className="bg-slate-900 text-white pt-28 pb-20 relative overflow-hidden">
         {/* Glow Effects */}
         <div className="absolute top-0 left-0 w-[450px] h-[450px] bg-sky-500/10 rounded-full blur-[100px] pointer-events-none opacity-40"></div>
         <div className="absolute bottom-0 right-0 w-[350px] h-[350px] bg-emerald-500/5 rounded-full blur-[90px] pointer-events-none opacity-30"></div>
@@ -173,68 +173,70 @@ export default function Planos() {
             </div>
           </div>
 
-          {/* Right Column: CSS Grid of professionals */}
-          <div className="lg:col-span-6 relative">
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0B1E33] via-transparent to-transparent pointer-events-none z-10"></div>
+          {/* Right Column: Diverse Professionals Grid */}
+          <div className="lg:col-span-6 relative min-h-[350px] flex items-center justify-center">
+            {/* Gradient Overlay for blending */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-slate-900/30 pointer-events-none z-10"></div>
+            <div className="absolute -inset-2 bg-gradient-to-r from-slate-900 via-transparent to-slate-900 pointer-events-none z-10"></div>
             
-            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto relative z-0 opacity-90">
-              {/* Card 1 */}
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex flex-col justify-between h-36 transform -rotate-1 hover:rotate-0 transition-transform duration-300">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-extrabold text-sm shadow-inner">MS</div>
-                  <div>
-                    <h4 className="text-xs font-bold text-white leading-tight">Maria Silva</h4>
-                    <span className="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider font-sans">Manicure</span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center mt-4">
-                  <span className="text-[10px] bg-emerald-500/25 text-emerald-300 px-2 py-0.5 rounded-full font-bold font-sans">Serra</span>
-                  <span className="text-xs text-amber-400 font-bold font-sans">★ 5.0</span>
+            <div className="grid grid-cols-3 gap-3 w-full max-w-lg relative z-0 opacity-80 hover:opacity-95 transition-opacity duration-500">
+              {/* Box 1 - Tall/Large */}
+              <div className="col-span-2 row-span-2 relative rounded-2xl overflow-hidden shadow-2xl group aspect-[4/3] sm:aspect-square">
+                <img 
+                  src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=400&q=80" 
+                  alt="Eletricista Profissional" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-3">
+                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-amber-300">Eletricista / Instalações</span>
                 </div>
               </div>
 
-              {/* Card 2 */}
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex flex-col justify-between h-36 translate-y-4 transform rotate-1 hover:rotate-0 transition-transform duration-300">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-extrabold text-sm shadow-inner">JS</div>
-                  <div>
-                    <h4 className="text-xs font-bold text-white leading-tight">João Souza</h4>
-                    <span className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider font-sans">Pedreiro</span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center mt-4">
-                  <span className="text-[10px] bg-amber-500/25 text-amber-300 px-2 py-0.5 rounded-full font-bold font-sans">Sertão</span>
-                  <span className="text-xs text-amber-400 font-bold font-sans">★ 4.9</span>
+              {/* Box 2 - Small */}
+              <div className="col-span-1 relative rounded-2xl overflow-hidden shadow-2xl group aspect-square">
+                <img 
+                  src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80" 
+                  alt="Consultora" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-2">
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-sky-300">Consultoria</span>
                 </div>
               </div>
 
-              {/* Card 3 */}
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex flex-col justify-between h-36 transform rotate-2 hover:rotate-0 transition-transform duration-300">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400 font-extrabold text-sm shadow-inner">AO</div>
-                  <div>
-                    <h4 className="text-xs font-bold text-white leading-tight">Ana Oliveira</h4>
-                    <span className="text-[10px] text-sky-400 font-semibold uppercase tracking-wider font-sans">Dentista</span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center mt-4">
-                  <span className="text-[10px] bg-sky-500/25 text-sky-300 px-2 py-0.5 rounded-full font-bold font-sans">Litoral</span>
-                  <span className="text-xs text-amber-400 font-bold font-sans">★ 5.0</span>
+              {/* Box 3 - Small */}
+              <div className="col-span-1 relative rounded-2xl overflow-hidden shadow-2xl group aspect-square">
+                <img 
+                  src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?auto=format&fit=crop&w=300&q=80" 
+                  alt="Confeiteira" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-2">
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-rose-300">Confeitaria</span>
                 </div>
               </div>
 
-              {/* Card 4 */}
-              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex flex-col justify-between h-36 translate-y-4 transform -rotate-2 hover:rotate-0 transition-transform duration-300">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 font-extrabold text-sm shadow-inner">CS</div>
-                  <div>
-                    <h4 className="text-xs font-bold text-white leading-tight">Carlos Santos</h4>
-                    <span className="text-[10px] text-rose-400 font-semibold uppercase tracking-wider font-sans">Mecânico</span>
-                  </div>
+              {/* Box 4 - Wide */}
+              <div className="col-span-2 relative rounded-2xl overflow-hidden shadow-2xl group aspect-[2/1]">
+                <img 
+                  src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80" 
+                  alt="Costureira" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-3">
+                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-300">Costura & Artesanato</span>
                 </div>
-                <div className="flex justify-between items-center mt-4">
-                  <span className="text-[10px] bg-emerald-500/25 text-emerald-300 px-2 py-0.5 rounded-full font-bold font-sans">Serra</span>
-                  <span className="text-xs text-amber-400 font-bold font-sans">★ 4.8</span>
+              </div>
+
+              {/* Box 5 - Small */}
+              <div className="col-span-1 relative rounded-2xl overflow-hidden shadow-2xl group aspect-square">
+                <img 
+                  src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80" 
+                  alt="Personal Trainer" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent flex items-end p-2">
+                  <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-300">Saúde & Bem-Estar</span>
                 </div>
               </div>
             </div>
@@ -243,7 +245,7 @@ export default function Planos() {
       </section>
 
       {/* ---------- TRIAL STRIP ---------- */}
-      <div className="bg-slate-50 border-y border-slate-200/50 py-5">
+      <div className="bg-slate-50 border-b border-slate-200/40 py-5">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 flex flex-wrap items-center justify-center gap-8 md:gap-12">
           <div className="flex items-center gap-2.5 text-slate-700 text-xs sm:text-sm font-semibold font-sans">
             <svg className="text-emerald-600 w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none">
@@ -261,7 +263,7 @@ export default function Planos() {
       </div>
 
       {/* ---------- COMO FUNCIONA + VIDEO ---------- */}
-      <section className="bg-white py-20 border-b border-slate-100">
+      <section className="bg-slate-50 py-20 border-b border-slate-200/50">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left Column: Steps */}
           <div className="space-y-8 text-left">
@@ -309,16 +311,12 @@ export default function Planos() {
             </div>
           </div>
 
-          {/* Right Column: YouTube Video Iframe */}
+          {/* Right Column: Video Placeholder */}
           <div className="w-full max-w-xl mx-auto">
-            <div className="relative aspect-video rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-slate-100 bg-slate-900">
-              <iframe
-                title="Como funciona o proITA"
-                src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                className="absolute inset-0 w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
+            {/* TODO: Substituir esta div pelo iframe do YouTube quando o vídeo estiver pronto */}
+            <div className="w-full aspect-video bg-slate-100 rounded-xl shadow-lg border border-slate-200 flex flex-col items-center justify-center text-slate-400 gap-2">
+              <PlayCircle size={48} />
+              <span className="text-sm font-semibold font-sans">Vídeo explicativo em breve...</span>
             </div>
           </div>
         </div>
