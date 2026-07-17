@@ -47,11 +47,11 @@ export default function Dicas() {
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                   <span className="text-amber-400 font-extrabold text-xl block mb-1">2. Ofereça</span>
-                  <span className="text-xs text-slate-400 leading-normal block">Cobre apenas R$ 5,00 ou R$ 10,00 por mês para exibir a marca deles no seu perfil.</span>
+                  <span className="text-xs text-slate-400 leading-normal block">Negocie um valor acessível mensal com esses comerciantes para exibir a marca deles no seu perfil.</span>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                   <span className="text-amber-400 font-extrabold text-xl block mb-1">3. Fature</span>
-                  <span className="text-xs text-slate-400 leading-normal block">Vendendo 3 espaços, você arrecada R$ 15,00+/mês. Custeia sua assinatura e ainda lucra!</span>
+                  <span className="text-xs text-slate-400 leading-normal block">Vendendo os 3 espaços, você gera uma renda extra que pode cobrir integralmente o custo da sua assinatura e ainda dar lucro!</span>
                 </div>
               </div>
 

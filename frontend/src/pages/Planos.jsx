@@ -140,46 +140,189 @@ export default function Planos() {
     <div className="planos-page">
       
       {/* ---------- HERO ---------- */}
-      <section className="hero">
-        <div className="horizon">
-          <svg viewBox="0 0 1200 520" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0,220 C220,150 420,260 620,190 C820,120 1000,210 1200,160 L1200,0 L0,0 Z" fill="#E8F4F1" opacity="0.55"/>
-            <path d="M0,300 C260,240 460,330 700,270 C900,222 1050,290 1200,250 L1200,0 L0,0 Z" fill="#E6F2ED" opacity="0.35"/>
-            <path d="M0,360 C240,330 500,400 760,350 C960,312 1080,360 1200,340 L1200,520 L0,520 Z" fill="#FEF3C7" opacity="0.28"/>
-            <path d="M0,430 C260,400 520,455 800,415 C980,390 1090,420 1200,410 L1200,520 L0,520 Z" fill="#E0F2FE" opacity="0.55"/>
-            <path d="M0,470 C280,450 540,495 820,465 C1000,445 1100,468 1200,460 L1200,520 L0,520 Z" fill="#BAE6FD" opacity="0.6"/>
-          </svg>
-        </div>
-        <div className="hero-inner">
-          <span className="eyebrow">★ O guia dos três climas</span>
-          <h1>Seu serviço visto na <em>serra</em>, no <em>sertão</em><br />e no <em>litoral</em> de Itapipoca.</h1>
-          <p className="sub">Um perfil profissional, avaliações reais e clientes chegando pelo WhatsApp. Comece hoje, teste por 30 dias sem gastar nada.</p>
-          <div className="hero-ctas">
-            <button onClick={(e) => handlePlanCta('trial', e)} className="btn btn-primary">
-              Começar grátis por 30 dias
-            </button>
-            <a href="#planos" className="btn btn-ghost">Ver planos ↓</a>
+      <section className="bg-gradient-to-br from-[#0B1E33] via-[#0F2C46] to-[#1E3A8A] text-white pt-28 pb-20 relative overflow-hidden">
+        {/* Glow Effects */}
+        <div className="absolute top-0 left-0 w-[450px] h-[450px] bg-sky-500/10 rounded-full blur-[100px] pointer-events-none opacity-40"></div>
+        <div className="absolute bottom-0 right-0 w-[350px] h-[350px] bg-emerald-500/5 rounded-full blur-[90px] pointer-events-none opacity-30"></div>
+
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          {/* Left Column */}
+          <div className="lg:col-span-6 space-y-6 text-left">
+            <span className="inline-flex items-center gap-1.5 bg-amber-400/10 text-amber-300 border border-amber-400/20 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
+              ★ O Guia dos Três Climas
+            </span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.05] !font-serif">
+              Sua vitrine profissional em <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-200">Itapipoca</span>
+            </h1>
+            <p className="text-slate-300 text-sm md:text-base leading-relaxed max-w-xl">
+              Divulgue seus serviços na serra, no sertão e no litoral. Tenha um perfil profissional moderno, conquiste avaliações reais de clientes e receba contatos diretos pelo WhatsApp sem pagar intermediários.
+            </p>
+            <div className="flex flex-wrap gap-4 pt-2">
+              <button 
+                onClick={(e) => handlePlanCta('trial', e)} 
+                className="px-6 py-3.5 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-600 hover:to-amber-500 text-slate-950 font-extrabold rounded-xl transition-all duration-300 shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20 active:scale-95 cursor-pointer text-center text-sm"
+              >
+                Começar grátis por 30 dias
+              </button>
+              <a 
+                href="#planos" 
+                className="px-6 py-3.5 bg-white/5 hover:bg-white/10 text-white font-bold border border-white/10 rounded-xl transition-all duration-300 text-center text-sm cursor-pointer"
+              >
+                Ver Planos ↓
+              </a>
+            </div>
+          </div>
+
+          {/* Right Column: CSS Grid of professionals */}
+          <div className="lg:col-span-6 relative">
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0B1E33] via-transparent to-transparent pointer-events-none z-10"></div>
+            
+            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto relative z-0 opacity-90">
+              {/* Card 1 */}
+              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex flex-col justify-between h-36 transform -rotate-1 hover:rotate-0 transition-transform duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-extrabold text-sm shadow-inner">MS</div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white leading-tight">Maria Silva</h4>
+                    <span className="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider font-sans">Manicure</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center mt-4">
+                  <span className="text-[10px] bg-emerald-500/25 text-emerald-300 px-2 py-0.5 rounded-full font-bold font-sans">Serra</span>
+                  <span className="text-xs text-amber-400 font-bold font-sans">★ 5.0</span>
+                </div>
+              </div>
+
+              {/* Card 2 */}
+              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex flex-col justify-between h-36 translate-y-4 transform rotate-1 hover:rotate-0 transition-transform duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-extrabold text-sm shadow-inner">JS</div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white leading-tight">João Souza</h4>
+                    <span className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider font-sans">Pedreiro</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center mt-4">
+                  <span className="text-[10px] bg-amber-500/25 text-amber-300 px-2 py-0.5 rounded-full font-bold font-sans">Sertão</span>
+                  <span className="text-xs text-amber-400 font-bold font-sans">★ 4.9</span>
+                </div>
+              </div>
+
+              {/* Card 3 */}
+              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex flex-col justify-between h-36 transform rotate-2 hover:rotate-0 transition-transform duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400 font-extrabold text-sm shadow-inner">AO</div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white leading-tight">Ana Oliveira</h4>
+                    <span className="text-[10px] text-sky-400 font-semibold uppercase tracking-wider font-sans">Dentista</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center mt-4">
+                  <span className="text-[10px] bg-sky-500/25 text-sky-300 px-2 py-0.5 rounded-full font-bold font-sans">Litoral</span>
+                  <span className="text-xs text-amber-400 font-bold font-sans">★ 5.0</span>
+                </div>
+              </div>
+
+              {/* Card 4 */}
+              <div className="bg-white/5 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex flex-col justify-between h-36 translate-y-4 transform -rotate-2 hover:rotate-0 transition-transform duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400 font-extrabold text-sm shadow-inner">CS</div>
+                  <div>
+                    <h4 className="text-xs font-bold text-white leading-tight">Carlos Santos</h4>
+                    <span className="text-[10px] text-rose-400 font-semibold uppercase tracking-wider font-sans">Mecânico</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center mt-4">
+                  <span className="text-[10px] bg-emerald-500/25 text-emerald-300 px-2 py-0.5 rounded-full font-bold font-sans">Serra</span>
+                  <span className="text-xs text-amber-400 font-bold font-sans">★ 4.8</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ---------- TRIAL STRIP ---------- */}
-      <div className="trial-strip">
-        <div className="wrap">
-          <div className="trial-item">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M20 6L9 17l-5-5" stroke="var(--serra)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <div className="bg-slate-50 border-y border-slate-200/50 py-5">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 flex flex-wrap items-center justify-center gap-8 md:gap-12">
+          <div className="flex items-center gap-2.5 text-slate-700 text-xs sm:text-sm font-semibold font-sans">
+            <svg className="text-emerald-600 w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none">
+              <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             30 dias 100% grátis
           </div>
-          <div className="trial-item">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M20 6L9 17l-5-5" stroke="var(--serra)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+          <div className="flex items-center gap-2.5 text-slate-700 text-xs sm:text-sm font-semibold font-sans">
+            <svg className="text-emerald-600 w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none">
+              <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             Sem cobrança automática
           </div>
         </div>
       </div>
+
+      {/* ---------- COMO FUNCIONA + VIDEO ---------- */}
+      <section className="bg-white py-20 border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Left Column: Steps */}
+          <div className="space-y-8 text-left">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-widest text-primary font-sans">Passo a Passo</span>
+              <h2 className="text-3xl font-bold text-slate-900 mt-2 !font-serif">Como funciona o proITA?</h2>
+              <p className="text-slate-500 mt-2 text-sm leading-relaxed font-sans">
+                Entenda como a plataforma te conecta a clientes em toda Itapipoca em apenas 3 passos simples.
+              </p>
+            </div>
+
+            <div className="space-y-6 font-sans">
+              {/* Step 1 */}
+              <div className="flex gap-4">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0">1</div>
+                <div>
+                  <h4 className="text-base font-bold text-slate-800">Cadastro Rápido</h4>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Crie sua conta e configure o seu perfil preenchendo sua categoria, localização e descrição dos seus serviços.
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 2 */}
+              <div className="flex gap-4">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0">2</div>
+                <div>
+                  <h4 className="text-base font-bold text-slate-800">Visibilidade Local</h4>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Seu anúncio passa a aparecer nas buscas e categorias em toda a região de Itapipoca (serra, sertão e litoral).
+                  </p>
+                </div>
+              </div>
+
+              {/* Step 3 */}
+              <div className="flex gap-4">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-lg shrink-0">3</div>
+                <div>
+                  <h4 className="text-base font-bold text-slate-800">Negociação Direta no WhatsApp</h4>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Os clientes te encontram e entram em contato direto pelo seu WhatsApp, sem intermediários, taxas ou comissões.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: YouTube Video Iframe */}
+          <div className="w-full max-w-xl mx-auto">
+            <div className="relative aspect-video rounded-3xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-slate-100 bg-slate-900">
+              <iframe
+                title="Como funciona o proITA"
+                src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                className="absolute inset-0 w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ---------- PLANS SECTION ---------- */}
       <section className="plans-section" id="planos">
