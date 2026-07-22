@@ -5,8 +5,13 @@ import { HelmetProvider } from 'react-helmet-async'
 import './index.css'
 import App from './App.jsx'
 
-// Registrar o Service Worker do PWA
-registerSW({ immediate: true })
+// Registrar o Service Worker do PWA com atualização automática
+const updateSW = registerSW({
+  onNeedRefresh() {
+    updateSW(true)
+  },
+  onOfflineReady() {},
+})
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
