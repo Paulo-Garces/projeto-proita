@@ -85,8 +85,8 @@ export default function Footer() {
 
         </div>
         
-        <div className="pt-8 border-t border-slate-800 text-center text-[9px] leading-tight sm:text-[10px] md:text-xs text-white/70">
-          <p>© 2026 proITA Serviços Digitais Ltda. Todos os direitos reservados. | CNPJ: 67.140.810/0001-14 | Itapipoca — CE</p>
+        <div className="pt-8 border-t border-slate-800 text-center text-[9px] sm:text-[10px] md:text-xs text-slate-500 font-normal leading-tight">
+          <p>© 2026 proITA Serviços Digitais Ltda. Todos os direitos reservados. <span className="hidden sm:inline">|</span><br className="sm:hidden" /> CNPJ: 67.140.810/0001-14 | Itapipoca — CE</p>
         </div>
       </div>
     </footer>

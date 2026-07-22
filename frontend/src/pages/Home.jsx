@@ -289,10 +289,10 @@ export default function Home() {
       {/* Spacer to distribute centering balance */}
       <div className="h-4 md:h-8 shrink-0"></div>
 
-      {/* Footer minimalista colado na base - texto branco sobre as serras verdes */}
-      <footer className="absolute bottom-4 left-0 w-full text-center bg-transparent z-20 shrink-0">
-        <p className="text-white/80 text-xs font-semibold tracking-wide drop-shadow-md">
-          © 2026 proITA Serviços Digitais Ltda. Todos os direitos reservados. | CNPJ: 67.140.810/0001-14 | Itapipoca — CE
+      {/* Footer minimalista colado na base - texto discreto sobre as serras verdes */}
+      <footer className="absolute bottom-2 sm:bottom-3 left-0 w-full text-center bg-transparent z-20 shrink-0 px-4">
+        <p className="text-white/60 text-[9px] sm:text-[10px] md:text-xs font-normal leading-tight tracking-tight max-w-[90%] sm:max-w-none mx-auto drop-shadow-sm">
+          © 2026 proITA Serviços Digitais Ltda. Todos os direitos reservados. <span className="hidden sm:inline">|</span><br className="sm:hidden" /> CNPJ: 67.140.810/0001-14 | Itapipoca — CE
         </p>
       </footer>
     </div>
