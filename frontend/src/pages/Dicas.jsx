@@ -1,8 +1,70 @@
-import React from 'react';
+import React, { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { Lightbulb, ArrowLeft, Quote, Sparkles, Coins, CheckCircle, Star } from 'lucide-react';
+import { Lightbulb, ArrowLeft, Quote, Sparkles, MessageSquare, X, Send, Loader2 } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
+import { API_URL } from '../config';
 
 export default function Dicas() {
+  const { user } = useContext(AuthContext);
+  const [isContactFormOpen, setIsContactFormOpen] = useState(false);
+  const [nome, setNome] = useState('');
+  const [email, setEmail] = useState('');
+  const [assunto, setAssunto] = useState('');
+  const [mensagem, setMensagem] = useState('');
+  const [formSuccess, setFormSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleOpenContactForm = () => {
+    setIsContactFormOpen(true);
+    setFormSuccess(false);
+    setAssunto('Dica de Sucesso para a Comunidade');
+    setMensagem('');
+    const userNome = user ? `${user.nome || user.name || ''} ${user.sobrenome || ''}`.trim() : '';
+    setNome(userNome);
+    setEmail(user?.email || '');
+  };
+
+  const handleCloseContactForm = () => {
+    setIsContactFormOpen(false);
+  };
+
+  const handleSubmitTip = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/api/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nome,
+          email,
+          assunto,
+          mensagem,
+          tipo: 'dica'
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Erro ao enviar sua dica.');
+      }
+
+      setFormSuccess(true);
+      setTimeout(() => {
+        setIsContactFormOpen(false);
+      }, 2500);
+    } catch (err) {
+      console.error('Erro no envio da dica:', err);
+      alert(err.message || 'Ocorreu um erro ao enviar sua dica. Por favor, tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const testimonials = [
     {
       quote: "Sempre coloco fotos nítidas dos meus trabalhos. Os clientes de Itapipoca adoram ver o resultado pronto antes de chamar no WhatsApp!",
@@ -83,15 +145,26 @@ export default function Dicas() {
           ))}
         </div>
 
+        {/* CTA para enviar dica de sucesso */}
+        <div className="text-center pt-2">
+          <button
+            onClick={handleOpenContactForm}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 hover:text-primary rounded-2xl border border-slate-200 text-sm font-semibold transition-all shadow-xs cursor-pointer group"
+          >
+            <MessageSquare className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+            <span>Tem uma dica de sucesso? Compartilhe com a nossa comunidade!</span>
+          </button>
+        </div>
+
         {/* Banner complementar: Dica Extra de Monetização */}
         <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-3xl p-6 sm:p-8 shadow-md border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-left">
             <span className="inline-flex items-center gap-1.5 bg-amber-400/20 text-amber-300 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
               <Sparkles size={14} /> Dica de Ouro
             </span>
-            <h3 className="text-xl font-bold text-white">Querzerar o custo da sua assinatura?</h3>
+            <h3 className="text-xl font-bold text-white">Quer zerar o custo da sua assinatura?</h3>
             <p className="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-xl">
-              Adicione parceiros e patrocinadores locais no seu perfil e transforme seu espaço no proITA em fonte de renda extra!
+              O proITA permite que você adicione banners de parceiros ou patrocinadores locais diretamente no seu perfil. Você pode cobrar por esse espaço publicitário, cobrindo o valor da sua assinatura e ainda transformando seu perfil em uma nova fonte de renda extra todos os meses!
             </p>
           </div>
           <Link
@@ -103,6 +176,117 @@ export default function Dicas() {
         </div>
 
       </div>
+
+      {/* Modal de Envio de Dicas */}
+      {isContactFormOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden border border-slate-100 animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-slate-900 text-white px-6 py-5 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold">
+                  Compartilhe sua Dica de Sucesso
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Sua sugestão será analisada por nossa equipe para inspirar outros profissionais
+                </p>
+              </div>
+              <button 
+                onClick={handleCloseContactForm}
+                className="text-slate-400 hover:text-white transition-colors cursor-pointer p-1.5 hover:bg-slate-800 rounded-lg"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <form onSubmit={handleSubmitTip} className="p-6 space-y-4">
+              {formSuccess ? (
+                <div className="py-8 text-center space-y-3 animate-in fade-in duration-300">
+                  <div className="mx-auto w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center font-bold text-xl">
+                    ✓
+                  </div>
+                  <h4 className="text-lg font-bold text-slate-800">Dica Enviada com Sucesso!</h4>
+                  <p className="text-sm text-slate-600 max-w-sm mx-auto leading-relaxed">
+                    Muito obrigado por compartilhar sua experiência com a nossa comunidade!
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Seu Nome</label>
+                      <input
+                        type="text"
+                        value={nome}
+                        onChange={(e) => setNome(e.target.value)}
+                        readOnly={!!(user?.nome || user?.name)}
+                        required
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm read-only:bg-slate-50 read-only:text-slate-500 read-only:cursor-not-allowed"
+                        placeholder="Nome completo"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Seu E-mail</label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        readOnly={!!user?.email}
+                        required
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm read-only:bg-slate-50 read-only:text-slate-500 read-only:cursor-not-allowed"
+                        placeholder="seu@email.com"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Assunto</label>
+                    <input
+                      type="text"
+                      value={assunto}
+                      onChange={(e) => setAssunto(e.target.value)}
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm"
+                      placeholder="Título da dica"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Sua Dica / História</label>
+                    <textarea
+                      value={mensagem}
+                      onChange={(e) => setMensagem(e.target.value)}
+                      required
+                      rows={4}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-sm resize-none"
+                      placeholder="Escreva sua dica ou segredo de sucesso no proITA..."
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={handleCloseContactForm}
+                      className="flex-1 py-3 border border-slate-200 hover:bg-slate-50 text-slate-650 rounded-xl text-sm font-bold transition-all cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 py-3 bg-primary hover:bg-primary-hover disabled:opacity-50 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-primary/10"
+                    >
+                      {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                      Enviar Dica
+                    </button>
+                  </div>
+                </>
+              )}
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

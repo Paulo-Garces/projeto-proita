@@ -69,7 +69,9 @@ export default function Faq() {
     },
     {
       question: 'É grátis para o profissional anunciar?',
-      answer: 'Sim! Você tem 30 dias de teste totalmente grátis para experimentar a plataforma e sentir os resultados. Após esse período, cobramos apenas uma pequena taxa anual de manutenção para manter seu perfil ativo e em destaque.'
+      answer: 'Você tem 30 dias de teste totalmente grátis para experimentar a plataforma e sentir os resultados. Após esse período, aplicamos uma taxa de manutenção (anual ou bienal) para manter seu perfil ativo e em destaque. ',
+      linkTo: '/planos',
+      linkLabel: 'Consultar nossos planos'
     },
     {
       question: 'Como faço para anunciar meus serviços?',
@@ -131,7 +133,18 @@ export default function Faq() {
                   </button>
                   {isOpen && (
                     <div className="px-6 pb-5 text-slate-600 text-sm md:text-base leading-relaxed border-t border-slate-100 pt-3 animate-in fade-in duration-200">
-                      {item.answer}
+                      <span>{item.answer}</span>
+                      {item.linkTo && (
+                        <div className="mt-3">
+                          <Link
+                            to={item.linkTo}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl font-bold text-xs sm:text-sm transition-colors cursor-pointer"
+                          >
+                            <span>{item.linkLabel || 'Consultar nossos planos'}</span>
+                            <span>→</span>
+                          </Link>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

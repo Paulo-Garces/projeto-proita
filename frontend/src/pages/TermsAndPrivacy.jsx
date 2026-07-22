@@ -57,13 +57,20 @@ export default function TermsAndPrivacy() {
             </p>
           </div>
 
-          {/* Botão de Documento Completo */}
-          <div className="pt-6 border-t border-slate-100 text-center">
+          {/* Botões de Termos e Privacidade */}
+          <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/termos"
-              className="inline-flex items-center gap-2 px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl transition-all shadow-md hover:scale-105 active:scale-95 cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-primary hover:bg-primary-hover text-white font-bold text-sm rounded-xl transition-all shadow-md hover:scale-105 active:scale-95 cursor-pointer"
             >
-              <span>Ler documento completo</span>
+              <span>Ler Termos de Serviço</span>
+              <ExternalLink className="w-4 h-4" />
+            </Link>
+            <Link
+              to="/privacidade"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white hover:bg-slate-100 text-slate-700 font-bold text-sm rounded-xl border border-slate-300 transition-all shadow-xs hover:scale-105 active:scale-95 cursor-pointer"
+            >
+              <span>Ler Política de Privacidade</span>
               <ExternalLink className="w-4 h-4" />
             </Link>
           </div>
