@@ -625,7 +625,13 @@ export default function Profile() {
     ? [professional.user.nome, professional.user.sobrenome].filter(Boolean).join(' ').trim()
     : '';
 
-  const isOwner = user?.id === professional?.userId;
+  const isOwner = Boolean(
+    user && professional && (
+      (user.id && professional.userId && user.id === professional.userId) ||
+      (user.id && professional.user?.id && user.id === professional.user.id) ||
+      (user.id && professional.id && user.id === professional.id)
+    )
+  );
 
   const handleWhatsApp = () => {
     if (professional.phone) {
@@ -759,17 +765,19 @@ export default function Profile() {
             <IconComponent size={18} />
           </a>
         );
-      } else {
+      } else if (isOwner) {
         return (
           <button
             key={p.key}
-            disabled
-            title={`${p.label} não cadastrado`}
-            className="p-2 rounded-xl text-slate-300 bg-slate-50 border border-slate-100 cursor-not-allowed opacity-50"
+            onClick={() => { setIsSocialModalOpen(true); setSocialError(''); }}
+            title={`Cadastrar ${p.label}`}
+            className="p-2 rounded-xl text-slate-300 bg-slate-50 border border-slate-100 opacity-50 cursor-pointer"
           >
             <IconComponent size={18} />
           </button>
         );
+      } else {
+        return null;
       }
     });
   };
@@ -1799,7 +1807,7 @@ export default function Profile() {
       )}
 
       {/* Modal de In-Place Editing das Redes Sociais */}
-      {isSocialModalOpen && (
+      {isSocialModalOpen && isOwner && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-105 animate-in zoom-in-95 duration-200">
             {/* Header */}
@@ -1868,7 +1876,7 @@ export default function Profile() {
       )}
 
       {/* Modal de In-Place Editing de Sobre o Profissional */}
-      {isDescModalOpen && (
+      {isDescModalOpen && isOwner && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden border border-slate-105 animate-in zoom-in-95 duration-200">
             {/* Header */}

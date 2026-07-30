@@ -6,6 +6,8 @@ import Fuse from 'fuse.js';
 import { AuthContext } from '../context/AuthContext';
 import { API_URL } from '../config';
 import { getProfileDisplayName, getProfileAvatarNameParam } from '../utils/profileDisplayName';
+import { normalize } from '../utils/normalize';
+import { MOCK_PROFESSIONALS } from '../mocks/data';
 
 export default function Search() {
   const { user, token } = useContext(AuthContext);
@@ -94,6 +96,16 @@ export default function Search() {
               : [];
             const instagramEntry = socialLinks.find((s) => s.platform === 'instagram');
             const instagram = instagramEntry?.url || '';
+            let tags = Array.isArray(profile.tags) ? profile.tags : (Array.isArray(profile.atividadesSecundarias) ? profile.atividadesSecundarias : []);
+            const catNorm = normalize(profile.atividadePrincipal || profile.category || '');
+            if (catNorm.includes('eletricis')) {
+              const electricianDefaultTags = ['tomada', 'lampada', 'fiação', 'energia', 'instalar', 'manutenção', 'reparo', 'chuveiro'];
+              tags = Array.from(new Set([...tags, ...electricianDefaultTags]));
+            } else if (catNorm.includes('psicol') || catNorm.includes('terapeuta')) {
+              const psychologistDefaultTags = ['saude mental', 'terapia', 'ansiedade', 'depressão', 'comportamento', 'psicologia', 'emocional'];
+              tags = Array.from(new Set([...tags, ...psychologistDefaultTags]));
+            }
+
             return {
               ...profile,
               id: profile.id,
@@ -105,6 +117,8 @@ export default function Search() {
               location: profile.serviceBairro || profile.user?.bairro || 'Itapipoca',
               shortDescription: profile.descricaoCurta || profile.shortDescription || (profile.descricaoTrabalho?.substring(0, 90) + '...'),
               fullDescription: profile.descricaoTrabalho,
+              description: profile.descricaoCurta || profile.descricaoTrabalho || profile.shortDescription || '',
+              tags,
               phone: (profile.telefoneComercial && profile.telefoneComercial.trim() !== '')
                 ? profile.telefoneComercial.trim()
                 : (profile.servicePhone && profile.servicePhone.trim() !== '')
@@ -136,11 +150,18 @@ export default function Search() {
                   || `https://ui-avatars.com/api/?name=${encodeURIComponent(getProfileAvatarNameParam(profile))}&background=0ea5e9&color=fff&bold=true`),
             };
           });
-          setProfissionais(mappedData);
+          if (mappedData.length > 0) {
+            setProfissionais(mappedData);
+          } else {
+            setProfissionais(MOCK_PROFESSIONALS);
+          }
           // A filtragem inicial definirá os resultados no outro useEffect
+        } else {
+          setProfissionais(MOCK_PROFESSIONALS);
         }
       } catch (err) {
         console.error('Erro ao buscar profissionais:', err);
+        setProfissionais(MOCK_PROFESSIONALS);
       } finally {
         setIsLoading(false);
       }
@@ -187,19 +208,26 @@ export default function Search() {
     }
 
     if (queryParam) {
-      const fuse = new Fuse(filtered, {
-        keys: [
-          { name: 'name', weight: 1.0 },
-          { name: 'category', weight: 1.0 },
-          { name: 'categoriaGeral', weight: 0.5 },
-          { name: 'shortDescription', weight: 0.3 },
-          { name: 'fullDescription', weight: 0.3 }
-        ],
-        threshold: 0.35,
-        ignoreLocation: true
+      const qNorm = normalize(queryParam);
+      filtered = filtered.filter(p => {
+        const nameStr = p.name || p.nome || p.nomeExibicao || '';
+        const nameMatch = normalize(nameStr).includes(qNorm);
+
+        const catStr = p.category || p.atividadePrincipal || '';
+        const generalCatStr = p.categoriaGeral || '';
+        const categoryMatch = normalize(catStr).includes(qNorm) || normalize(generalCatStr).includes(qNorm);
+
+        const descStr = p.description || p.shortDescription || p.fullDescription || p.descricaoTrabalho || p.descricaoCurta || p.about || '';
+        const descriptionMatch = normalize(descStr).includes(qNorm);
+
+        const tagsArr = Array.isArray(p.tags) ? p.tags : [];
+        const tagsMatch = tagsArr.some(tag => {
+          const tagNorm = normalize(typeof tag === 'string' ? tag : String(tag));
+          return tagNorm.includes(qNorm) || qNorm.includes(tagNorm);
+        });
+
+        return nameMatch || categoryMatch || descriptionMatch || tagsMatch;
       });
-      const fuseResults = fuse.search(queryParam);
-      filtered = fuseResults.map(result => result.item);
     }
 
     if (derivedCat) {
